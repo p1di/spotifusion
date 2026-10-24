@@ -53,7 +53,7 @@ fun FindInListField(query: String, onQuery: (String) -> Unit, hint: String, modi
             value = query,
             onValueChange = onQuery,
             singleLine = true,
-            textStyle = TextStyle(color = Color.White, fontSize = 15.sp),
+            textStyle = TextStyle(color = Color.White, fontSize = 15.sp, fontFamily = com.music.spotui.ui.theme.AppSans),
             cursorBrush = SolidColor(Color.White),
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
             modifier = Modifier.weight(1f).padding(8.dp, 10.dp),

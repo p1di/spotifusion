@@ -2,6 +2,14 @@
 
 Each release on GitHub shows its section below. The app shows it too when it offers the update. Every detail: [docs/CHANGELOG-full.md](docs/CHANGELOG-full.md).
 
+## 2.0.0
+
+- **1:1 Spotify UI Redesign**: Pixel-accurate layout and spacing matching the official Spotify client across Now Playing, Library, and Navigation (transport control sizing, seek bar, Spotify Mix font, and bottom peek cards).
+- **BitChord Audio Downloads**: Full transition from SpotiFLAC to BitChord's download engine (intelligent TrackMatcher, JioSaavn 320kbps AAC, and fast range-chunked stream downloader with zero verification gates).
+- **Search Fixes**: Persistent keyboard focus while typing search queries, smooth sticky bar transition, and double-tap to reset search.
+- **Now Playing & Artist Enhancements**: Clickable secondary artist credits navigating to artist profiles; corrected HTML entity decoding in artist descriptions; updated repeat, shuffle, and queue icons.
+- **Account & Profile Updates**: Top gradient accent on user profiles; customized update links and bug reporting form.
+
 ## 2.0.0-beta.9
 
 - **Fast skips during an ad or a reload**: the song your taps point to plays once the ad or the reload is over, and the screen shows that same song (the sound and the screen no longer drift apart); "previous" during an ad no longer restarts the ad.

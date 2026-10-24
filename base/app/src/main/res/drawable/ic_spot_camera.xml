@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- Spotify Camera icon in Search top-right matching Screenshot 2 -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M9.4,3.5L7.9,5.5H4A2.5,2.5 0,0 0,1.5 8v10.5A2.5,2.5 0,0 0,4 21h16a2.5,2.5 0,0 0,2.5 -2.5V8A2.5,2.5 0,0 0,20 5.5h-3.9l-1.5,-2H9.4zM10.4,5.5h3.2l1.5,2H20c0.28,0 0.5,0.22 0.5,0.5v10.5c0,0.28 -0.22,0.5 -0.5,0.5H4c-0.28,0 -0.5,-0.22 -0.5,-0.5V8c0,-0.28 0.22,-0.5 0.5,-0.5h4.9l1.5,-2zM12,17a4,4 0,1 0,0 -8,4 4,0 0,0 0,8zM12,15a2,2 0,1 1,0 -4,2 2,0 0,1 0,4z" />
+</vector>

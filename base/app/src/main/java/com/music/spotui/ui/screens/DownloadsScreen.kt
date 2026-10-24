@@ -138,17 +138,6 @@ fun DownloadsScreen(navController: NavController) {
                     }
                 }
             }
-            // No SpotiFLAC verification: the reliable source is off, say it where downloads fail.
-            if (!com.music.spotui.data.preferences.hasSpotiflacSession(context)) item(key = "verify") {
-                Text(
-                    stringResource(R.string.downloads_verify_banner),
-                    color = Color.White, fontSize = 14.sp, lineHeight = 19.sp,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp).fillMaxWidth()
-                        .clip(RoundedCornerShape(8.dp)).background(Color(0xFF2A2A2A))
-                        .pressable(0.98f) { navController.navigate(com.music.spotui.ui.navigation.Routes.Spotiflac.route) }
-                        .padding(14.dp),
-                )
-            }
             // A25: one tap empties the queue; the songs already downloaded stay untouched.
             if (stoppable > 0) item(key = "stop_all") {
                 Row(

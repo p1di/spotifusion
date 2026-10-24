@@ -79,20 +79,6 @@ fun SettingsScreen(navController: NavController) {
 
             Section(R.string.settings_section_downloads)
             DownloadQualityPicker()
-            // The lossless source: SpotiFLAC's own servers once verified.
-            Column(
-                Modifier.fillMaxWidth().clickable { navController.navigate(com.music.spotui.ui.navigation.Routes.Spotiflac.route) }
-                    .padding(horizontal = 20.dp, vertical = 10.dp),
-            ) {
-                Text(stringResource(R.string.spotiflac_row_title), color = Color.White, fontSize = 16.sp)
-                Text(
-                    stringResource(
-                        if (com.music.spotui.data.preferences.hasSpotiflacSession(ctx)) R.string.spotiflac_row_on
-                        else R.string.spotiflac_row_off,
-                    ),
-                    color = Color(0xFFB3B3B3), fontSize = 12.sp,
-                )
-            }
             if (com.music.spotui.data.offline.OfflineStore.tracks.isNotEmpty()) RemoveDownloadsRow()
             Divider()
 

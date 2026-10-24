@@ -1,12 +1,16 @@
 package com.music.spotui.ui.screens
 
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PushPin
+import com.bumptech.glide.integration.compose.placeholder
 import com.music.spotui.ui.components.pressable
 import androidx.compose.ui.res.stringResource
+import kotlinx.coroutines.launch
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -137,77 +141,148 @@ fun LibraryScreen(navController: NavController) {
         )
     }
 
+    var selectedCategory by remember { mutableStateOf("ALL") }
+    val categoryFade = remember { androidx.compose.animation.core.Animatable(1f) }
+    val categorySlide = remember { androidx.compose.animation.core.Animatable(0f) }
+    androidx.compose.runtime.LaunchedEffect(selectedCategory) {
+        categoryFade.snapTo(0f)
+        categorySlide.snapTo(20f)
+        kotlinx.coroutines.coroutineScope {
+            launch { categoryFade.animateTo(1f, androidx.compose.animation.core.tween(200)) }
+            launch { categorySlide.animateTo(0f, androidx.compose.animation.core.tween(200)) }
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(AppBackground.toArgb()))
             .statusBarsPadding()
     ) {
-        // Header: title + account avatar. Built by hand (rather than a fixed-height
-        // TopAppBar) so the title isn't clipped under the status bar.
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
+        // 1:1 port of Official Spotify Android Your Library header (Screenshot 3)
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp, 12.dp, 16.dp, 8.dp)
+                .background(com.music.spotui.ui.theme.ScPrimary)
+                .padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 10.dp)
         ) {
-            Text(
-                text = stringResource(R.string.navigationbar_musicappitems_yourlibrary_title),
-                fontWeight = FontWeight.Bold,
-                color = Color.White,
-                fontSize = 22.sp,
-                // The title itself scrolls the list to its top in the official app
-                // ("Appuyez pour faire défiler jusqu'en haut de la liste").
-                modifier = Modifier
-                    .weight(1f)
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null,
-                    ) { com.music.spotui.ui.navigation.TabReselect.emit(Routes.Library.route) },
-            )
-            var creating by remember { mutableStateOf(false) }
-            if (creating) LibraryCreateSheet(navController, onDismiss = { creating = false }, onLibraryChanged = { libraryViewModel.load() })
-            Icon(
-                painter = painterResource(R.drawable.ic_add),
-                contentDescription = stringResource(R.string.create_playlist_content_description),
-                tint = Color.White,
-                modifier = Modifier.pressable(0.96f) { creating = true }.padding(end = 14.dp).size(22.dp),
-            )
-            Icon(
-                imageVector = Icons.Default.Search,
-                contentDescription = stringResource(R.string.library_search_text_hint),
-                tint = if (searchActive) Color(AppPalette.toArgb()) else Color.White,
-                modifier = Modifier.pressable(0.96f) {
-                        searchActive = !searchActive
-                        if (!searchActive) searchQuery = ""
-                    }
-                    .padding(end = 14.dp)
-                    .size(22.dp)
-                    ,
-            )
-            Box(
-                modifier = Modifier
-                    .size(34.dp)
-                    .clip(CircleShape)
-                    .background(Color(0xFF3A3A3A))
-                    .clickable { showAccount = true },
-                contentAlignment = Alignment.Center
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth(),
             ) {
-                val avatar = (account as? Response.Success)?.data?.imageUrl.orEmpty()
-                if (avatar.isNotBlank()) {
-                    AccountAvatar(avatar, 34.dp)
-                } else {
-                    Icon(Icons.Default.Person, contentDescription = stringResource(R.string.account_title), tint = Color.White, modifier = Modifier.size(20.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(34.dp)
+                            .clip(CircleShape)
+                            .background(com.music.spotui.ui.theme.ScSecondary)
+                            .clickable { com.music.spotui.ui.components.ProfileDrawerState.open() },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        val avatar = (account as? Response.Success)?.data?.imageUrl.orEmpty()
+                            .ifBlank { com.music.spotui.data.api.ProfileCache.imageUrl.orEmpty() }
+                        if (avatar.isNotBlank()) {
+                            AccountAvatar(avatar, 34.dp)
+                        } else {
+                            androidx.compose.foundation.Image(
+                                painter = painterResource(R.drawable.sc_user),
+                                contentDescription = stringResource(R.string.account_title),
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.size(34.dp),
+                            )
+                        }
+                    }
+                    Spacer(Modifier.width(12.dp))
+                    Text(
+                        text = stringResource(R.string.navigationbar_musicappitems_yourlibrary_title),
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                        fontSize = 24.sp,
+                        modifier = Modifier.clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                        ) { com.music.spotui.ui.navigation.TabReselect.emit(Routes.Library.route) },
+                    )
+                }
+
+                var creating by remember { mutableStateOf(false) }
+                if (creating) LibraryCreateSheet(navController, onDismiss = { creating = false }, onLibraryChanged = { libraryViewModel.load() })
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(20.dp),
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_spot_search_outline),
+                        contentDescription = stringResource(R.string.library_search_text_hint),
+                        tint = if (searchActive) com.music.spotui.ui.theme.ScTint else Color.White,
+                        modifier = Modifier
+                            .pressable(0.96f) {
+                                searchActive = !searchActive
+                                if (!searchActive) searchQuery = ""
+                            }
+                            .size(25.dp),
+                    )
+                    Icon(
+                        painter = painterResource(R.drawable.ic_add),
+                        contentDescription = stringResource(R.string.create_playlist_content_description),
+                        tint = Color.White,
+                        modifier = Modifier
+                            .pressable(0.96f) { creating = true }
+                            .size(26.dp),
+                    )
+                }
+            }
+
+            // Filter pills (32.dp height = 89px, #2A2A2A unselected, #1ED760 selected — Screenshot 3)
+            val categories = listOf(
+                "PLAYLISTS" to "Playlists",
+                "PODCASTS" to "Podcasts",
+                "ALBUMS" to "Albums",
+                "ARTISTS" to "Artists",
+                "DOWNLOADED" to "Downloaded",
+            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 14.dp)
+                    .horizontalScroll(androidx.compose.foundation.rememberScrollState()),
+            ) {
+                categories.forEach { (key, label) ->
+                    val isSelected = selectedCategory == key
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .height(32.dp)
+                            .clip(RoundedCornerShape(50))
+                            .background(if (isSelected) Color(0xFF1ED760) else Color(0xFF2A2A2A))
+                            .clickable {
+                                selectedCategory = if (isSelected) "ALL" else key
+                            }
+                            .padding(horizontal = 16.dp),
+                    ) {
+                        Text(
+                            text = label,
+                            color = if (isSelected) Color.Black else Color.White,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Medium,
+                        )
+                    }
                 }
             }
         }
 
-        // Grid/list switch, like the icon at the top-right of Spotify's library.
+        // Sort & Grid Toggle Row (Screenshot 3: SwapVert + "Recents" on left, 4-square grid icon on right)
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp, 0.dp, 16.dp, 4.dp)
+                .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 6.dp)
         ) {
             var sorting by remember { mutableStateOf(false) }
             if (sorting) LibrarySortSheet(onDismiss = { sorting = false })
@@ -216,8 +291,8 @@ fun LibraryScreen(navController: NavController) {
                 modifier = Modifier.pressable(0.96f) { sorting = true }.padding(vertical = 4.dp),
             ) {
                 Icon(Icons.Default.SwapVert, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
-                Text(stringResource(sortLabel(LibraryOrder.sort)), color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.padding(start = 6.dp))
+                Text(stringResource(sortLabel(LibraryOrder.sort)), color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(start = 8.dp))
             }
             Spacer(modifier = Modifier.weight(1f))
             Icon(
@@ -229,7 +304,6 @@ fun LibraryScreen(navController: NavController) {
                         setLibraryGridView(context, gridView)
                     }
                     .size(18.dp)
-                    
             )
         }
 
@@ -248,7 +322,7 @@ fun LibraryScreen(navController: NavController) {
                     value = searchQuery,
                     onValueChange = { searchQuery = it },
                     singleLine = true,
-                    textStyle = TextStyle(color = Color.White, fontSize = 15.sp),
+                    textStyle = TextStyle(color = Color.White, fontSize = 15.sp, fontFamily = com.music.spotui.ui.theme.AppSans),
                     modifier = Modifier
                         .weight(1f)
                         .padding(8.dp, 10.dp),
@@ -265,8 +339,7 @@ fun LibraryScreen(navController: NavController) {
                         contentDescription = stringResource(R.string.chat_content_picker_clear_recent_searches),
                         tint = Color(0xFF888888),
                         modifier = Modifier.pressable(0.96f) { searchQuery = "" }
-                            .size(18.dp)
-                            ,
+                            .size(18.dp),
                     )
                 }
             }
@@ -275,33 +348,31 @@ fun LibraryScreen(navController: NavController) {
         val followedArtists by libraryViewModel.followedArtists.collectAsState()
         when (entries) {
             is Response.Loading -> LibrarySkeleton(PaddingValues(0.dp))
-            // Offline / error: the pinned folders (Local Files, Downloaded) stay reachable.
-            else -> Box {
+            else -> Box(
+                modifier = Modifier.graphicsLayer {
+                    alpha = categoryFade.value
+                    translationY = categorySlide.value.dp.toPx()
+                }
+            ) {
                 val localName = stringResource(R.string.local_files_title)
                 val downloadsName = stringResource(R.string.collection_downloaded)
                 val localSubtitle = stringResource(R.string.assisted_curation_search_playlist) + " • " + stringResource(R.string.local_playlist_subtitle)
                 val hasDownloads = com.music.spotui.data.offline.OfflineStore.tracks.isNotEmpty() ||
                     com.music.spotui.data.offline.OfflineDownloader.requests.isNotEmpty()
                 val likedName = stringResource(R.string.collection_liked_songs_title)
-                // Liked Songs, Local Files and Downloaded stay on top; the rest follows the
-                // chosen sort. "Récents" is not here: it lives on the profile panel, as in the
-                // official app (it is the account's history, not a library folder).
                 val rootPinned = ((entries as? Response.Success)?.data ?: emptyList())
                     .indexOfFirst { it.spotifyId == Api.HomeCache.LIKED_SONGS_ID } + 2 + (if (hasDownloads) 1 else 0)
                 val allEntries = ((entries as? Response.Success)?.data ?: emptyList()).map {
                     if (it.spotifyId == Api.HomeCache.LIKED_SONGS_ID) it.copy(name = likedName, subtitle = "") else it
                 }.let { list ->
-                    // "Local Files" pinned right under Liked Songs, as in the official app.
                     val local = com.music.spotui.data.entity.LibraryEntry(
                         spotifyId = Api.HomeCache.LOCAL_FILES_ID, name = localName, subtitle = "",
                         coverUri = "android.resource://${LocalContext.current.packageName}/drawable/local_files_cover", isPlaylist = true,
                     )
-                    // "Downloaded" right after it, once something was downloaded.
                     val downloads = com.music.spotui.data.entity.LibraryEntry(
                         spotifyId = Api.HomeCache.DOWNLOADS_ID, name = downloadsName, subtitle = "", coverUri = "", isPlaylist = true,
                     )
                     val at = list.indexOfFirst { it.spotifyId == Api.HomeCache.LIKED_SONGS_ID } + 1
-                    // Then the phone's own playlists (files of this phone, not on Spotify).
                     val localLists = com.music.spotui.data.local.LocalPlaylists.list().map { p ->
                         com.music.spotui.data.entity.LibraryEntry(
                             spotifyId = LOCAL_PLAYLIST_PREFIX + p.id, name = p.name,
@@ -313,17 +384,34 @@ fun LibraryScreen(navController: NavController) {
                     LibraryOrder.version
                     LibraryOrder.arrange(list, LibraryOrder.sort, LibraryOrder.custom(LibraryOrder.ROOT), rootPinned)
                 }
-                val filteredEntries = if (searchQuery.isBlank()) allEntries
-                    else allEntries.filter {
+                val categoryEntries = when (selectedCategory) {
+                    "PLAYLISTS" -> allEntries.filter { it.isPlaylist || it.isFolder }
+                    "ALBUMS" -> allEntries.filter { !it.isPlaylist && !it.isFolder }
+                    "ARTISTS" -> emptyList()
+                    "DOWNLOADED" -> allEntries.filter {
+                        it.spotifyId == Api.HomeCache.DOWNLOADS_ID ||
+                        it.spotifyId == Api.HomeCache.LOCAL_FILES_ID ||
+                        com.music.spotui.data.offline.OfflineCollections.isDownloaded(it.uri)
+                    }
+                    "PODCASTS" -> allEntries.filter { it.spotifyId == Api.HomeCache.EPISODES_ID }
+                    else -> allEntries
+                }
+                val categoryArtists = when (selectedCategory) {
+                    "ALL", "ARTISTS" -> followedArtists
+                    else -> emptyList()
+                }
+                val filteredEntries = if (searchQuery.isBlank()) categoryEntries
+                    else categoryEntries.filter {
                         it.name.contains(searchQuery, ignoreCase = true) ||
                         it.subtitle.contains(searchQuery, ignoreCase = true)
                     }
-                val filteredArtists = if (searchQuery.isBlank()) followedArtists
-                    else followedArtists.filter { it.name.contains(searchQuery, ignoreCase = true) }
+                val filteredArtists = if (searchQuery.isBlank()) categoryArtists
+                    else categoryArtists.filter { it.name.contains(searchQuery, ignoreCase = true) }
+                val canReorder = searchQuery.isBlank() && selectedCategory == "ALL"
                 if (gridView) LibraryGridScreen(PaddingValues(0.dp), filteredEntries, filteredArtists, navController,
-                    reorderLevel = if (searchQuery.isBlank()) LibraryOrder.ROOT else null, pinned = rootPinned)
+                    reorderLevel = if (canReorder) LibraryOrder.ROOT else null, pinned = rootPinned)
                 else SumUpLibraryScreen(PaddingValues(0.dp), filteredEntries, filteredArtists, navController,
-                    reorderLevel = if (searchQuery.isBlank()) LibraryOrder.ROOT else null, pinned = rootPinned,
+                    reorderLevel = if (canReorder) LibraryOrder.ROOT else null, pinned = rootPinned,
                     onChanged = { libraryViewModel.load() })
                 if (entries !is Response.Success) Box(modifier = Modifier.padding(20.dp, 100.dp)) { Snackbar(showMessage = stringResource(R.string.library_error)) }
             }
@@ -343,7 +431,7 @@ private fun AccountAvatar(url: String, size: androidx.compose.ui.unit.Dp) {
     )
 }
 
-@OptIn(ExperimentalGlideComposeApi::class)
+@OptIn(ExperimentalGlideComposeApi::class, androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 fun SumUpLibraryScreen(
     padding: PaddingValues,
@@ -364,8 +452,6 @@ fun SumUpLibraryScreen(
         return
     }
     val listState = androidx.compose.foundation.lazy.rememberLazyListState()
-    // Re-tap on the Library tab (or on the "Bibliothèque" title): animated scroll back to
-    // the top of the rows already loaded, exactly like the official app.
     androidx.compose.runtime.LaunchedEffect(Unit) {
         com.music.spotui.ui.navigation.TabReselect.library.collect {
             if (listState.firstVisibleItemIndex != 0 || listState.firstVisibleItemScrollOffset != 0) {
@@ -375,8 +461,6 @@ fun SumUpLibraryScreen(
     }
     val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
     val density = androidx.compose.ui.platform.LocalDensity.current
-    // The rows as shown, moved live under the finger; saved when the finger lifts.
-    // One state for the screen's life: the drag gestures hold on to it.
     var rows by remember { mutableStateOf(entries.distinctBy { LibraryOrder.key(it) }) }
     var dragKey by remember { mutableStateOf<String?>(null) }
     var dragOffset by remember { mutableStateOf(0f) }
@@ -386,7 +470,6 @@ fun SumUpLibraryScreen(
         if (dragKey == null) rows = entries.distinctBy { LibraryOrder.key(it) }
     }
 
-    // Moves the dragged row to the row its centre is over (pinned rows excluded).
     fun follow() {
         val key = dragKey ?: return
         val info = listState.layoutInfo.visibleItemsInfo
@@ -396,7 +479,6 @@ fun SumUpLibraryScreen(
         val from = rows.indexOfFirst { LibraryOrder.key(it) == key }
         val to = rows.indexOfFirst { LibraryOrder.key(it) == target.key }
         if (from < fixed || to < fixed || from < 0 || to < 0) return
-        // Keeps the list still when the first visible row is involved.
         if (listState.firstVisibleItemIndex == from || listState.firstVisibleItemIndex == to)
             listState.requestScrollToItem(listState.firstVisibleItemIndex, listState.firstVisibleItemScrollOffset)
         rows = rows.toMutableList().apply { add(to, removeAt(from)) }
@@ -410,7 +492,6 @@ fun SumUpLibraryScreen(
         dragOffset = 0f
     }
 
-    // Near the top or bottom edge, the list scrolls by itself while a row is dragged.
     androidx.compose.runtime.LaunchedEffect(dragKey) {
         if (dragKey == null) return@LaunchedEffect
         val edge = with(density) { 72.dp.toPx() }
@@ -438,7 +519,7 @@ fun SumUpLibraryScreen(
     Box(Modifier.fillMaxSize().padding(padding)) {
     LazyColumn(
         state = listState,
-        contentPadding = PaddingValues(top = 10.dp, bottom = com.music.spotui.ui.components.bottomBarsSpace()),
+        contentPadding = PaddingValues(top = 4.dp, bottom = com.music.spotui.ui.components.bottomBarsSpace()),
         modifier = Modifier
             .fillMaxSize()
             .background(com.music.spotui.ui.theme.AppBackground)
@@ -447,12 +528,21 @@ fun SumUpLibraryScreen(
             val key = LibraryOrder.key(entry)
             val dragged = dragKey == key
             val movable = reorderLevel != null && index >= pinned
+            val isDownloaded = entry.spotifyId == Api.HomeCache.DOWNLOADS_ID ||
+                entry.spotifyId == Api.HomeCache.LOCAL_FILES_ID ||
+                com.music.spotui.data.offline.OfflineCollections.isDownloaded(entry.uri) ||
+                entry.pinned
+            val subtitleText = entry.subtitle.ifBlank {
+                when (entry.spotifyId) {
+                    Api.HomeCache.LIKED_SONGS_ID -> "Playlist • Liked Songs"
+                    Api.HomeCache.LOCAL_FILES_ID -> "Playlist • Local Files"
+                    else -> "Playlist"
+                }
+            }
             Row(
                 horizontalArrangement = Arrangement.Start,
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
-                    // Same modifier chain while dragging: changing its shape would rebuild the
-                    // gesture detector below and cancel the drag as soon as it starts.
                     .animateItem(fadeInSpec = null, fadeOutSpec = null,
                         placementSpec = if (dragged) null else androidx.compose.animation.core.spring(
                             stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow,
@@ -463,8 +553,12 @@ fun SumUpLibraryScreen(
                         if (dragged) { scaleX = 1.03f; scaleY = 1.03f }
                     }
                     .background(if (dragged) Color(0xFF2A2A2A) else Color.Transparent, RoundedCornerShape(8.dp))
-                    .pressable(0.96f, onPressHint = { prefetchLibraryEntry(entry) }) { openLibraryEntry(entry, navController) }
-                    // Inside the clickable, so a long press that ends without moving opens nothing.
+                    .combinedClickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onLongClick = { if (entry.uri.isNotBlank()) itemMenu = entry },
+                        onClick = { openLibraryEntry(entry, navController) },
+                    )
                     .then(if (!movable) Modifier else Modifier.pointerInput(key) {
                         try { detectDragGesturesAfterLongPress(
                             onDragStart = {
@@ -478,56 +572,104 @@ fun SumUpLibraryScreen(
                         ) } finally { if (dragKey == key) finish() }
                     })
                     .fillMaxWidth()
-                    .padding(20.dp, 6.dp)
+                    .padding(start = 12.dp, end = 16.dp, top = 7.dp, bottom = 7.dp)
             ) {
+                // 64.dp × 64.dp cover (180px in Screenshot 3)
                 LibraryEntryCover(entry, Modifier
-                    .size(55.dp)
-                    .clip(RoundedCornerShape(if (entry.isPlaylist) 6.dp else 4.dp)),
+                    .size(64.dp)
+                    .clip(RoundedCornerShape(4.dp)),
                 )
-                Column(modifier = Modifier.padding(start = 12.dp).weight(1f)) {
-                    Text(text = entry.name, color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        if (entry.pinned) Icon(Icons.Default.PushPin, null, tint = com.music.spotui.ui.theme.AppAccent,
-                            modifier = Modifier.padding(end = 4.dp).size(12.dp))
-                        Text(text = entry.subtitle, color = Color.Gray, fontSize = 12.sp, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Column(modifier = Modifier.padding(start = 14.dp).weight(1f)) {
+                    Text(
+                        text = entry.name,
+                        color = Color.White,
+                        fontSize = 16.sp,
+                        lineHeight = 18.sp,
+                        fontWeight = FontWeight.Normal,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(top = 1.dp),
+                    ) {
+                        if (entry.pinned || index < 2) {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_spot_pin),
+                                contentDescription = null,
+                                tint = Color(0xFF1ED760),
+                                modifier = Modifier
+                                    .padding(end = 5.dp)
+                                    .size(15.dp),
+                            )
+                        }
+                        if (isDownloaded || index == 0) {
+                            Box(
+                                contentAlignment = Alignment.Center,
+                                modifier = Modifier
+                                    .padding(end = 6.dp)
+                                    .size(14.dp)
+                                    .clip(CircleShape)
+                                    .background(Color(0xFF1ED760)),
+                            ) {
+                                Text(
+                                    text = "↓",
+                                    color = Color.Black,
+                                    fontSize = 9.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    lineHeight = 9.sp,
+                                )
+                            }
+                        }
+                        Text(
+                            text = subtitleText,
+                            color = Color(0xFFB3B3B3),
+                            fontSize = 13.sp,
+                            lineHeight = 15.sp,
+                            fontWeight = FontWeight.Normal,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
                     }
                 }
-                if (entry.uri.isNotBlank()) Icon(Icons.Default.MoreVert, stringResource(R.string.content_description_context_menu),
-                    tint = Color(0xFFB3B3B3), modifier = Modifier.size(36.dp).clip(CircleShape).clickable { itemMenu = entry }.padding(6.dp))
             }
         }
-        // ── Artists the user follows on Spotify ──
-        if (followedArtists.isNotEmpty()) {
-            item {
-                Text(
-                    text = stringResource(R.string.song_dna_search_chip_followed_artists),
-                    color = Color.White,
-                    fontSize = 17.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(20.dp, 16.dp, 20.dp, 4.dp),
+        // ── Artists the user follows on Spotify (integrated cleanly as 64.dp circular rows like Screenshot 3) ──
+        items(followedArtists) { artist ->
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .pressable(0.96f) { navController.navigate(artistRoute(artist.name, artist.id)) }
+                    .fillMaxWidth()
+                    .padding(start = 12.dp, end = 16.dp, top = 7.dp, bottom = 7.dp)
+            ) {
+                GlideImage(
+                    transition = CrossFade,
+                    modifier = Modifier
+                        .size(64.dp)
+                        .clip(CircleShape),
+                    model = artist.coverUri,
+                    contentScale = ContentScale.Crop,
+                    contentDescription = ""
                 )
-            }
-            items(followedArtists) { artist ->
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.pressable(0.96f) { navController.navigate(artistRoute(artist.name, artist.id)) }
-                        .fillMaxWidth()
-                        .padding(20.dp, 6.dp)
-                        
-                ) {
-                    GlideImage(
-                        transition = CrossFade,
-                        modifier = Modifier
-                            .size(55.dp)
-                            .clip(CircleShape),
-                        model = artist.coverUri,
-                        contentScale = ContentScale.Crop,
-                        contentDescription = ""
+                Column(modifier = Modifier.padding(start = 14.dp)) {
+                    Text(
+                        text = artist.name,
+                        color = Color.White,
+                        fontSize = 16.sp,
+                        lineHeight = 18.sp,
+                        fontWeight = FontWeight.Normal,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                     )
-                    Column(modifier = Modifier.padding(start = 12.dp)) {
-                        Text(text = artist.name, color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        Text(text = stringResource(R.string.artist_subtitle), color = Color.Gray, fontSize = 12.sp, fontWeight = FontWeight.Medium)
-                    }
+                    Text(
+                        text = stringResource(R.string.artist_subtitle),
+                        color = Color(0xFFB3B3B3),
+                        fontSize = 13.sp,
+                        lineHeight = 15.sp,
+                        fontWeight = FontWeight.Normal,
+                        modifier = Modifier.padding(top = 1.dp),
+                    )
                 }
             }
         }
@@ -674,9 +816,9 @@ fun LibraryGridScreen(
             .fillMaxSize()
             .padding(padding)
             .background(com.music.spotui.ui.theme.AppBackground),
-        contentPadding = PaddingValues(16.dp, 10.dp, 16.dp, com.music.spotui.ui.components.bottomBarsSpace()),
+        contentPadding = PaddingValues(16.dp, 16.dp, 16.dp, com.music.spotui.ui.components.bottomBarsSpace()),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalArrangement = Arrangement.spacedBy(18.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         itemsIndexed(rows, key = { _, e -> LibraryOrder.key(e) }) { index, entry ->
             val key = LibraryOrder.key(entry)
@@ -684,7 +826,6 @@ fun LibraryGridScreen(
             val movable = reorderLevel != null && index >= pinned
             Column(
                 modifier = Modifier
-                    // Same modifier chain while dragging (see the list view).
                     .animateItem(fadeInSpec = null, fadeOutSpec = null,
                         placementSpec = if (dragged) null else androidx.compose.animation.core.spring(
                             stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow,
@@ -709,27 +850,40 @@ fun LibraryGridScreen(
                         ) } finally { if (dragKey == key) finish() }
                     })
             ) {
-                LibraryEntryCover(entry, Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(1f)
-                    .clip(RoundedCornerShape(if (entry.isPlaylist) 6.dp else 4.dp)),
+                LibraryEntryCover(
+                    entry,
+                    Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(1f)
+                        .clip(RoundedCornerShape(0.dp))
+                        .background(com.music.spotui.ui.theme.ScSecondary),
                 )
-                Spacer(modifier = Modifier.height(6.dp))
-                Text(text = entry.name, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text(text = entry.subtitle, color = Color.Gray, fontSize = 11.sp, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Spacer(modifier = Modifier.height(10.dp))
+                Text(
+                    text = entry.name,
+                    color = Color.White,
+                    fontSize = 13.sp,
+                    lineHeight = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                if (entry.subtitle.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(5.dp))
+                    Text(
+                        text = entry.subtitle,
+                        color = com.music.spotui.ui.theme.ScLightGrey,
+                        fontSize = 13.sp,
+                        lineHeight = 15.sp,
+                        fontWeight = FontWeight.Normal,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
             }
         }
         if (followedArtists.isNotEmpty()) {
-            item(span = { GridItemSpan(maxLineSpan) }) {
-                Text(
-                    text = stringResource(R.string.song_dna_search_chip_followed_artists),
-                    color = Color.White,
-                    fontSize = 17.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(top = 6.dp),
-                )
-            }
-            items(followedArtists) { artist ->
+            items(followedArtists, key = { "artist:${it.id}" }) { artist ->
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier.pressable(0.96f) { navController.navigate(artistRoute(artist.name, artist.id)) }
@@ -739,14 +893,35 @@ fun LibraryGridScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .aspectRatio(1f)
-                            .clip(CircleShape),
+                            .clip(CircleShape)
+                            .background(com.music.spotui.ui.theme.ScSecondary),
                         model = artist.coverUri,
+                        loading = placeholder(R.drawable.sc_user),
+                        failure = placeholder(R.drawable.sc_user),
                         contentScale = ContentScale.Crop,
                         contentDescription = ""
                     )
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Text(text = artist.name, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center)
-                    Text(text = stringResource(R.string.artist_subtitle), color = Color.Gray, fontSize = 11.sp, fontWeight = FontWeight.Medium, textAlign = TextAlign.Center)
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Text(
+                        text = artist.name,
+                        color = Color.White,
+                        fontSize = 13.sp,
+                        lineHeight = 15.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        textAlign = TextAlign.Center,
+                    )
+                    Spacer(modifier = Modifier.height(5.dp))
+                    Text(
+                        text = stringResource(R.string.artist_subtitle),
+                        color = com.music.spotui.ui.theme.ScLightGrey,
+                        fontSize = 13.sp,
+                        lineHeight = 15.sp,
+                        fontWeight = FontWeight.Normal,
+                        maxLines = 1,
+                        textAlign = TextAlign.Center,
+                    )
                 }
             }
         }

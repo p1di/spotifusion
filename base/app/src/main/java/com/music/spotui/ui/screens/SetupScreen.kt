@@ -105,12 +105,6 @@ fun SetupScreen(onDone: () -> Unit, onSpotiflac: () -> Unit = {}) {
             stringResource(R.string.setup_battery_title), stringResource(R.string.setup_battery_detail),
             BatteryExemption.isExempt(context),
         ) { BatteryExemption.request(context) }
-        // Lossless downloads need SpotiFLAC's one-off verification (the quality toggle
-        // lives in Settings); not verified yet, the lossless source stays OFF.
-        if (com.music.spotui.data.preferences.getDownloadQuality(context) != com.music.spotui.data.preferences.DownloadQuality.OFF) SetupRow(
-            stringResource(R.string.setup_spotiflac_title), stringResource(R.string.setup_spotiflac_detail),
-            com.music.spotui.data.preferences.hasSpotiflacSession(context),
-        ) { onSpotiflac() }
         Spacer(Modifier.height(12.dp))
         Button(
             onClick = { Setup.done(context); onDone() },

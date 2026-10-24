@@ -11,86 +11,98 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.systemBarsPadding
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.myspoti.engine.R
 import com.music.spotui.ui.components.pressable
-import com.music.spotui.ui.theme.AppBackground
 import com.music.spotui.ui.theme.AppSans
+import com.music.spotui.ui.theme.ScGrey
+import com.music.spotui.ui.theme.ScPrimary
+import com.music.spotui.ui.theme.ScSecondary
+import com.music.spotui.ui.theme.ScTint
 
 /**
- * First screen of a signed-out app: what Myspoti is, then Spotify's own login page
- * (shown by the engine once [onLogin] is tapped).
+ * 1:1 Jetpack Compose port of redretep/spotify-clone components/Login/Login.tsx & styles.ts.
  */
 @Composable
 fun WelcomeScreen(onLogin: () -> Unit) {
     Box(
-        Modifier
+        modifier = Modifier
             .fillMaxSize()
-            .background(AppBackground)
-            .background(
-                Brush.radialGradient(
-                    colors = listOf(Color(0x551ED760), Color.Transparent),
-                    center = Offset(540f, 380f),
-                    radius = 1100f,
-                ),
-            )
-            .systemBarsPadding()
-            .padding(horizontal = 28.dp, vertical = 24.dp),
+            .background(ScPrimary),
     ) {
+        Image(
+            painter = painterResource(R.drawable.sc_login_bg),
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxSize(),
+        )
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
-            modifier = Modifier.fillMaxWidth().align(Alignment.Center).padding(bottom = 120.dp),
+            verticalArrangement = Arrangement.Bottom,
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 35.dp),
         ) {
             Image(
-                painter = painterResource(R.drawable.ic_launcher_foreground),
+                painter = painterResource(R.drawable.sc_logo),
                 contentDescription = null,
-                modifier = Modifier.size(132.dp).clip(RoundedCornerShape(36.dp)).background(Color(0xFF181818)),
+                contentScale = ContentScale.Fit,
+                modifier = Modifier
+                    .size(53.dp)
+                    .padding(bottom = 0.dp),
             )
-            Spacer(Modifier.height(28.dp))
-            Text("Myspoti", color = Color.White, fontFamily = AppSans, fontWeight = FontWeight.ExtraBold, fontSize = 40.sp)
+            Spacer(Modifier.height(20.dp))
             Text(
-                stringResource(R.string.welcome_tagline),
-                color = Color.White.copy(alpha = 0.7f), fontFamily = AppSans, fontSize = 17.sp, lineHeight = 24.sp,
-                textAlign = TextAlign.Center, modifier = Modifier.padding(top = 12.dp),
+                text = "Millions of Songs.\nFree on Spotify.",
+                color = Color.White,
+                fontFamily = AppSans,
+                fontWeight = FontWeight.Bold,
+                fontSize = 35.sp,
+                lineHeight = 40.sp,
+                textAlign = TextAlign.Center,
             )
-        }
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.fillMaxWidth().align(Alignment.BottomCenter),
-        ) {
+            Spacer(Modifier.height(25.dp))
             Box(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(54.dp)
                     .pressable(0.96f, onClick = onLogin)
-                    .clip(RoundedCornerShape(50))
-                    .background(com.music.spotui.ui.theme.AppAccent),
+                    .clip(CircleShape)
+                    .background(ScTint)
+                    .padding(vertical = 18.dp),
             ) {
-                Text(stringResource(R.string.welcome_login), color = Color.Black, fontFamily = AppSans,
-                    fontWeight = FontWeight.Bold, fontSize = 17.sp)
+                Text(
+                    text = "Sign in",
+                    color = ScSecondary,
+                    fontFamily = AppSans,
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 16.sp,
+                    textAlign = TextAlign.Center,
+                )
             }
+            Spacer(Modifier.height(10.dp))
             Text(
-                stringResource(R.string.welcome_privacy),
-                color = Color.White.copy(alpha = 0.5f), fontFamily = AppSans, fontSize = 13.sp, lineHeight = 18.sp,
-                textAlign = TextAlign.Center, modifier = Modifier.padding(top = 14.dp),
+                text = "NOTE: You won't be sharing your credentials",
+                color = ScGrey,
+                fontFamily = AppSans,
+                fontStyle = FontStyle.Italic,
+                fontSize = 12.sp,
+                textAlign = TextAlign.Center,
             )
+            Spacer(Modifier.height(150.dp))
         }
     }
 }

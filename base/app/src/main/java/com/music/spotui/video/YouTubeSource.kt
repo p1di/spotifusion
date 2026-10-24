@@ -30,7 +30,8 @@ import kotlinx.coroutines.runInterruptible
  */
 object YouTubeSource {
     private const val TAG = "MusicVideo"
-    private const val UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:128.0) Gecko/20100101 Firefox/128.0"
+    private const val UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36"
+    private const val EMPTY_NEXT_RESPONSE = """{"responseContext":{},"contents":{},"currentVideoEndpoint":{},"trackingParams":""}"""
 
     val http: OkHttpClient = OkHttpClient.Builder()
         .addInterceptor(com.music.spotui.data.DataSaver.interceptor)
@@ -73,9 +74,15 @@ object YouTubeSource {
 
     private object OkDownloader : Downloader() {
         override fun execute(request: Request): Response {
+            val url = request.url()
+            // BitChord optimization: NewPipe calls /youtubei/v1/next during StreamInfo.getInfo
+            // only for related videos/comments which we never use; short-circuiting saves 7-12s.
+            if (url.contains("/youtubei/v1/next")) {
+                return Response(200, "OK", emptyMap(), EMPTY_NEXT_RESPONSE, url)
+            }
             val body = request.dataToSend()?.toRequestBody()
             val b = okhttp3.Request.Builder()
-                .url(request.url())
+                .url(url)
                 .method(request.httpMethod(), body)
                 .header("User-Agent", UA)
             request.headers().forEach { (k, values) ->
@@ -100,6 +107,8 @@ object YouTubeSource {
         .replace(Regex("""\(.*?\)|\[.*?]"""), " ")
         .replace(Regex("""\b(?:feat|ft)\.?(?=\s|$)|\b(?:official|music|video|audio|clip|lyrics?)\b"""), " ")
         .filter { it.isLetterOrDigit() }
+
+    internal fun searchCandidates(query: String, filter: String): List<Hit> = search(query, filter)
 
     private fun search(query: String, filter: String): List<Hit> {
         checkInterrupted()

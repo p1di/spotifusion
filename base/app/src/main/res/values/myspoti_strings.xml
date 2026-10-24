@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Myspoti's own texts (English default, French, Italian). -->
+<!-- Spotifusion's own texts (English default, French, Italian). -->
 <resources>
     <string name="welcome_tagline">Your music, with synced lyrics and official music videos.</string>
     <string name="welcome_login">Log in with Spotify</string>
-    <string name="welcome_privacy">You sign in on Spotify\'s own page. Myspoti never sees your password.</string>
-    <string name="crash_heading">Myspoti stopped working</string>
+    <string name="welcome_privacy">You sign in on Spotify\'s own page. Spotifusion never sees your password.</string>
+    <string name="crash_heading">Spotifusion stopped working</string>
     <string name="crash_explanation">Something went wrong. Restart the app; if it happens again, copy the report and share it in a GitHub issue.</string>
-    <string name="crash_restart_app">Restart Myspoti</string>
+    <string name="crash_restart_app">Restart Spotifusion</string>
     <string name="crash_copy_report">Copy the report</string>
     <string name="crash_report_copied">Report copied</string>
     <string name="remove_from_liked">Remove from Liked Songs</string>
@@ -56,7 +56,7 @@
     <string name="local_files_none_subtitle">We didn\'t find any playable audio files on this device. When there are some, they\'ll show up here.</string>
     <string name="downloads_empty_title">Download to listen offline</string>
     <string name="downloads_empty_subtitle">Tap Download in a song\'s menu, or the download button of an album or playlist.</string>
-    <string name="downloads_source">Lossless FLAC, checked against the original recording. Kept inside Myspoti only.</string>
+    <string name="downloads_source">Lossless FLAC, checked against the original recording. Kept inside Spotifusion only.</string>
     <string name="downloads_size">%1$s on this phone</string>
     <string name="download_unavailable">No matching recording found</string>
     <string name="download_retry">Try again</string>
@@ -72,8 +72,8 @@
     <string name="browse_workout">Workout</string>
     <string name="browse_dance_electronic">Dance/Electronic</string>
     <string name="language_auto">Automatic</string>
-    <string name="language_auto_detail">Your phone\'s language when Myspoti has it (English, French, German, Greek, Italian, Portuguese, Spanish), English otherwise</string>
-    <string name="language_partial_note">Other languages: Spotify\'s own labels are translated, Myspoti\'s texts stay in English.</string>
+    <string name="language_auto_detail">Your phone\'s language when Spotifusion has it (English, French, German, Greek, Italian, Portuguese, Spanish), English otherwise</string>
+    <string name="language_partial_note">Other languages: Spotify\'s own labels are translated, Spotifusion\'s texts stay in English.</string>
     <string name="restart_player_title">Restart the player</string>
     <string name="restart_player_detail">If the music stops responding: reloads Spotify\'s player</string>
     <string name="ad_playing">Advertisement</string>
@@ -92,21 +92,21 @@
     <string name="local_playlist_empty">Add songs from Local Files with their + button.</string>
     <string name="playlist_change_refused">Spotify refused the change to this playlist</string>
     <string name="download_kept_by_list">Still downloaded: a downloaded playlist holds it</string>
-    <string name="support_title">Support Myspoti</string>
-    <string name="support_body">Myspoti is free, without ads, and made in my spare time. If you enjoy it, a small donation helps keep it going.</string>
+    <string name="support_title">Support Spotifusion</string>
+    <string name="support_body">Spotifusion is free, without ads, and made in my spare time. If you enjoy it, a small donation helps keep it going.</string>
     <string name="support_action">Support on Ko-fi</string>
     <string name="support_decline">No thanks</string>
     <string name="support_row_detail">A small donation on Ko-fi or GitHub Sponsors helps keep the app going</string>
     <string name="supporter_perks_title">Supporter perks</string>
     <string name="supporter_perks_detail">Accent colour, app icon and a badge, to say thanks</string>
-    <string name="supporter_perks_locked">Unlocked by supporting Myspoti. It\'s on your word: nothing is checked.</string>
-    <string name="supporter_i_supported">I\'ve supported Myspoti</string>
+    <string name="supporter_perks_locked">Unlocked by supporting Spotifusion. It\'s on your word: nothing is checked.</string>
+    <string name="supporter_i_supported">I\'ve supported Spotifusion</string>
     <string name="supporter_how">How did you support it?</string>
     <string name="supporter_once">A donation</string>
     <string name="supporter_monthly">Every month</string>
     <string name="supporter_badge">Supporter</string>
     <string name="supporter_thanks_title">Thank you for your support!</string>
-    <string name="supporter_thanks_body">If Myspoti still serves you well, a new small donation helps keep it going.</string>
+    <string name="supporter_thanks_body">If Spotifusion still serves you well, a new small donation helps keep it going.</string>
     <string name="support_again">Support again</string>
     <string name="supporter_accent">Accent colour</string>
     <string name="supporter_icon">App icon</string>
@@ -128,7 +128,7 @@
     <string name="song_radio_failed">Couldn\'t open this song\'s radio</string>
     <string name="local_files_find_hint">Find in Local Files</string>
     <string name="data_saver_title">Data saver</string>
-    <string name="data_saver_summary">On mobile data, Myspoti uses no data: only downloaded songs and Local Files play</string>
+    <string name="data_saver_summary">On mobile data, Spotifusion uses no data: only downloaded songs and Local Files play</string>
     <string name="data_saver_blocked">Data saver: on mobile data, only downloaded songs and Local Files play</string>
     <string name="new_releases_followed">From artists you follow</string>
     <string name="new_releases_latest">Latest releases</string>
@@ -161,7 +161,7 @@
     <string name="recap_top_tracks">Top tracks</string>
     <string name="recap_top_artists">Top artists</string>
     <string name="recap_top_albums">Top albums</string>
-    <string name="recap_private_note">Counts everything played in Myspoti (Spotify, downloads, local files). It stays on this phone and is never sent to Spotify.</string>
+    <string name="recap_private_note">Counts everything played in Spotifusion (Spotify, downloads, local files). It stays on this phone and is never sent to Spotify.</string>
     <string name="recap_detail">Your listening, downloads and local files included</string>
     <string name="track_credits">Credits</string>
     <string name="exclude_taste">Exclude from your taste profile</string>
@@ -194,7 +194,7 @@
     <string name="track_sort_artist">Artist</string>
     <string name="track_sort_album">Album</string>
     <string name="track_sort_duration">Duration</string>
-    <string name="setup_title">Set up Myspoti</string>
+    <string name="setup_title">Set up Spotifusion</string>
     <string name="setup_subtitle">Allow what you want; you can change it later in the phone settings.</string>
     <string name="setup_notifications_title">Notifications</string>
     <string name="setup_notifications_detail">Controls on the lock screen and in the notification shade</string>
@@ -214,7 +214,7 @@
     <string name="track_sort_added">Date added</string>
     <!-- Lossless (SpotiFLAC) downloads -->
     <string name="spotiflac_row_title">Lossless downloads (FLAC)</string>
-    <string name="spotiflac_row_on">Verified — Myspoti uses SpotiFLAC\'s own servers.</string>
+    <string name="spotiflac_row_on">Verified — Spotifusion uses SpotiFLAC\'s own servers.</string>
     <string name="spotiflac_row_off">Not verified — tap to solve the one-off check.</string>
     <string name="spotiflac_verify_title">SpotiFLAC verification</string>
     <string name="spotiflac_verify_start_failed">Could not start verification. Tap Retry or come back later.</string>
@@ -258,7 +258,7 @@
     <string name="quality_download_hires">FLAC Hi-Res</string>
     <string name="quality_download_hires_detail">24-bit when it exists, files about three times bigger</string>
     <string name="setup_quality_title">Sound quality</string>
-    <string name="setup_quality_subtitle">Choose how Myspoti plays and saves your music. You can change it later in Settings.</string>
+    <string name="setup_quality_subtitle">Choose how Spotifusion plays and saves your music. You can change it later in Settings.</string>
     <string name="downloads_off_toast">Downloads are off. Turn them on in Settings.</string>
     <string name="quality_streaming_high_detail">160 kbit/s, the best sound</string>
     <string name="downloads_verify_hint">No lossless source answered. Verify SpotiFLAC once in Settings, Downloads: its servers are the reliable ones.</string>
@@ -274,7 +274,7 @@
     <string name="spotiflac_verify_in_browser">Solve the check in the browser tab that opened, then come back here.</string>
     <string name="update_downloading">Downloading… %1$d%%</string>
     <string name="update_installing">Installing…</string>
-    <string name="update_needs_permission">To update, allow Myspoti to install apps, then come back here.</string>
+    <string name="update_needs_permission">To update, allow Spotifusion to install apps, then come back here.</string>
     <string name="update_allow">Allow</string>
     <string name="update_failed">The update failed: %1$s</string>
     <string name="update_retry">Try again</string>
@@ -284,7 +284,7 @@
     <string name="settings_check_update_title">Check for updates now</string>
     <string name="settings_check_update_detail">Looks for a newer version and offers to install it</string>
     <string name="settings_update_checking">Checking…</string>
-    <string name="settings_update_check_latest">Myspoti is up to date</string>
+    <string name="settings_update_check_latest">Spotifusion is up to date</string>
     <!-- A25: stop the queue, keep the songs already downloaded. -->
     <string name="downloads_stop_all_title">Stop all downloads</string>
     <string name="downloads_stop_all_detail">Cancels what is left; songs already downloaded are kept</string>

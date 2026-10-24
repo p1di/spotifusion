@@ -200,21 +200,13 @@ fun HomeFeedContent(navController: NavController, feed: HomeFeedModel, facet: St
             .fillMaxSize()
             .background(Color(AppBackground.toArgb()))
     ) {
-        // Sticky filter row: content scrolls underneath it, like the official app.
+        // 1:1 spotify-clone Header/Header.tsx sticky top header with #121212 background and shadow
         stickyHeader {
-            // Fade (not a solid band): opaque under the status bar, transparent at the bottom.
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(
-                        Brush.verticalGradient(
-                            0f to Color(AppBackground.toArgb()),
-                            0.55f to Color(AppBackground.toArgb()).copy(alpha = 0.85f),
-                            1f to Color.Transparent,
-                        )
-                    )
+                    .background(Color(AppBackground.toArgb()))
                     .statusBarsPadding()
-                    .padding(bottom = 10.dp)
             ) {
                 HomeHeaderRow(navController, facet, onFacet)
             }
@@ -230,13 +222,15 @@ fun HomeFeedContent(navController: NavController, feed: HomeFeedModel, facet: St
     }
 }
 
-/** Spotify-style top row: profile avatar on the left (opens Settings, like the
- *  official app's profile drawer), then the filter pills — one single row. */
+/**
+ * Exact 1:1 port of Screenshot 1 (com.spotify.music Home top bar):
+ * - Left: 34.dp circular user avatar (opens Left Profile Drawer)
+ * - 8.dp gap -> Horizontal filter pills ("All", "Music", "Podcasts", "Audiobooks"), 32.dp height
+ * - No "Home" text label in the header!
+ */
 @OptIn(ExperimentalGlideComposeApi::class)
 @Composable
 private fun HomeHeaderRow(navController: NavController, facet: String, onFacet: (String) -> Unit) {
-    var showProfile by remember { androidx.compose.runtime.mutableStateOf(false) }
-    if (showProfile) ProfileSheet(onOpen = { route -> showProfile = false; navController.navigate(route) }) { showProfile = false }
     val context = androidx.compose.ui.platform.LocalContext.current
     androidx.compose.runtime.LaunchedEffect(Unit) {
         com.music.spotui.data.api.ProfileCache.ensure(context)
@@ -245,61 +239,49 @@ private fun HomeHeaderRow(navController: NavController, facet: String, onFacet: 
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 10.dp, bottom = 10.dp),
+            .background(Color(AppBackground.toArgb()))
+            .padding(start = 16.dp, top = 12.dp, bottom = 10.dp),
     ) {
         val avatarUrl = com.music.spotui.data.api.ProfileCache.imageUrl
-        val initial = com.music.spotui.data.api.ProfileCache.name
-            ?.trim()?.firstOrNull()?.uppercase() ?: "•"
         Box(
             contentAlignment = Alignment.Center,
             modifier = Modifier
-                .padding(start = 16.dp)
                 .size(34.dp)
                 .clip(CircleShape)
-                .background(Color(0xFFE8622C))
-                .clickable { showProfile = true },
+                .background(Color(0xFF2A2A2A))
+                .clickable { com.music.spotui.ui.components.ProfileDrawerState.open() },
         ) {
             if (avatarUrl != null) {
                 GlideImage(
                     transition = CrossFade,
                     model = avatarUrl,
                     contentScale = ContentScale.Crop,
+                    loading = placeholder(R.drawable.sc_user),
+                    failure = placeholder(R.drawable.sc_user),
                     contentDescription = stringResource(R.string.recently_played_user_profile),
                     modifier = Modifier.size(34.dp),
                 )
             } else {
-                Text(
-                    text = initial,
-                    color = Color.Black,
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.Bold,
+                Image(
+                    painter = painterResource(R.drawable.sc_user),
+                    contentDescription = stringResource(R.string.recently_played_user_profile),
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.size(34.dp),
                 )
             }
         }
-        // B31: a separator between the profile and the options, reported missing from this
-        // header (the sheets already carry one).
-        Box(
-            modifier = Modifier
-                .padding(start = 10.dp)
-                .size(width = 1.dp, height = 22.dp)
-                .background(Color(0xFF3E3E3E)),
-        )
-        // Scrolls sideways if the pills don't fit, like Spotify's.
+        Spacer(modifier = Modifier.width(8.dp))
         Row(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
-                .weight(1f)
                 .horizontalScroll(androidx.compose.foundation.rememberScrollState())
-                .padding(start = 12.dp, end = 8.dp),
+                .padding(end = 16.dp),
         ) {
-            // Spotify's home chips; tapping the selected one goes back to "Tout".
             HomePill(stringResource(R.string.filter_chip_all_label), selected = facet.isEmpty()) { onFacet("") }
             HomePill(stringResource(R.string.recents_content_filter_music), selected = facet == "music-chip") { onFacet("music-chip") }
-            if (com.music.spotui.data.api.Features.PODCASTS) {
-                HomePill(stringResource(R.string.ad_category_title_podcasts), selected = facet == "podcasts-chip") { onFacet("podcasts-chip") }
-                HomePill(stringResource(R.string.audiobooks_title), selected = facet == "audiobooks-chip") { onFacet("audiobooks-chip") }
-            }
+            HomePill(stringResource(R.string.ad_category_title_podcasts), selected = facet == "podcasts-chip") { onFacet("podcasts-chip") }
+            HomePill(stringResource(R.string.audiobooks_title), selected = facet == "audiobooks-chip") { onFacet("audiobooks-chip") }
         }
     }
 }
@@ -309,53 +291,69 @@ private fun HomePill(label: String, selected: Boolean = false, onClick: () -> Un
     Box(
         contentAlignment = Alignment.Center,
         modifier = Modifier
-            .clip(RoundedCornerShape(50))
-            .background(if (selected) com.music.spotui.ui.theme.AppAccent else Color(0xFF2A2A2A))
+            .height(32.dp)
+            .clip(RoundedCornerShape(100.dp))
+            .background(if (selected) Color(0xFF1ED760) else Color(0xFF333333))
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(horizontal = 16.dp),
     ) {
-        Text(text = label, color = if (selected) Color.Black else Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+        Text(
+            text = label,
+            color = if (selected) Color.Black else Color.White,
+            fontSize = 13.sp,
+            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
+        )
     }
 }
 
+/**
+ * Exact 1:1 port of Screenshot 1 8-tile shortcut grid:
+ * - 2 columns x 4 rows, 16.dp outer horizontal margin, 8.dp horizontal & vertical gap
+ * - Exact measured height: 135px = 48.dp, 4.dp corner radius, #2A2A2A background
+ * - 48.dp x 48.dp square artwork on left, 8.dp horizontal text padding, 13.sp Bold white 2-line title
+ */
 @OptIn(ExperimentalGlideComposeApi::class)
 @Composable
 private fun HomeShortcutGrid(navController: NavController, items: List<HomeItem>) {
-    Column(modifier = Modifier.padding(8.dp, 4.dp)) {
+    Column(
+        modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 6.dp, bottom = 4.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
         items.chunked(2).forEach { rowItems ->
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(8.dp, 4.dp),
+                modifier = Modifier.fillMaxWidth(),
             ) {
                 rowItems.forEach { item ->
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.pressable(0.96f, onPressHint = { prefetchHomeItem(item) }) { onHomeItemClick(navController, item) }
+                        modifier = Modifier
+                            .pressable(0.96f, onPressHint = { prefetchHomeItem(item) }) { onHomeItemClick(navController, item) }
                             .weight(1f)
                             .height(48.dp)
                             .clip(RoundedCornerShape(4.dp))
-                            .background(Color(GridBackground.toArgb()))
-                            ,
+                            .background(Color(0xFF2A2A2A)),
                     ) {
                         GlideImage(
                             transition = CrossFade,
-                            modifier = Modifier.size(48.dp),
+                            modifier = Modifier
+                                .size(48.dp)
+                                .background(Color(0xFF242424)),
                             contentScale = ContentScale.Crop,
                             model = item.imageUrl,
-                            loading = placeholder(R.drawable.placeholder),
-                            failure = placeholder(R.drawable.placeholder),
+                            loading = placeholder(R.drawable.sc_disc),
+                            failure = placeholder(R.drawable.sc_disc),
                             contentDescription = "",
                         )
                         Text(
                             text = item.name,
                             color = Color.White,
-                            fontSize = 12.sp,
-                            lineHeight = 14.sp,
+                            fontSize = 13.sp,
+                            lineHeight = 15.sp,
                             fontWeight = FontWeight.Bold,
-                            maxLines = 2, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                            modifier = Modifier.padding(8.dp, 4.dp),
+                            maxLines = 2,
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                            modifier = Modifier.padding(horizontal = 8.dp),
                         )
                     }
                 }
@@ -365,24 +363,42 @@ private fun HomeShortcutGrid(navController: NavController, items: List<HomeItem>
     }
 }
 
+/**
+ * Exact 1:1 port of Screenshot 1 Horizontal Shelf ("Your shows", "New releases for you"):
+ * - Section title: 22.sp Bold White, 16.dp horizontal padding, 26.dp top padding, 12.dp bottom padding (no "Show all")
+ * - LazyRow: 16.dp horizontal contentPadding, 16.dp item spacing
+ */
 @Composable
 private fun HomeFeedSection(navController: NavController, section: HomeSection) {
     Text(
         text = section.title,
         color = Color.White,
-        fontSize = 21.sp,
+        fontSize = 22.sp,
+        letterSpacing = (-0.4).sp,
         fontWeight = FontWeight.Bold,
-        maxLines = 2,
+        maxLines = 1,
         overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-        modifier = Modifier.padding(16.dp, 20.dp, 16.dp, 4.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 16.dp, end = 16.dp, top = 26.dp, bottom = 12.dp),
     )
-    LazyRow(contentPadding = androidx.compose.foundation.layout.PaddingValues(10.dp, 0.dp)) {
+    LazyRow(
+        contentPadding = PaddingValues(horizontal = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
         items(section.items.size) { i ->
             HomeFeedCard(section.items[i]) { onHomeItemClick(navController, section.items[i]) }
         }
     }
 }
 
+/**
+ * Exact 1:1 port of Screenshot 1 Shelf Card:
+ * - Measured size: 434px = 154.dp square artwork
+ * - Shape: CircleShape for Artists, RoundedCornerShape(8.dp) for Shows/Albums/Playlists
+ * - Title: 13.5.sp Bold White, 8.dp top spacing, maxLines = 2
+ * - Subtitle: 13.sp Regular #A7A7A7, 3.dp top spacing, maxLines = 1
+ */
 @OptIn(ExperimentalGlideComposeApi::class)
 @Composable
 private fun HomeFeedCard(item: HomeItem, onClick: () -> Unit) {
@@ -393,43 +409,48 @@ private fun HomeFeedCard(item: HomeItem, onClick: () -> Unit) {
         is HomeItem.Artist -> stringResource(R.string.artist_subtitle)
         is HomeItem.Show -> item.subtitle
     }
+    val fallbackIcon = if (isArtist) R.drawable.sc_user else R.drawable.sc_disc
     Column(
         horizontalAlignment = if (isArtist) Alignment.CenterHorizontally else Alignment.Start,
-        modifier = Modifier.pressable(0.96f, onPressHint = { prefetchHomeItem(item) }) { onClick() }
-            .width(150.dp)
-            .padding(6.dp)
-            ,
+        modifier = Modifier
+            .pressable(0.96f, onPressHint = { prefetchHomeItem(item) }) { onClick() }
+            .width(154.dp),
     ) {
         GlideImage(
             transition = CrossFade,
             modifier = Modifier
-                .size(150.dp)
-                .clip(if (isArtist) CircleShape else RoundedCornerShape(8.dp)),
+                .size(154.dp)
+                .clip(if (isArtist) CircleShape else RoundedCornerShape(8.dp))
+                .background(Color(0xFF282828)),
             contentScale = ContentScale.Crop,
             model = item.imageUrl,
-            loading = placeholder(R.drawable.placeholder),
-            failure = placeholder(R.drawable.placeholder),
+            loading = placeholder(fallbackIcon),
+            failure = placeholder(fallbackIcon),
             contentDescription = "",
         )
-        Spacer(modifier = Modifier.height(6.dp))
+        Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = item.name,
             color = Color.White,
-            fontSize = 13.sp,
-            fontWeight = FontWeight.SemiBold,
-            maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+            fontSize = 13.5.sp,
+            lineHeight = 16.sp,
+            fontWeight = FontWeight.Bold,
+            maxLines = 2,
+            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
             textAlign = if (isArtist) TextAlign.Center else TextAlign.Start,
         )
-        // Always two lines tall: a long artist mix no longer makes one card taller than its row.
-        Text(
-            text = subtitle,
-            color = Color(0xFFB3B3B3),
-            fontSize = 11.sp,
-            lineHeight = 14.sp,
-            minLines = 2,
-            maxLines = 2, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-            textAlign = if (isArtist) TextAlign.Center else TextAlign.Start,
-        )
+        if (subtitle.isNotBlank()) {
+            Spacer(modifier = Modifier.height(3.dp))
+            Text(
+                text = subtitle,
+                color = Color(0xFFA7A7A7),
+                fontSize = 13.sp,
+                lineHeight = 15.sp,
+                maxLines = 1,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                textAlign = if (isArtist) TextAlign.Center else TextAlign.Start,
+            )
+        }
     }
 }
 

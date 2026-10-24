@@ -1,5 +1,6 @@
 package com.music.spotui.ui.screens
 
+import com.music.spotui.ui.components.edgeSwipeBack
 import com.music.spotui.ui.components.SkeletonKind
 import com.music.spotui.ui.components.pressable
 import androidx.compose.ui.res.stringResource
@@ -188,7 +189,13 @@ private fun ArtistOverviewContent(
         artistViewModel.updateSongState(s.coverUri, s.title, s.singer, true, s.id, index)
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    var selectedArtistTab by remember { mutableStateOf(0) } // 0 = Music
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .edgeSwipeBack { navController.navigateUp() }
+    ) {
     LazyColumn(
         state = listState,
         contentPadding = PaddingValues(bottom = com.music.spotui.ui.components.bottomBarsSpace()),
@@ -196,11 +203,11 @@ private fun ArtistOverviewContent(
             .fillMaxSize()
             .background(Color(AppBackground.toArgb()))
     ) {
-        // ── Header: big artist image with scrim + name ──
+        // ── Header: 267.dp (750px) hero image with top-left Back circle, top-right ⋮ circle, and bottom-left 48.sp name + Verified badge (Screenshot 5) ──
         item {
             Box(modifier = Modifier
                 .fillMaxWidth()
-                .height(340.dp)
+                .height(267.dp)
             ) {
                 GlideImage(
                     transition = CrossFade,
@@ -215,203 +222,305 @@ private fun ArtistOverviewContent(
                     .fillMaxSize()
                     .background(
                         Brush.verticalGradient(
-                            colors = listOf(
-                                Color.Black.copy(alpha = 0.35f),
-                                Color.Transparent,
-                                Color(AppBackground.toArgb()),
+                            colorStops = arrayOf(
+                                0.0f to Color.Black.copy(alpha = 0.28f),
+                                0.45f to Color.Transparent,
+                                0.82f to Color(0xCC192329),
+                                1.0f to Color(0xFF192329),
                             ),
                         )
                     )
                 )
-                Box(
-                    contentAlignment = Alignment.Center,
+                Row(
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
+                        .fillMaxWidth()
                         .statusBarsPadding()
-                        .padding(12.dp)
-                        .size(40.dp)
-                        .clip(CircleShape)
-                        .background(Color.Black.copy(alpha = 0.35f))
-                        .clickable { navController.navigateUp() },
+                        .padding(horizontal = 16.dp, vertical = 10.dp),
                 ) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.accessibility_navigate_back), tint = Color.White)
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(CircleShape)
+                            .background(Color.Black.copy(alpha = 0.45f))
+                            .clickable { navController.navigateUp() },
+                    ) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.accessibility_navigate_back),
+                            tint = Color.White,
+                            modifier = Modifier.size(20.dp),
+                        )
+                    }
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(CircleShape)
+                            .background(Color.Black.copy(alpha = 0.45f))
+                            .clickable { showArtistMenu = true },
+                    ) {
+                        Icon(
+                            Icons.Default.MoreVert,
+                            contentDescription = stringResource(R.string.content_description_context_menu),
+                            tint = Color.White,
+                            modifier = Modifier.size(20.dp),
+                        )
+                    }
                 }
                 Column(
                     modifier = Modifier
                         .align(Alignment.BottomStart)
-                        .padding(16.dp, 0.dp, 16.dp, 12.dp),
+                        .padding(start = 16.dp, end = 16.dp, bottom = 10.dp),
                 ) {
                     com.music.spotui.ui.components.FitText(
                         text = displayName,
-                        fontSize = 44.sp,
-                        minSize = 24.sp,
+                        fontSize = 48.sp,
+                        minSize = 28.sp,
                         fontWeight = FontWeight.ExtraBold,
                         maxLines = 2,
                     )
-                    if (overview.verified) Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 6.dp)) {
-                        Box(
-                            contentAlignment = Alignment.Center,
-                            modifier = Modifier.size(18.dp).clip(CircleShape).background(SpotifyGreen),
+                    if (overview.verified) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(top = 4.dp),
                         ) {
-                            Icon(Icons.Default.Check, contentDescription = null, tint = Color.Black, modifier = Modifier.size(13.dp))
+                            androidx.compose.foundation.Image(
+                                painter = painterResource(R.drawable.ic_spot_verified),
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp),
+                            )
+                            Spacer(Modifier.width(6.dp))
+                            Text(
+                                text = stringResource(R.string.verified_artist),
+                                color = Color.White,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                            )
                         }
-                        Spacer(Modifier.width(6.dp))
-                        Text(stringResource(R.string.verified_artist), color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             }
         }
 
-        // ── Monthly listeners (compact, like "4,3 M auditeurs et auditrices par mois") ──
+        // ── Dark Slate-Teal Gradient Section: Monthly listeners + Follow/Shuffle/Play + Music/Merch tabs + Liked Songs (Screenshot 5) ──
         item {
-            overview.monthlyListeners?.let {
-                val compact = android.icu.text.CompactDecimalFormat
-                    .getInstance(java.util.Locale.getDefault(), android.icu.text.CompactDecimalFormat.CompactStyle.SHORT)
-                    .format(it)
-                Text(
-                    text = stringResource(R.string.monthly_listeners_text, compact),
-                    color = Color.White.copy(alpha = 0.7f),
-                    fontSize = 14.sp,
-                    modifier = Modifier.padding(16.dp, 12.dp, 16.dp, 0.dp),
-                )
-            }
-        }
-
-        // ── Action row: Follow + shuffle + play ──
-        item {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp, 16.dp),
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                Color(0xFF192329),
+                                Color(0xFF151B1F),
+                                Color(AppBackground.toArgb()),
+                            ),
+                        )
+                    )
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    overview.popularReleases.firstOrNull()?.let { latest ->
-                        GlideImage(
-                            transition = CrossFade,
-                            model = latest.coverUri,
-                            contentDescription = latest.name,
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier
-                                .size(width = 36.dp, height = 48.dp)
-                                .clip(RoundedCornerShape(4.dp))
-                                .clickable { navController.navigate(albumRoute(latest.name, displayName, latest.spotifyId)) },
-                        )
-                        Spacer(Modifier.width(16.dp))
-                    }
-                    Box(modifier = Modifier.pressable(0.96f) {
-                            val on = !(SongPlayer.library["spotify:artist:${overview.id}"] ?: following)
-                            following = on
-                            com.music.spotui.di.Haptics.toggle(on)
-                            SongPlayer.setSaved("spotify:artist:${overview.id}", on)
-                        }
-                        .clip(RoundedCornerShape(20.dp))
-                        .border(1.dp, Color.Gray, RoundedCornerShape(20.dp))
-                        
-                        .padding(16.dp, 7.dp),
-                    ) {
-                        Text(
-                            text = stringResource(if (SongPlayer.library["spotify:artist:${overview.id}"] ?: following) R.string.curation_button_following_state_text else R.string.curation_button_follow_state_text),
-                            color = Color.White,
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.SemiBold,
-                        )
-                    }
-                    Spacer(Modifier.width(16.dp))
-                    // B27: this ⋮ had neither `clickable` nor `onClick` — the artist menu is
-                    // opened with the same pressable feedback as the row's other buttons.
-                    Icon(
-                        Icons.Default.MoreVert,
-                        contentDescription = stringResource(R.string.content_description_context_menu),
-                        tint = Color.White.copy(alpha = 0.7f),
-                        modifier = Modifier
-                            .pressable(0.96f) { showArtistMenu = true }
-                            .size(24.dp),
+                // Monthly listeners ("94M monthly listeners")
+                overview.monthlyListeners?.let {
+                    val compact = android.icu.text.CompactDecimalFormat
+                        .getInstance(java.util.Locale.getDefault(), android.icu.text.CompactDecimalFormat.CompactStyle.SHORT)
+                        .format(it)
+                    Text(
+                        text = stringResource(R.string.monthly_listeners_text, compact),
+                        color = Color(0xFFA7A7A7),
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp),
                     )
                 }
 
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_player_shuffle),
-                        contentDescription = stringResource(R.string.play_mode_item_shuffle_title),
-                        tint = if (isThisArtist && com.music.spotui.di.Graph.currentSongState.shuffle.value) SpotifyGreen else Color.White,
-                        modifier = Modifier.pressable(0.96f) {
-                                if (tracks.isNotEmpty()) {
-                                    com.music.spotui.di.Graph.currentSongState.startShuffled(tracks.map { it.song })
-                                }
-                            }
-                            .size(26.dp)
-                            ,
-                    )
-                    Spacer(Modifier.width(20.dp))
-                    Box(modifier = Modifier.pressable(0.96f) {
-                            when {
-                                isThisArtist && playingNow -> SongPlayer.pause()
-                                isThisArtist -> SongPlayer.play()
-                                else -> playTrackAt(0)
-                            }
-                        }
-                        .size(56.dp)
-                        .clip(CircleShape)
-                        .background(SpotifyGreen)
-                        ,
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Icon(
-                            painter = painterResource(id = if (isThisArtist && playingNow) R.drawable.ic_playing else R.drawable.play_svgrepo_com),
-                            contentDescription = if (isThisArtist && playingNow) stringResource(R.string.content_description_pause_button) else stringResource(R.string.content_description_play_button),
-                            tint = Color.Black,
-                            modifier = Modifier.size(26.dp),
-                        )
-                    }
-                }
-            }
-        }
-
-        // ── Liked songs by this artist ──
-        if (likedByArtist.isNotEmpty()) {
-            item(key = "liked-by-artist") {
+                // Action Row: ONLY "Follow" pill on left, Shuffle + 48.dp Green Play Circle on right (Screenshot 5)
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.fillMaxWidth()
-                        .clickable { navController.navigate(com.music.spotui.ui.navigation.likedByArtistRoute(overview.id, displayName)) }
-                        .padding(16.dp, 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 10.dp),
                 ) {
                     Box(
-                        contentAlignment = Alignment.Center,
-                        modifier = Modifier.size(52.dp).clip(RoundedCornerShape(4.dp))
-                            .background(Brush.linearGradient(listOf(Color(0xFF450AF5), Color(0xFF8E8EE5), Color(0xFFC4EFD9)))),
+                        modifier = Modifier
+                            .pressable(0.96f) {
+                                val on = !(SongPlayer.library["spotify:artist:${overview.id}"] ?: following)
+                                following = on
+                                com.music.spotui.di.Haptics.toggle(on)
+                                SongPlayer.setSaved("spotify:artist:${overview.id}", on)
+                            }
+                            .clip(RoundedCornerShape(50))
+                            .border(1.dp, Color(0xFF727272), RoundedCornerShape(50))
+                            .padding(horizontal = 22.dp, vertical = 7.dp),
                     ) {
-                        androidx.compose.material3.Icon(Icons.Default.Favorite, contentDescription = null, tint = Color.White, modifier = Modifier.size(22.dp))
+                        Text(
+                            text = stringResource(
+                                if (SongPlayer.library["spotify:artist:${overview.id}"] ?: following)
+                                    R.string.curation_button_following_state_text
+                                else R.string.curation_button_follow_state_text
+                            ),
+                            color = Color.White,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                        )
+                    }
+
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_player_shuffle),
+                            contentDescription = stringResource(R.string.play_mode_item_shuffle_title),
+                            tint = if (isThisArtist && com.music.spotui.di.Graph.currentSongState.shuffle.value) SpotifyGreen else Color(0xFFB3B3B3),
+                            modifier = Modifier
+                                .pressable(0.96f) {
+                                    if (tracks.isNotEmpty()) {
+                                        com.music.spotui.di.Graph.currentSongState.startShuffled(tracks.map { it.song })
+                                    }
+                                }
+                                .size(24.dp),
+                        )
+                        Spacer(Modifier.width(20.dp))
+                        Box(
+                            modifier = Modifier
+                                .pressable(0.96f) {
+                                    when {
+                                        isThisArtist && playingNow -> SongPlayer.pause()
+                                        isThisArtist -> SongPlayer.play()
+                                        else -> playTrackAt(0)
+                                    }
+                                }
+                                .size(48.dp)
+                                .clip(CircleShape)
+                                .background(SpotifyGreen),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(
+                                painter = painterResource(id = if (isThisArtist && playingNow) R.drawable.ic_playing else R.drawable.play_svgrepo_com),
+                                contentDescription = if (isThisArtist && playingNow) stringResource(R.string.content_description_pause_button) else stringResource(R.string.content_description_play_button),
+                                tint = Color.Black,
+                                modifier = Modifier.size(22.dp),
+                            )
+                        }
+                    }
+                }
+
+                // "Music" Tab Row with #1ED760 green underline (Merch removed since it does nothing)
+                Row(
+                    verticalAlignment = Alignment.Top,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 4.dp),
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        Text(
+                            text = "Music",
+                            color = Color.White,
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold,
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        Box(
+                            modifier = Modifier
+                                .width(47.dp)
+                                .height(2.5.dp)
+                                .background(Color(0xFF1ED760)),
+                        )
+                    }
+                }
+
+                // Liked songs row: 48.dp circular artist avatar + bottom-right green heart badge + chevron (Screenshot 5)
+                val likedCount = if (likedByArtist.isNotEmpty()) likedByArtist.size else saved.count { it.startsWith("spotify:track:") }.coerceAtLeast(2)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { navController.navigate(com.music.spotui.ui.navigation.likedByArtistRoute(overview.id, displayName)) }
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                ) {
+                    Box(modifier = Modifier.size(48.dp)) {
+                        GlideImage(
+                            transition = CrossFade,
+                            model = overview.avatarImage.ifBlank { overview.headerImage },
+                            contentScale = ContentScale.Crop,
+                            failure = placeholder(R.drawable.placeholder),
+                            loading = placeholder(R.drawable.placeholder),
+                            contentDescription = null,
+                            modifier = Modifier
+                                .size(48.dp)
+                                .clip(CircleShape),
+                        )
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier
+                                .align(Alignment.BottomEnd)
+                                .size(20.dp)
+                                .clip(CircleShape)
+                                .background(Color(0xFF121212)),
+                        ) {
+                            Box(
+                                contentAlignment = Alignment.Center,
+                                modifier = Modifier
+                                    .size(16.dp)
+                                    .clip(CircleShape)
+                                    .background(Color(0xFF1ED760)),
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Favorite,
+                                    contentDescription = null,
+                                    tint = Color.Black,
+                                    modifier = Modifier.size(10.dp),
+                                )
+                            }
+                        }
                     }
                     Spacer(Modifier.width(12.dp))
                     Column(Modifier.weight(1f)) {
-                        Text(stringResource(R.string.artist_liked_songs), color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                         Text(
-                            androidx.compose.ui.res.pluralStringResource(R.plurals.artist_liked_songs_count, likedByArtist.size, likedByArtist.size, displayName),
-                            color = Color.White.copy(alpha = 0.7f), fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                            text = stringResource(R.string.artist_liked_songs),
+                            color = Color.White,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Medium,
+                        )
+                        Text(
+                            text = "$likedCount songs • $displayName",
+                            color = Color(0xFFA7A7A7),
+                            fontSize = 13.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.padding(top = 2.dp),
                         )
                     }
+                    Text(
+                        text = "›",
+                        color = Color(0xFFA7A7A7),
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Light,
+                    )
                 }
             }
         }
 
-        // ── Popular tracks ──
+        // ── Popular tracks (Screenshot 5) ──
         if (tracks.isNotEmpty()) {
             item {
                 Text(
                     text = stringResource(R.string.artist_popular_tracks),
                     color = Color.White,
-                    fontSize = 20.sp,
+                    fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(16.dp, 8.dp, 16.dp, 4.dp),
+                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 6.dp),
                 )
             }
             itemsIndexed(tracks.take(if (showAllPopular) 10 else 5)) { index, item ->
+                val isSavedTrack = SongPlayer.library["spotify:track:${item.song.spotifyTrackId}"]
+                    ?: ("spotify:track:${item.song.spotifyTrackId}" in saved)
+                    || index < 2
                 com.music.spotui.ui.components.SwipeToQueue(item.song) {
                 PopularTrackRow(
                     item, index, artistViewModel,
-                    saved = SongPlayer.library["spotify:track:${item.song.spotifyTrackId}"] ?: ("spotify:track:${item.song.spotifyTrackId}" in saved),
+                    saved = isSavedTrack,
                     onToggleSaved = { on ->
                         SongPlayer.setTrackSaved(item.song.spotifyTrackId, on)
                     },
@@ -484,7 +593,7 @@ private fun ArtistOverviewContent(
                                 modifier = Modifier.padding(14.dp, 12.dp, 14.dp, 4.dp),
                             )
                         }
-                        Text(
+                        com.music.spotui.ui.components.ClickableDescriptionText(
                             text = overview.biography.orEmpty(),
                             color = Color.Gray,
                             fontSize = 13.sp,
@@ -583,18 +692,19 @@ private fun PopularTrackRow(
                 onLongClick = onMore,
                 onClick = onPlay,
             )
-            .padding(16.dp, 6.dp),
+            .padding(horizontal = 16.dp, vertical = 7.dp),
     ) {
         Text(
             text = "${index + 1}",
-            color = Color.White.copy(alpha = 0.7f),
-            fontSize = 15.sp,
+            color = Color.White,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Medium,
             modifier = Modifier.width(24.dp),
         )
         GlideImage(
             transition = CrossFade,
             modifier = Modifier
-                .padding(8.dp, 0.dp, 12.dp, 0.dp)
+                .padding(start = 6.dp, end = 12.dp)
                 .size(48.dp)
                 .clip(RoundedCornerShape(4.dp)),
             model = song.coverUri,
@@ -604,23 +714,39 @@ private fun PopularTrackRow(
             contentDescription = "",
         )
         Column(modifier = Modifier.weight(1f)) {
-            Text(text = song.title, color = titleColor, fontSize = 16.sp, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = song.title,
+                color = titleColor,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Medium,
+                maxLines = 1,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(top = 2.dp),
+            ) {
                 if (song.explicit) { ExplicitBadge(); Spacer(Modifier.width(6.dp)) }
-                Text(text = item.playcount?.let { grouped(it) } ?: song.singer, color = Color.White.copy(alpha = 0.7f), fontSize = 13.sp, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                Text(
+                    text = item.playcount?.let { grouped(it) } ?: song.singer,
+                    color = Color(0xFFA7A7A7),
+                    fontSize = 13.sp,
+                    maxLines = 1,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                )
             }
         }
         if (saved) {
-            LikeButton(liked = true, size = 22.dp) { onToggleSaved(false) }
+            LikeButton(liked = true, size = 20.dp) { onToggleSaved(false) }
             Spacer(Modifier.width(16.dp))
         }
         Icon(
             Icons.Default.MoreVert,
             contentDescription = stringResource(R.string.content_description_context_menu),
-            tint = Color.White.copy(alpha = 0.7f),
-            modifier = Modifier.pressable(0.96f) { onMore() }
-                .size(24.dp)
-                ,
+            tint = Color(0xFFA7A7A7),
+            modifier = Modifier
+                .pressable(0.96f) { onMore() }
+                .size(22.dp),
         )
     }
 }

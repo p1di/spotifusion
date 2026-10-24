@@ -125,14 +125,18 @@ class PlayerViewModel constructor(private val currentSongState: CurrentSongState
         }
     }
 
-    fun goToArtist(trackId: String, fallbackName: String, navigate: (route: String) -> Unit) {
+    fun goToArtist(trackId: String, fallbackName: String, artistIndex: Int = 0, navigate: (route: String) -> Unit) {
         viewModelScope.launch {
+            val targetName = fallbackName.substringBefore(",").trim()
             val route = withContext(Dispatchers.IO) {
-                val artist = if (trackId.isNotBlank())
-                    runCatching { app.myspoti.host.android.MyspotiRuntime.api.catalog.track("spotify:track:$trackId") }.getOrNull()?.artists?.firstOrNull()
-                else null
+                val artists = if (trackId.isNotBlank())
+                    runCatching { app.myspoti.host.android.MyspotiRuntime.api.catalog.track("spotify:track:$trackId") }.getOrNull()?.artists.orEmpty()
+                else emptyList()
+                val artist = artists.firstOrNull { it.name.equals(targetName, ignoreCase = true) }
+                    ?: artists.getOrNull(artistIndex)
+                    ?: artists.firstOrNull()
                 artistRoute(
-                    artist?.name?.ifBlank { null } ?: fallbackName.substringBefore(",").trim(),
+                    artist?.name?.ifBlank { null } ?: targetName,
                     artist?.uri?.substringAfterLast(':').orEmpty(),
                 )
             }

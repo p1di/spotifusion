@@ -1,5 +1,6 @@
 package com.music.spotui.ui.screens
 
+import com.music.spotui.ui.components.edgeSwipeBack
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -108,7 +109,12 @@ fun EpisodeScreen(navController: NavController, episodeId: String, fallbackName:
         )
     }
 
-    Box(Modifier.fillMaxSize().background(AppBackground)) {
+    Box(
+        Modifier
+            .fillMaxSize()
+            .background(AppBackground)
+            .edgeSwipeBack { navController.navigateUp() }
+    ) {
         LazyColumn(
             contentPadding = PaddingValues(bottom = com.music.spotui.ui.components.bottomBarsSpace()),
             modifier = Modifier.fillMaxSize(),
@@ -184,8 +190,9 @@ fun EpisodeScreen(navController: NavController, episodeId: String, fallbackName:
                     val minutes = episodeMinutes(episode?.durationMs ?: 0)
                     Text(
                         text = if (date.isBlank()) minutes else "$date • $minutes",
-                        color = Color.White.copy(alpha = 0.65f),
+                        color = Color.White,
                         fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium,
                         modifier = Modifier.padding(horizontal = 16.dp),
                     )
                     // Action row: save, download, share, "…", then Play.
@@ -259,7 +266,7 @@ fun EpisodeScreen(navController: NavController, episodeId: String, fallbackName:
                 }
                 if (ep.description.isNotBlank()) item {
                     Column(Modifier.fillMaxWidth().animateContentSize(androidx.compose.animation.core.tween(250)).padding(16.dp)) {
-                        Text(
+                        com.music.spotui.ui.components.ClickableDescriptionText(
                             text = ep.description,
                             color = Color.White.copy(alpha = 0.78f),
                             fontSize = 14.sp,

@@ -1,7 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Material Icons "skip_next" (Google, Apache License 2.0). Tinted by the caller. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="24dp" android:height="24dp"
-    android:viewportWidth="24" android:viewportHeight="24">
-    <path android:fillColor="#FFFFFFFF" android:pathData="M6,18l8.5,-6L6,6v12zM16,6v12h2V6h-2z" />
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="16"
+    android:viewportHeight="16">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M12.7,1a0.7,0.7 0,0 0,-0.7 0.7v5.15L2.05,1.107A0.7,0.7 0,0 0,1 1.712v12.575a0.7,0.7 0,0 0,1.05 0.606L12,9.149V14.3a0.7,0.7 0,0 0,0.7 0.7h1.6a0.7,0.7 0,0 0,0.7 -0.7V1.7a0.7,0.7 0,0 0,-0.7 -0.7h-1.6z" />
 </vector>

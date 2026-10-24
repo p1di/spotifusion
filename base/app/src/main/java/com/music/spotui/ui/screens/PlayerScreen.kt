@@ -33,6 +33,7 @@ import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -363,7 +364,9 @@ fun PlayerScreen(navController: NavController) {
         // Sized from the real space (foldables, tablets), not the screen: wide windows centre
         // the content in a capped column and the cover fits both the width and the height.
         androidx.compose.foundation.layout.BoxWithConstraints(
-            modifier = Modifier.fillParentMaxHeight().fillMaxWidth(),
+            modifier = Modifier
+                .fillParentMaxHeight(if (immersive) 1f else 0.91f)
+                .fillMaxWidth(),
             contentAlignment = Alignment.TopCenter,
         ) {
         val wide = maxWidth > 600.dp && maxWidth > maxHeight
@@ -378,7 +381,7 @@ fun PlayerScreen(navController: NavController) {
             modifier = Modifier
                 .fillMaxHeight()
                 .width(contentWidth)
-                .navigationBarsPadding(),
+                .then(if (immersive) Modifier.navigationBarsPadding() else Modifier),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // Immersive mode has no top bar: only the artwork and the compact strip remain.
@@ -389,7 +392,7 @@ fun PlayerScreen(navController: NavController) {
                     np = np,
                     fallbackName = playerViewModel.currentSongAlbum.value,
                 )
-                Spacer(modifier = Modifier.height(28.dp))
+                Spacer(modifier = Modifier.height(8.dp))
             }
             // Media area: artwork (swipe to change track) or the music video, with
             // Spotify's "Passer à la vidéo" pill over it (black, like the official app).
@@ -397,7 +400,8 @@ fun PlayerScreen(navController: NavController) {
             // screens): otherwise play / pause ends up under the lyrics card.
             // A clear upward drag on the artwork opens the lyrics (observed on the initial pass,
             // never consumed, so the pager and the pull-to-close keep working).
-            Box(modifier = Modifier.size(artSide).pointerInput(immersive, videoOn) {
+            val artBoxHeight = if (immersive) artSide else (artSide - 72.dp).coerceAtLeast(160.dp)
+            Box(modifier = Modifier.width(artSide).height(artBoxHeight).pointerInput(immersive, videoOn) {
                 detectTapGestures(onTap = {
                     // Plain tap on the artwork: the immersive toggle, with or without a Canvas
                     // (it used to depend on the Canvas being there, and only ever turned on).
@@ -435,8 +439,7 @@ fun PlayerScreen(navController: NavController) {
             } else HorizontalPager(
                 state = artworkPagerState,
                 // Immersive: the artwork fills the screen instead of sitting in a square.
-                modifier = if (immersive) Modifier.fillMaxSize()
-                    else Modifier.fillMaxWidth().aspectRatio(1f),
+                modifier = Modifier.fillMaxSize(),
             ) { page ->
                 val cover = when (page) {
                     0 -> np.prev?.coverUri
@@ -447,8 +450,8 @@ fun PlayerScreen(navController: NavController) {
                     GlideImage(
                         transition = CrossFade,
                         modifier = (if (immersive) Modifier.fillMaxSize()
-                            // Normal layout keeps the inset, rounded cover.
-                            else Modifier.padding(horizontal = 24.dp).aspectRatio(1f).clip(RoundedCornerShape(8.dp)))
+                            // Normal layout keeps the inset, rounded cover (36.dp horizontal padding matching official screenshot).
+                            else Modifier.padding(horizontal = 36.dp).aspectRatio(1f).clip(RoundedCornerShape(8.dp)))
                             .graphicsLayer {
                                 alpha = coverAlpha
                                 val grow = 1f + (1f - coverAlpha) * 0.06f
@@ -496,8 +499,8 @@ fun PlayerScreen(navController: NavController) {
                         val albumId = np.albumUri.substringAfterLast(":")
                         if (albumId.isNotBlank()) navController.navigate(albumRoute(playerViewModel.currentSongAlbum.value, songSinger, albumId))
                     },
-                    onArtistClick = {
-                        playerViewModel.goToArtist(SongPlayer.currentTrackId, songSinger) { route ->
+                    onArtistItemClick = { clickedArtist, index ->
+                        playerViewModel.goToArtist(SongPlayer.currentTrackId, clickedArtist, index) { route ->
                             navController.navigate(route)
                         }
                     },
@@ -823,24 +826,25 @@ fun PlayerTopBar(
     }
 }
 
-/** Small grey "E" badge for explicit tracks. */
+/** Small grey "E" badge for explicit tracks (14.dp square, 9.sp bold 'E' matching official app). */
 @Composable
 fun ExplicitBadge(modifier: Modifier = Modifier) {
     Box(
         contentAlignment = Alignment.Center,
         modifier = modifier
-            .size(16.dp)
+            .size(14.dp)
             .clip(RoundedCornerShape(2.dp))
-            .background(Color.White.copy(alpha = 0.65f)),
+            .background(Color(0xFFB3B3B3)),
     ) {
         // No font padding + trimmed line height so the "E" sits dead centre.
         Text(
             "E",
-            color = Color.Black,
+            color = Color(0xFF121212),
             fontWeight = FontWeight.Bold,
             style = androidx.compose.ui.text.TextStyle(
-                fontSize = 10.sp,
-                lineHeight = 10.sp,
+                fontFamily = com.music.spotui.ui.theme.AppSans,
+                fontSize = 9.sp,
+                lineHeight = 9.sp,
                 platformStyle = androidx.compose.ui.text.PlatformTextStyle(includeFontPadding = false),
                 lineHeightStyle = androidx.compose.ui.text.style.LineHeightStyle(
                     alignment = androidx.compose.ui.text.style.LineHeightStyle.Alignment.Center,
@@ -890,6 +894,7 @@ fun PlayerInfo(
     /** The track behind the +: with it, the + opens "Saved in" once the track is saved. */
     likeSong: (() -> SongsModel)? = null,
     onArtistClick: (() -> Unit)? = null,
+    onArtistItemClick: ((String, Int) -> Unit)? = null,
     onTitleClick: (() -> Unit)? = null,
     /** T4: an ad break is on: what the caller passes is the song from before it, not what plays. */
     adPlaying: Boolean = false,
@@ -924,17 +929,53 @@ fun PlayerInfo(
                     ExplicitBadge()
                     Spacer(modifier = Modifier.width(6.dp))
                 }
-                Text(
-                    text = songSinger,
-                    color = Color.White.copy(alpha = 0.7f),
-                    fontSize = 16.sp,
-                    maxLines = 1,
-                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                    modifier = if (onArtistClick != null) Modifier.clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null,
-                    ) { onArtistClick() } else Modifier,
-                )
+                val artistParts = remember(songSinger) {
+                    songSinger.split(",").map { it.trim() }.filter { it.isNotEmpty() }
+                }
+                if (onArtistItemClick != null && artistParts.size > 1) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.basicMarquee(iterations = 2, initialDelayMillis = 2_000, repeatDelayMillis = 3_000),
+                    ) {
+                        artistParts.forEachIndexed { idx, artistName ->
+                            Text(
+                                text = artistName,
+                                color = Color.White.copy(alpha = 0.7f),
+                                fontSize = 16.sp,
+                                maxLines = 1,
+                                softWrap = false,
+                                modifier = Modifier.clickable(
+                                    interactionSource = remember { MutableInteractionSource() },
+                                    indication = null,
+                                ) { onArtistItemClick(artistName, idx) },
+                            )
+                            if (idx < artistParts.lastIndex) {
+                                Text(
+                                    text = ", ",
+                                    color = Color.White.copy(alpha = 0.7f),
+                                    fontSize = 16.sp,
+                                    maxLines = 1,
+                                    softWrap = false,
+                                )
+                            }
+                        }
+                    }
+                } else {
+                    Text(
+                        text = songSinger,
+                        color = Color.White.copy(alpha = 0.7f),
+                        fontSize = 16.sp,
+                        maxLines = 1,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                        modifier = if (onArtistItemClick != null || onArtistClick != null) Modifier.clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                        ) {
+                            if (onArtistItemClick != null) onArtistItemClick(artistParts.firstOrNull() ?: songSinger, 0)
+                            else onArtistClick?.invoke()
+                        } else Modifier,
+                    )
+                }
             }
         }
         // No like for a local file (not in the Spotify library), and none during an ad break:
@@ -986,7 +1027,7 @@ fun SpotifySeekBar(
     }
     androidx.compose.foundation.Canvas(
         modifier = modifier
-            .height(24.dp)
+            .height(18.dp)
             .semantics {
                 contentDescription = seekDescription
                 progressBarRangeInfo = ProgressBarRangeInfo(semanticProgress.value, 0f..1f)
@@ -1017,7 +1058,7 @@ fun SpotifySeekBar(
         val f = fraction().coerceIn(0f, 1f)
         drawLine(Color.White.copy(alpha = 0.3f), androidx.compose.ui.geometry.Offset(0f, y), androidx.compose.ui.geometry.Offset(size.width, y), track, androidx.compose.ui.graphics.StrokeCap.Round)
         drawLine(Color.White, androidx.compose.ui.geometry.Offset(0f, y), androidx.compose.ui.geometry.Offset(size.width * f, y), track, androidx.compose.ui.graphics.StrokeCap.Round)
-        drawCircle(Color.White, radius = 6.dp.toPx(), center = androidx.compose.ui.geometry.Offset(size.width * f, y))
+        drawCircle(Color.White, radius = 4.5.dp.toPx(), center = androidx.compose.ui.geometry.Offset(size.width * f, y))
     }
 }
 
@@ -1057,23 +1098,20 @@ fun PlayerFull(
     val smartOn = SmartShuffle.on.value != null && SmartShuffle.on.value == SongPlayer.nowPlaying.value.contextUri
     val smartScope = androidx.compose.runtime.rememberCoroutineScope()
 
-
-
-
     Row(verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(20.dp)
-            .height(64.dp)
+            .padding(start = 25.dp, end = 25.dp, top = 14.dp, bottom = 22.dp)
+            .height(65.dp)
     ) {
         Icon(
             modifier = Modifier
-                .size(25.dp)
+                .size(24.dp)
                 .drawWithContent {
                     drawContent()
                     if (shuffle || smartOn) drawCircle(com.music.spotui.ui.theme.AppAccent, radius = 2.dp.toPx(),
-                        center = androidx.compose.ui.geometry.Offset(size.width / 2, size.height + 7.dp.toPx()))
+                        center = androidx.compose.ui.geometry.Offset(size.width / 2, size.height + 6.dp.toPx()))
                 }
                 .pressable {
                     // As in Spotify: off → shuffle → smart shuffle (playlists, Liked Songs) → off.
@@ -1106,7 +1144,8 @@ fun PlayerFull(
         
         Icon(
             modifier = Modifier
-                .size(35.dp)
+                .offset(x = 6.dp)
+                .size(28.dp)
                 .pressable {
                     // The queue itself is already in shuffled order when shuffle
                     // is on (reordered once at toggle) — never re-shuffle per tap.
@@ -1118,9 +1157,8 @@ fun PlayerFull(
             contentDescription = stringResource(R.string.np_content_desc_prev))
         androidx.compose.foundation.layout.Box(
             modifier = Modifier
-                // requiredSize forces an exact 64×64 square even if the parent Column
-                // constrains height — .size() alone let it get squished into an ellipse.
-                .requiredSize(64.dp)  // never below 56dp
+                // requiredSize forces an exact 65×65 square matching the 180px circle in the official screenshot.
+                .requiredSize(65.dp)
                 .pressable(pressedScale = 0.92f) {
                     if (songPlayingState) {
                         SongPlayer.pause()
@@ -1152,7 +1190,7 @@ fun PlayerFull(
             contentAlignment = Alignment.Center
         ) {
             com.music.spotui.ui.components.PlayPauseIcon(
-                modifier = Modifier.size(30.dp),
+                modifier = Modifier.size(25.dp),
                 tint = Color.Black,
                 playing = songPlayingState,
                 contentDescription = stringResource(if (songPlayingState) R.string.notif_action_pause else R.string.notif_action_play))
@@ -1160,9 +1198,9 @@ fun PlayerFull(
 
         Icon(
             modifier = Modifier
-                .size(35.dp)
+                .offset(x = (-6).dp)
+                .size(28.dp)
                 .pressable {
-
                     playerViewModel.playNextSongs(queueSongs, context)
                 }
             ,
@@ -1171,11 +1209,14 @@ fun PlayerFull(
             contentDescription = stringResource(R.string.np_content_desc_next))
         Icon(
             modifier = Modifier
-                .size(20.dp)
+                .size(24.dp)
+                .drawWithContent {
+                    drawContent()
+                    if (repeat) drawCircle(com.music.spotui.ui.theme.AppAccent, radius = 2.dp.toPx(),
+                        center = androidx.compose.ui.geometry.Offset(size.width / 2, size.height + 6.dp.toPx()))
+                }
                 .pressable {
                     SongPlayer.cycleRepeat()
-
-
                 }
             ,
             tint = if (repeat){
@@ -1203,7 +1244,7 @@ fun PlayerConnectRow(
         horizontalArrangement = Arrangement.SpaceBetween,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 24.dp, vertical = 4.dp),
+            .padding(start = 24.dp, end = 27.dp, top = 6.dp, bottom = 4.dp),
     ) {
         // Spotify Connect: current device, opens the device picker.
         Row(
@@ -1216,7 +1257,7 @@ fun PlayerConnectRow(
             Icon(
                 painter = painterResource(id = R.drawable.ic_devices),
                 tint = com.music.spotui.ui.theme.AppAccent,
-                modifier = Modifier.size(20.dp),
+                modifier = Modifier.size(19.dp),
                 contentDescription = stringResource(R.string.mr_user_route_category_name),
             )
             Text(
@@ -1226,7 +1267,7 @@ fun PlayerConnectRow(
                 maxLines = 1,
                 overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                 modifier = Modifier
-                    .padding(start = 8.dp)
+                    .padding(start = 9.dp)
                     .widthIn(max = 200.dp),
             )
         }
@@ -1238,7 +1279,7 @@ fun PlayerConnectRow(
                     painter = painterResource(id = R.drawable.ic_share),
                     tint = Color.White,
                     modifier = Modifier
-                        .size(22.dp)
+                        .size(18.dp)
                         .clickable(
                             interactionSource = remember { MutableInteractionSource() },
                             indication = null,
@@ -1275,12 +1316,12 @@ fun PlayerConnectRow(
                     )
                 }
             }
-            Spacer(modifier = Modifier.width(24.dp))
+            Spacer(modifier = Modifier.width(35.dp))
             Icon(
-                imageVector = Icons.AutoMirrored.Filled.List,
+                painter = painterResource(id = R.drawable.ic_spot_queue),
                 tint = Color.White,
                 modifier = Modifier
-                    .size(26.dp)
+                    .size(18.dp)
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null,
@@ -1337,11 +1378,15 @@ fun nowPlayingSong(playerViewModel: PlayerViewModel): SongsModel {
 @Composable
 fun AddButton(song: () -> SongsModel, liked: Boolean, size: androidx.compose.ui.unit.Dp = 28.dp, onLike: () -> Unit) {
     val context = androidx.compose.ui.platform.LocalContext.current
+    val keyboardController = androidx.compose.ui.platform.LocalSoftwareKeyboardController.current
+    val focusManager = androidx.compose.ui.platform.LocalFocusManager.current
     var savedIn by remember { mutableStateOf<SongsModel?>(null) }
     savedIn?.let { s ->
         com.music.spotui.ui.components.SavedInSheet(song = s, context = context, onDismiss = { savedIn = null })
     }
     LikeButton(liked = liked, size = size) {
+        keyboardController?.hide()
+        focusManager.clearFocus()
         if (liked) savedIn = song() else {
             onLike()
             android.widget.Toast.makeText(context, context.getString(R.string.snackbar_added_to_liked_songs), android.widget.Toast.LENGTH_SHORT).show()

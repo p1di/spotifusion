@@ -1,6 +1,8 @@
 package com.music.spotui.ui.screens
 
+import com.music.spotui.ui.components.edgeSwipeBack
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -119,7 +121,12 @@ fun ShowScreen(navController: NavController, showId: String, showName: String = 
         )
     }
 
-    Box(Modifier.fillMaxSize().background(AppBackground)) {
+    Box(
+        Modifier
+            .fillMaxSize()
+            .background(AppBackground)
+            .edgeSwipeBack { navController.navigateUp() }
+    ) {
         LazyColumn(
             contentPadding = PaddingValues(bottom = com.music.spotui.ui.components.bottomBarsSpace()),
             modifier = Modifier.fillMaxSize(),
@@ -303,11 +310,12 @@ private fun FollowPill(following: Boolean, onClick: () -> Unit) {
     Box(
         contentAlignment = Alignment.Center,
         modifier = Modifier
-            .height(32.dp)
-            .clip(RoundedCornerShape(16.dp))
+            .height(34.dp)
+            .clip(RoundedCornerShape(50))
+            .border(1.dp, if (following) Color.White else Color(0xFF727272), RoundedCornerShape(50))
             .background(if (following) Color.White.copy(alpha = 0.12f) else Color.Transparent)
             .pressable(0.96f, onClick = onClick)
-            .padding(horizontal = 16.dp),
+            .padding(horizontal = 20.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             if (following) {
@@ -351,7 +359,7 @@ private fun About(show: PodcastModel?) {
     val authors = show?.authors.orEmpty().joinToString(", ")
     val narrators = show?.narrators.orEmpty().joinToString(", ")
     Column(Modifier.fillMaxWidth().padding(16.dp)) {
-        Text(
+        com.music.spotui.ui.components.ClickableDescriptionText(
             text = show?.description.orEmpty(),
             color = Color.White.copy(alpha = 0.75f),
             fontSize = 14.sp,
@@ -412,9 +420,9 @@ private fun EpisodeRow(
                 Spacer(Modifier.height(4.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     if (finished) {
-                        Text(stringResource(R.string.episode_marked_played), color = Color.White.copy(alpha = 0.6f), fontSize = 12.sp)
+                        Text(stringResource(R.string.episode_marked_played), color = Color.White, fontSize = 12.sp)
                         Spacer(Modifier.width(6.dp))
-                        Text("•", color = Color.White.copy(alpha = 0.4f), fontSize = 12.sp)
+                        Text("•", color = Color.White.copy(alpha = 0.7f), fontSize = 12.sp)
                         Spacer(Modifier.width(6.dp))
                     }
                     val started = episode.playedPositionMs > 0 && !finished
@@ -423,8 +431,9 @@ private fun EpisodeRow(
                             date.isBlank() -> minutes
                             else -> "$date • $minutes"
                         },
-                        color = Color.White.copy(alpha = 0.6f),
+                        color = Color.White,
                         fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium,
                     )
                     if (started) {
                         Spacer(Modifier.width(8.dp))

@@ -18,3 +18,19 @@ ANNEXE-ETAT.txt
 docs/RESTE-A-FAIRE.md
 tools/handoff_state.sh
 REDDIT-*.md
+
+# Local root working directory mirrors (code lives in base/)
+/app/
+/api/
+/api-spotify/
+/host-android/
+/host-cdp/
+/licenses/
+/gradle/
+/gradlew
+/gradlew.bat
+/build.gradle.kts
+/settings.gradle.kts
+/gradle.properties
+/APP_DOCUMENTATION.md
+/assets/

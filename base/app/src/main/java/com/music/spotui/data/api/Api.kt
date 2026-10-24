@@ -463,7 +463,7 @@ class Api constructor(
             publisher = head?.publisher?.takeIf { it.isNotBlank() }
                 ?: book?.authors?.joinToString(", ").orEmpty(),
             coverUri = cover,
-            description = head?.description ?: book?.description.orEmpty(),
+            description = stripHtml(head?.description ?: book?.description),
             rating = head?.rating ?: 0.0,
             saved = head?.saved == true,
             authors = book?.authors.orEmpty(),
@@ -610,7 +610,7 @@ class Api constructor(
             name = page.artist.name.ifBlank { artistName },
             verified = page.artist.verified,
             monthlyListeners = page.artist.monthlyListeners,
-            biography = page.biography,
+            biography = stripHtml(page.biography),
             headerImage = big(page.headerImages).ifBlank { avatar },
             avatarImage = avatar,
             topTracks = top.map { (song, plays) -> ArtistTrackUi(song, plays) },
@@ -893,7 +893,8 @@ class Api constructor(
         val out = ArrayList<app.myspoti.api.LibraryItem>()
         var offset = 0
         repeat(40) {
-            val page = api.library.items(filter = filter, folderUri = folderUri, offset = offset, limit = 50)
+            val page = runCatching { api.library.items(filter = filter, folderUri = folderUri, offset = offset, limit = 50) }.getOrNull()
+                ?: if (out.isEmpty()) throw IllegalStateException("library fetch failed") else return out
             out += page.items
             offset = page.nextOffset ?: return out
         }
@@ -919,7 +920,16 @@ class Api constructor(
         if (HomeCache.libraryRoot == null) HomeCache.libraryRoot = withContext(Dispatchers.IO) { ScreenCache.libraryRoot.read() }
         HomeCache.libraryRoot?.let { emit(Response.Success(it)) } ?: emit(Response.Loading())
         if (!ready()) { if (HomeCache.libraryRoot == null) emit(Response.Error(notSignedIn())); return@flow }
-        runCatching { listOf(likedEntry()) + libraryLevel(null).mapNotNull(::entryOf) }.fold(
+        runCatching {
+            val rootItems = libraryLevel(null).mapNotNull(::entryOf)
+            val folderPlaylistIds = rootItems.filter { it.isFolder }.flatMap { folder ->
+                runCatching { libraryLevel(folder.folderUri).mapNotNull(::entryOf).map { it.spotifyId } }.getOrDefault(emptyList())
+            }.toSet()
+            val rootIds = rootItems.map { it.spotifyId }.toSet() + folderPlaylistIds
+            val extraPlaylists = runCatching { api.playlists.mine().map(::playlistEntry) }.getOrDefault(emptyList())
+                .filter { it.spotifyId !in rootIds }
+            listOf(likedEntry()) + rootItems + extraPlaylists
+        }.fold(
             onSuccess = { HomeCache.libraryRoot = it; ScreenCache.libraryRoot.write(it); emit(Response.Success(it)) },
             onFailure = { Log.e("Api", "getLibraryRoot failed", it); if (HomeCache.libraryRoot == null) emit(Response.Error(it.message ?: "error")) },
         )
@@ -1002,10 +1012,19 @@ class Api constructor(
         )
     }
 
-    /** Playlist descriptions come as HTML: keep the text and link labels. */
+    /** Descriptions/bios come as HTML (sometimes double-encoded with numeric entities like &#731;): decode cleanly. */
     private fun stripHtml(raw: String?): String {
         if (raw.isNullOrBlank()) return ""
-        return androidx.core.text.HtmlCompat.fromHtml(raw, androidx.core.text.HtmlCompat.FROM_HTML_MODE_LEGACY).toString().trim()
+        val pass1 = androidx.core.text.HtmlCompat.fromHtml(raw, androidx.core.text.HtmlCompat.FROM_HTML_MODE_LEGACY).toString()
+        val pass2 = androidx.core.text.HtmlCompat.fromHtml(pass1, androidx.core.text.HtmlCompat.FROM_HTML_MODE_LEGACY).toString()
+        return pass2
+            .replace(Regex("&#(\\d+);")) { m ->
+                runCatching { String(Character.toChars(m.groupValues[1].toInt())) }.getOrDefault(m.value)
+            }
+            .replace(Regex("&#[xX]([0-9a-fA-F]+);")) { m ->
+                runCatching { String(Character.toChars(m.groupValues[1].toInt(16))) }.getOrDefault(m.value)
+            }
+            .trim()
     }
 
     /** Among same-named albums, prefer the exact name by the requested artist. */

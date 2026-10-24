@@ -12,6 +12,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.graphics.graphicsLayer
 import android.annotation.SuppressLint
 import android.os.Build
 import androidx.annotation.RequiresApi
@@ -51,17 +53,68 @@ fun App() {
         }
     }
 
-    UpdatePrompt()
-    SupportPrompt()
+    // UpdatePrompt and SupportPrompt disabled so no non-Spotify dialogs interrupt the experience.
 
-    androidx.compose.foundation.layout.Box(Modifier.fillMaxSize()) {
-        Scaffold(
-            modifier = Modifier,
-            bottomBar = {
-                MainBottomNavigation(navController = navController, bottomBarState = bottomBarState, bottomBarPlayerState)
-            }
+    val drawerOpen by com.music.spotui.ui.components.ProfileDrawerState.isOpen
+    val drawerFraction by androidx.compose.animation.core.animateFloatAsState(
+        targetValue = if (drawerOpen) 1f else 0f,
+        animationSpec = androidx.compose.animation.core.tween(240),
+        label = "drawerSlide",
+    )
+    if (drawerOpen) {
+        androidx.activity.compose.BackHandler {
+            com.music.spotui.ui.components.ProfileDrawerState.close()
+        }
+    }
+
+    androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxSize()) {
+        val drawerWidthPx = constraints.maxWidth * 0.90f
+        androidx.compose.foundation.layout.Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .let { mod ->
+                    if (drawerFraction > 0f) {
+                        mod.then(
+                            androidx.compose.ui.Modifier.graphicsLayer {
+                                translationX = drawerWidthPx * drawerFraction
+                            }
+                        )
+                    } else mod
+                }
         ) {
-            MyNavHost(navHostController = navController, bottomBarState = bottomBarState, bottomBarPlayerState)
+            Scaffold(
+                modifier = Modifier,
+                bottomBar = {
+                    MainBottomNavigation(navController = navController, bottomBarState = bottomBarState, bottomBarPlayerState)
+                }
+            ) {
+                MyNavHost(navHostController = navController, bottomBarState = bottomBarState, bottomBarPlayerState)
+            }
+            if (drawerFraction > 0f) {
+                androidx.compose.foundation.layout.Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.55f * drawerFraction))
+                        .clickable(
+                            interactionSource = androidx.compose.runtime.remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                            indication = null,
+                        ) { com.music.spotui.ui.components.ProfileDrawerState.close() }
+                )
+            }
+        }
+        if (drawerFraction > 0f) {
+            com.music.spotui.ui.components.ProfileDrawerContent(
+                navController = navController,
+                modifier = Modifier
+                    .fillMaxWidth(0.90f)
+                    .let { mod ->
+                        mod.then(
+                            androidx.compose.ui.Modifier.graphicsLayer {
+                                translationX = -drawerWidthPx * (1f - drawerFraction)
+                            }
+                        )
+                    },
+            )
         }
         // Over the pages and the bottom bar: pulling it down shows them, already in place.
         com.music.spotui.ui.navigation.PlayerOverlay(navController)
@@ -274,7 +327,7 @@ private fun UpdateDialog(
                 modifier = Modifier.padding(top = 18.dp),
             )
             androidx.compose.material3.Text(
-                "Myspoti $version", color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.7f),
+                "Spotifusion $version", color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.7f),
                 fontFamily = com.music.spotui.ui.theme.AppSans, fontSize = 15.sp, modifier = Modifier.padding(top = 6.dp),
             )
             // What's new (the release's CHANGELOG section), scrollable if long.

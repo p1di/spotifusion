@@ -63,12 +63,6 @@ fun MyNavHost(
     val context = LocalContext.current
     val startDestination = Routes.Home.route
 
-    // A download asked for without a verified SpotiFLAC server opens the verification.
-    LaunchedEffect(navHostController) {
-        com.music.spotui.data.offline.SpotiflacGate.open.collect {
-            if (navHostController.currentDestination?.route != Routes.Spotiflac.route) navHostController.navigate(Routes.Spotiflac.route)
-        }
-    }
     NavHost(
         navController = navHostController,
         startDestination = startDestination,
@@ -129,15 +123,6 @@ fun MyNavHost(
             LaunchedEffect(playerState) {
                 bottomBarState.value = true
                 bottomBarPlayerState.value = playerState != ""
-            }
-            // Not verified with SpotiFLAC (or it lapsed): the verification first, once per visit.
-            var askedVerify by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
-            val context = androidx.compose.ui.platform.LocalContext.current
-            LaunchedEffect(Unit) {
-                if (!askedVerify && !com.music.spotui.data.preferences.hasSpotiflacSession(context)) {
-                    askedVerify = true
-                    navHostController.navigate(Routes.Spotiflac.route)
-                }
             }
             com.music.spotui.ui.screens.DownloadsScreen(navHostController)
         }

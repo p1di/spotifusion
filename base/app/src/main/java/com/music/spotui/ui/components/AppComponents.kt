@@ -227,29 +227,27 @@ fun MiniPlayer(navController: NavHostController) {
                         contentDescription = ""
                     )
                     val remote = SongPlayer.activeDevice.value
-                    Column(modifier = Modifier.padding(start = 12.dp, end = 8.dp)) {
+                    Column(modifier = Modifier.padding(start = 10.dp, end = 8.dp)) {
                         if (remote == null) {
-                            Text(text = if (adPlaying) stringResource(R.string.ad_playing) else (s?.title ?: songTitle), color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
-                            if (!adPlaying) Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                                // The artist yields the width: the output's name stays whole.
+                            Text(
+                                text = if (adPlaying) stringResource(R.string.ad_playing) else (s?.title ?: songTitle),
+                                color = Color.White,
+                                fontSize = 13.5.sp,
+                                lineHeight = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1,
+                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                            )
+                            if (!adPlaying) {
                                 Text(
-                                    text = s?.singer ?: songSinger, color = Color.White.copy(alpha = 0.7f), fontSize = 13.sp,
-                                    maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                                    modifier = Modifier.weight(1f, fill = false),
+                                    text = s?.singer ?: songSinger,
+                                    color = Color.White.copy(alpha = 0.72f),
+                                    fontSize = 13.sp,
+                                    lineHeight = 15.sp,
+                                    fontWeight = FontWeight.Normal,
+                                    maxLines = 1,
+                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                                 )
-                                if (routeLabel != null) {
-                                    Icon(
-                                        imageVector = if (route.kind == AudioRoute.Kind.BLUETOOTH) Icons.Filled.BluetoothAudio else Icons.Filled.Headphones,
-                                        contentDescription = stringResource(R.string.playing_on),
-                                        tint = Color.White.copy(alpha = 0.55f),
-                                        modifier = Modifier.padding(start = 6.dp).size(12.dp),
-                                    )
-                                    Text(
-                                        text = routeLabel, color = Color.White.copy(alpha = 0.55f), fontSize = 11.sp,
-                                        maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                                        modifier = Modifier.padding(start = 3.dp).widthIn(max = 110.dp),
-                                    )
-                                }
                             }
                         } else {
                             // Playing on another device: "Title • Artist", then the device in green.
@@ -263,8 +261,6 @@ fun MiniPlayer(navController: NavHostController) {
                                     pop()
                                 },
                                 fontSize = 13.sp, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, softWrap = false,
-                                // Scrolls once per track then rests: an endless marquee in the always-visible
-                                // mini player made the whole app redraw at 120 Hz without pause.
                                 modifier = Modifier.basicMarquee(iterations = 1, initialDelayMillis = 2_000),
                             )
                             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -276,16 +272,15 @@ fun MiniPlayer(navController: NavHostController) {
                 }
             }
             Icon(
-                painter = painterResource(id = if (SongPlayer.activeDevice.value != null) R.drawable.ic_devices else R.drawable.ic_devices),
-                tint = if (SongPlayer.activeDevice.value != null) com.music.spotui.ui.theme.AppAccent else Color.White.copy(alpha = 0.8f),
+                painter = painterResource(id = R.drawable.ic_spot_connect),
+                tint = if (SongPlayer.activeDevice.value != null) com.music.spotui.ui.theme.AppAccent else Color.White,
                 modifier = Modifier.pressable(0.96f) { showDevices = true }
-                    .size(22.dp)
-                    ,
+                    .size(24.dp),
                 contentDescription = stringResource(R.string.mr_user_route_category_name),
             )
-            Spacer(modifier = Modifier.width(20.dp))
-            if (!com.music.spotui.di.LocalPlayer.active.value) com.music.spotui.ui.screens.AddButton(song = { com.music.spotui.ui.screens.nowPlayingSong(vm) }, liked = liked, size = 24.dp) { vm.updateLikeState(true) }
-            Spacer(modifier = Modifier.width(20.dp))
+            Spacer(modifier = Modifier.width(18.dp))
+            if (!com.music.spotui.di.LocalPlayer.active.value) com.music.spotui.ui.screens.AddButton(song = { com.music.spotui.ui.screens.nowPlayingSong(vm) }, liked = liked, size = 22.dp) { vm.updateLikeState(true) }
+            Spacer(modifier = Modifier.width(18.dp))
             com.music.spotui.ui.components.PlayPauseIcon(
                 playing = songPlayingState,
                 contentDescription = if (songPlayingState) stringResource(R.string.content_description_pause_button) else stringResource(R.string.content_description_play_button),
@@ -299,8 +294,7 @@ fun MiniPlayer(navController: NavHostController) {
                             vm.updateSongState(songCoverUri, songTitle, songSinger, true, songId, vm.currentSongIndex.value, vm.currentSongAlbum.value)
                         }
                     }
-                    .size(26.dp)
-                    
+                    .size(24.dp)
             )
         }
         // Thin progress line at the bottom of the card.

@@ -8,7 +8,7 @@ import androidx.compose.runtime.setValue
 // Player engine streams Spotify's own audio). Crossfade is ours: a fade, not an overlap.
 
 private const val PREF = "settings_prefs"
-private const val KEY_LIBRARY_GRID = "library_grid_view"
+private const val KEY_LIBRARY_GRID = "library_grid_view_v2"
 private const val KEY_LYRIC_TRANSLATE_LANG = "lyric_translate_lang"
 private const val KEY_LYRICS_EXTRA = "lyrics_extra_sources"
 private const val KEY_CROSSFADE = "crossfade_seconds"
@@ -81,7 +81,7 @@ object OrientationPref {
     }
 }
 
-/** Library layout: false = rows (default), true = Spotify-style 3-column grid. */
+/** Library layout: false = Spotify list rows (default, Screenshot 3), true = 3-column grid. */
 fun isLibraryGridView(c: Context): Boolean = prefs(c).getBoolean(KEY_LIBRARY_GRID, false)
 fun setLibraryGridView(c: Context, v: Boolean) = prefs(c).edit().putBoolean(KEY_LIBRARY_GRID, v).apply()
 

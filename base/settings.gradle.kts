@@ -25,9 +25,11 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Myspoti"
+rootProject.name = "Spotifusion"
 include(":app")
 include(":api")
 include(":api-spotify")
 include(":host-cdp")
 include(":host-android")
+
+
