@@ -1,44 +1,61 @@
-# Third-party notices
+# Third-Party Notices
 
-Myspoti is free software under the GNU General Public License v3.0 (see `LICENSE`).
-It builds on the projects below; their licences are compatible with the GPL-3.0.
+Spotifusion is free software released under the GNU General Public License v3.0 (see `LICENSE`).
+It builds upon, incorporates, and interfaces with the open-source projects listed below:
 
-## Spotui — GPL-3.0
-https://github.com/Spotui/Spotui
+---
 
-The Kotlin lossless resolver, the DASH-to-FLAC remux and the first verification
-screen (`base/app/src/main/java/com/music/spotui/lossless/`, `SpotiflacScreen.kt`)
-are ported from Spotui and stay under the GPL-3.0. Each file says so in its header.
+## Myspoti / Spotui — GPL-3.0
+- Repository: https://github.com/kota-zo/myspoti
+- Upstream: https://github.com/Spotui/Spotui
+- Original Authors: kota-zo and the MetrolistGroup
+- Scope: The foundational Android background WebView bridge (`host-android`), Spotify catalog and GraphQL API mapping (`api-spotify`), and Jetpack Compose screen scaffolding.
 
-## SpotiFLAC — MIT
-https://github.com/spotbye/SpotiFLAC
+---
 
-The lossless resolving approach and its community backend protocol.
+## BitChord — MIT
+- Repository: https://github.com/kushagrasinghx/BitChord
+- Author: Kushagra Singh (kushagrasinghx)
+- Scope: The intelligent `TrackMatcher` title/artist scoring logic, NewPipe progressive stream resolver, JioSaavn 320kbps AAC extraction, and the range-chunked downloader architecture utilized in `OfflineDownloader.kt`.
 
-> MIT License — Copyright (c) 2026 afkarxyz.
-> Permission is hereby granted, free of charge, to any person obtaining a copy of this
-> software and associated documentation files (the "Software"), to deal in the Software
-> without restriction, including without limitation the rights to use, copy, modify,
-> merge, publish, distribute, sublicense, and/or sell copies of the Software, and to
-> permit persons to whom the Software is furnished to do so, subject to the following
-> conditions: The above copyright notice and this permission notice shall be included in
-> all copies or substantial portions of the Software. THE SOFTWARE IS PROVIDED "AS IS",
-> WITHOUT WARRANTY OF ANY KIND.
+> MIT License — Copyright (c) 2024 Kushagra Singh
+> 
+> Permission is hereby granted, free of charge, to any person obtaining a copy
+> of this software and associated documentation files (the "Software"), to deal
+> in the Software without restriction, including without limitation the rights
+> to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+> copies of the Software, and to permit persons to whom the Software is
+> furnished to do so, subject to the following conditions:
+> 
+> The above copyright notice and this permission notice shall be included in all
+> copies or substantial portions of the Software.
+> 
+> THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+> IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+> FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+> AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+> LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+> OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+> SOFTWARE.
 
-## SpotiFLAC Mobile — MIT
-https://github.com/zarzet/SpotiFLAC-Mobile
+---
 
-`ZarzSession.kt` implements the signed-session protocol of its extension runtime
-(bootstrap, challenge, grant exchange, ZARZ-HMAC-V1 signatures, download tickets),
-written in Kotlin from that runtime.
+## NewPipeExtractor — GPL-3.0
+- Repository: https://github.com/TeamNewPipe/NewPipeExtractor
+- Author: TeamNewPipe
+- Scope: YouTube Music and YouTube streaming metadata, URL deobfuscation, and audio stream extraction.
 
-> MIT License — Copyright (c) 2026 zarzet. Same permission notice as above.
+---
 
-## SpotiFLAC Extensions — Apache-2.0
-https://github.com/zarzet/SpotiFLAC-Extension
+## LRCLIB — MIT
+- Repository: https://github.com/tranxuanthang/lrcget
+- Website: https://lrclib.net
+- Author: Tran Xuan Thang
+- Scope: Synchronized line-by-line lyric retrieval and timestamps.
 
-The request shapes of the `tidal-web` and `qobuz-web` extensions (download endpoints,
-quality names, the Tidal web token and Qobuz app id they use) are followed in
-`LosslessSource.kt`. No extension code is included.
+---
 
-> Licensed under the Apache License, Version 2.0: http://www.apache.org/licenses/LICENSE-2.0
+## Google Material Icons — Apache-2.0
+- Repository: https://github.com/google/material-design-icons
+- Author: Google LLC
+- License: Apache License 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
