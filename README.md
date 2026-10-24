@@ -16,6 +16,36 @@
   <a href="https://instagram.com/pidi.mp3"><img src="https://img.shields.io/badge/Instagram-@pidi.mp3-E4405F?logo=instagram&logoColor=white" alt="Instagram: @pidi.mp3"></a>
 </p>
 
+<p align="center">
+  <a href="https://file.kiwi/32eb06a7#rgQUTkW5X-u78gjDhmXsOQ">
+    <img src="https://img.shields.io/badge/⬇%20Download%20Latest%20APK-File.kiwi-1DB954?style=for-the-badge&logo=android&logoColor=white" alt="Download Latest APK" height="48">
+  </a>
+</p>
+
+> [!NOTE]
+> **Why is the APK hosted via File.kiwi?**  
+> GitHub's automated systems actively scan and flag repositories that distribute pre-compiled streaming/client APK binaries directly via GitHub Releases. To prevent automated DMCA/bot takedowns and keep the GitHub repository permanently safe, the compiled release APK is hosted securely on [File.kiwi](https://file.kiwi/32eb06a7#rgQUTkW5X-u78gjDhmXsOQ). It provides direct, high-speed, virus-free downloads without account requirements or download caps.
+
+---
+
+## Screenshots
+
+<div align="center">
+
+| Now Playing | Synced Lyrics | Home Screen | Search & Browse |
+| :---: | :---: | :---: | :---: |
+| <img src="assets/Spotifusion%20Screenshots/Screenshot_2026-10-25-11-50-11-911_com.spotifusion.app.jpg" width="210" alt="Now Playing"> | <img src="assets/Spotifusion%20Screenshots/Screenshot_2026-10-25-11-50-39-504_com.spotifusion.app.jpg" width="210" alt="Lyrics"> | <img src="assets/Spotifusion%20Screenshots/Screenshot_2026-10-25-11-50-04-939_com.spotifusion.app.jpg" width="210" alt="Home"> | <img src="assets/Spotifusion%20Screenshots/Screenshot_2026-10-25-11-50-01-507_com.spotifusion.app.jpg" width="210" alt="Search"> |
+
+| Your Library | Playlist View | Artist Page | User Profile |
+| :---: | :---: | :---: | :---: |
+| <img src="assets/Spotifusion%20Screenshots/Screenshot_2026-10-25-11-49-57-848_com.spotifusion.app.jpg" width="210" alt="Library"> | <img src="assets/Spotifusion%20Screenshots/Screenshot_2026-10-25-11-50-52-104_com.spotifusion.app.jpg" width="210" alt="Playlist"> | <img src="assets/Spotifusion%20Screenshots/Screenshot_2026-10-25-11-50-15-614_com.spotifusion.app.jpg" width="210" alt="Artist"> | <img src="assets/Spotifusion%20Screenshots/Screenshot_2026-10-25-11-50-22-121_com.spotifusion.app.jpg" width="210" alt="Profile"> |
+
+| Up Next Queue | Recents & Recap | Account Drawer |
+| :---: | :---: | :---: |
+| <img src="assets/Spotifusion%20Screenshots/Screenshot_2026-10-25-11-51-01-646_com.spotifusion.app.jpg" width="210" alt="Queue"> | <img src="assets/Spotifusion%20Screenshots/Screenshot_2026-10-25-11-51-25-728_com.spotifusion.app.jpg" width="210" alt="Recents"> | <img src="assets/Spotifusion%20Screenshots/Screenshot_2026-10-25-11-50-07-139_com.spotifusion.app.jpg" width="210" alt="Drawer"> |
+
+</div>
+
 ---
 
 ## Overview
@@ -85,6 +115,7 @@ The compiled release APK will be generated at:
 
 Spotifusion is built on top of incredible open-source projects across the community:
 
+- **[SpotiDuck](https://github.com/SpotiDuck)** — Inspiration, design concepts, and client optimizations.
 - **[Myspoti / Spotui](https://github.com/kota-zo/myspoti)** (GPL-3.0) — The foundational Web Player WebView bridge architecture, Compose client components, and catalog interfaces by kota-zo and the MetrolistGroup.
 - **[BitChord](https://github.com/kushagrasinghx/BitChord)** (MIT) — The high-performance track matching algorithm, NewPipe stream resolution pipeline, and range-chunked download mechanism by Kushagra Singh.
 - **[NewPipeExtractor](https://github.com/TeamNewPipe/NewPipeExtractor)** (GPL-3.0) — Advanced streaming metadata and format extraction by TeamNewPipe.

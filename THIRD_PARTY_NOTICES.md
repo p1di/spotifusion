@@ -5,6 +5,12 @@ It builds upon, incorporates, and interfaces with the open-source projects liste
 
 ---
 
+## SpotiDuck
+- Repository: https://github.com/SpotiDuck
+- Scope: Inspiration, user experience patterns, design concepts, and client optimizations.
+
+---
+
 ## Myspoti / Spotui — GPL-3.0
 - Repository: https://github.com/kota-zo/myspoti
 - Upstream: https://github.com/Spotui/Spotui
