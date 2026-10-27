@@ -22,7 +22,7 @@ android {
     // signed with the first key, as "Spotifusion Beta"; releases are "app.myspoti.stable",
     // signed with their own key, as "Spotifusion".
     // Local builds (no version given) are on the beta side, like the phone test builds.
-    val version = (findProperty("appVersionName") as String?) ?: "2.0.0"
+    val version = (findProperty("appVersionName") as String?) ?: "1.0.0"
     val beta = findProperty("appVersionName") == null || version.contains("-")
     defaultConfig {
         applicationId = "com.spotifusion.app"

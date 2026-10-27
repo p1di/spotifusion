@@ -17,14 +17,10 @@
 </p>
 
 <p align="center">
-  <a href="https://file.kiwi/32eb06a7#rgQUTkW5X-u78gjDhmXsOQ">
-    <img src="https://img.shields.io/badge/⬇%20Download%20Latest%20APK-File.kiwi-1DB954?style=for-the-badge&logo=android&logoColor=white" alt="Download Latest APK" height="48">
+  <a href="https://github.com/p1di/spotifusion/releases/latest">
+    <img src="https://img.shields.io/badge/⬇%20Download%20Latest%20Release-GitHub%20Releases-1DB954?style=for-the-badge&logo=github&logoColor=white" alt="Download Latest Release" height="48">
   </a>
 </p>
-
-> [!NOTE]
-> **Why is the APK hosted via File.kiwi?**  
-> GitHub's automated systems actively scan and flag repositories that distribute pre-compiled streaming/client APK binaries directly via GitHub Releases. To prevent automated DMCA/bot takedowns and keep the GitHub repository permanently safe, the compiled release APK is hosted securely on [File.kiwi](https://file.kiwi/32eb06a7#rgQUTkW5X-u78gjDhmXsOQ). It provides direct, high-speed, virus-free downloads without account requirements or download caps.
 
 ---
 

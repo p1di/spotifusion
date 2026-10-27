@@ -2,7 +2,7 @@
 
 Each release on GitHub shows its section below. The app shows it too when it offers the update. Every detail: [docs/CHANGELOG-full.md](docs/CHANGELOG-full.md).
 
-## 2.0.0
+## 1.0.0
 
 - **1:1 Spotify UI Redesign**: Pixel-accurate layout and spacing matching the official Spotify client across Now Playing, Library, and Navigation (transport control sizing, seek bar, Spotify Mix font, and bottom peek cards).
 - **BitChord Audio Downloads**: Full transition from SpotiFLAC to BitChord's download engine (intelligent TrackMatcher, JioSaavn 320kbps AAC, and fast range-chunked stream downloader with zero verification gates).
@@ -10,7 +10,7 @@ Each release on GitHub shows its section below. The app shows it too when it off
 - **Now Playing & Artist Enhancements**: Clickable secondary artist credits navigating to artist profiles; corrected HTML entity decoding in artist descriptions; updated repeat, shuffle, and queue icons.
 - **Account & Profile Updates**: Top gradient accent on user profiles; customized update links and bug reporting form.
 
-## 2.0.0-beta.9
+## 1.0.0-beta.9
 
 - **Fast skips during an ad or a reload**: the song your taps point to plays once the ad or the reload is over, and the screen shows that same song (the sound and the screen no longer drift apart); "previous" during an ad no longer restarts the ad.
 - **Ad breaks are stopped at the source**: the player page's own ad managers (audio and in-stream) are switched off from the app, and again each time an ad shows up, instead of patching the web player's own files (the way SpotX does it, done here at runtime so an update of the page cannot break it). The device also no longer tells Spotify it cannot read mp3 (`file_urls_mp3`) — the registration some free accounts were refused for (`402 COMMAND_FAILED`).
@@ -55,12 +55,12 @@ Each release on GitHub shows its section below. The app shows it too when it off
 - **An episode stuck at its end goes on to the next one** instead of starting again from 0:00 (the stall recovery only knew songs).
 - **Spotify's colours everywhere, and smoother motion**: switches, sliders, radio buttons, dialogs and spinners took the phone's wallpaper colours (or Material purple); they now use Spotify's green and greys. Covers fade in instead of popping, play/pause morphs instead of swapping, the mini player's colour cross-fades from one song to the next, the podcast player takes the cover's colour, unfolded Recents rows slide in, and the bottom bar's fade is dense enough that covers no longer show through the tab labels. The episode page's Play button now turns into Pause while it plays.
 
-## 2.0.0-beta.8
+## 1.0.0-beta.8
 
 - **SpotiFLAC**: when it is not verified (or the verification lapsed), Downloads and any download open the verification first, then the songs download; its page is full screen (Retry and Skip were hidden under the mini player); sessions follow SpotiFLAC Mobile's rules (renewed once, in their last hour, and a download refused because another one just renewed it is sent again), so many downloads at once no longer end the verification; you are told when it must be done again.
 - **Automatic downloads wait for Wi-Fi**: downloaded lists keep in step only on Wi-Fi; a download you start on mobile data goes ahead with a warning.
 
-## 2.0.0-beta.7
+## 1.0.0-beta.7
 
 - **Music that keeps playing**: a frozen player page is caught and reloaded in seconds, and the song goes on where it was; no more silent songs after a skip, "previous" or an ad; play right after launch works.
 - **Skips about three times faster** (~0.8 s from tap to sound instead of ~2.5 s), and much less work in the background: far fewer calls to the player page and to Spotify.
@@ -75,7 +75,7 @@ Each release on GitHub shows its section below. The app shows it too when it off
 - **GrapheneOS**: the player loads with "secure app spawning" on.
 - **GitHub Sponsors**: support Myspoti on GitHub Sponsors too, next to Ko-fi.
 
-## 2.0.0-beta.6
+## 1.0.0-beta.6
 
 - **Fewer ads abroad**: ads from other countries' ad servers are blocked, sponsored playlists and promotion shelves are hidden; ads are recognised even when they look like songs; an ad that still gets through is muted and skipped.
 - **Steadier player**: play, pause and skips go one at a time (fast taps no longer jam it), and a song that did not start is asked again.
@@ -93,7 +93,7 @@ Each release on GitHub shows its section below. The app shows it too when it off
 - **Logout** stops everything (local songs, video, notification); the data saver applies from launch.
 - Player buttons are named for TalkBack.
 
-## 2.0.0-beta.5
+## 1.0.0-beta.5
 
 - **Encrypted downloads**: downloaded songs only play in Myspoti, on your phone.
 - **Offline queue**: the queue of downloaded songs shows what really plays next, and can be edited.
@@ -107,7 +107,7 @@ Each release on GitHub shows its section below. The app shows it too when it off
 - **Fixes**: AMOLED black everywhere, lists no longer end under the mini player, full-screen music videos show, the Spotify account page stays under the status bar, "Saved in" confirms each change, fast skips no longer jam the player, no white screen on phones in light mode.
 - **Security and reliability fixes** (Android Auto, library pages, logout, links, video lookups).
 
-## 2.0.0
+## 1.0.0
 
 A new engine, written from scratch, and a cleaner app on top of it.
 
