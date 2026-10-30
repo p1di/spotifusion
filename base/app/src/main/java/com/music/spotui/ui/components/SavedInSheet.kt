@@ -1,5 +1,9 @@
 package com.music.spotui.ui.components
 
+import com.music.spotui.ui.theme.tone
+import com.music.spotui.ui.theme.AppText
+import com.music.spotui.ui.theme.AppMuted
+
 import androidx.compose.ui.res.stringResource
 
 import android.content.Context
@@ -109,10 +113,10 @@ fun SavedInSheet(
         onDismiss()
     }
 
-    ModalBottomSheet(
+    com.music.spotui.ui.components.LookSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = Color(0xFF1A1A1A),
+        containerColor = tone(0xFF1A1A1A),
     ) {
         Column(modifier = Modifier.navigationBarsPadding().imePadding()) {
             Row(
@@ -124,10 +128,10 @@ fun SavedInSheet(
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f, fill = false)) {
                     if (folder != null) Icon(
-                        Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, tint = Color.White,
+                        Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, tint = AppText,
                         modifier = Modifier.padding(end = 12.dp).size(24.dp).clickable { folders.removeAt(folders.lastIndex) },
                     )
-                    Text(folder?.second ?: stringResource(R.string.add_to_playlist_saved_in_section_header), color = Color.White,
+                    Text(folder?.second ?: stringResource(R.string.add_to_playlist_saved_in_section_header), color = AppText,
                         fontSize = 20.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
                 Text(
@@ -151,10 +155,10 @@ fun SavedInSheet(
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                     keyboardActions = KeyboardActions(onDone = { createNow() }),
                     colors = TextFieldDefaults.colors(
-                        focusedContainerColor = Color(0xFF2A2A2A),
-                        unfocusedContainerColor = Color(0xFF2A2A2A),
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White,
+                        focusedContainerColor = tone(0xFF2A2A2A),
+                        unfocusedContainerColor = tone(0xFF2A2A2A),
+                        focusedTextColor = AppText,
+                        unfocusedTextColor = AppText,
                         cursorColor = SpotifyGreen,
                         focusedIndicatorColor = Color.Transparent,
                         unfocusedIndicatorColor = Color.Transparent,
@@ -203,7 +207,7 @@ fun SavedInSheet(
                                 Brush.linearGradient(listOf(Color(0xFF4A39EA), Color(0xFF868AE1)))
                             ),
                     ) {
-                        Icon(Icons.Default.Favorite, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
+                        Icon(Icons.Default.Favorite, contentDescription = null, tint = AppText, modifier = Modifier.size(20.dp))
                     }
                 },
             ) {
@@ -291,15 +295,15 @@ private fun FolderRow(name: String, subtitle: String, onOpen: () -> Unit) {
     ) {
         Box(
             contentAlignment = Alignment.Center,
-            modifier = Modifier.size(48.dp).clip(RoundedCornerShape(4.dp)).background(Color(0xFF333333)),
+            modifier = Modifier.size(48.dp).clip(RoundedCornerShape(4.dp)).background(tone(0xFF333333)),
         ) {
-            Icon(Icons.Outlined.Folder, contentDescription = null, tint = Color(0xFFB3B3B3), modifier = Modifier.size(24.dp))
+            Icon(Icons.Outlined.Folder, contentDescription = null, tint = AppMuted, modifier = Modifier.size(24.dp))
         }
         Column(Modifier.padding(start = 12.dp).weight(1f)) {
-            Text(name, color = Color.White, fontSize = 15.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Text(subtitle, color = Color(0xFFB3B3B3), fontSize = 13.sp, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+            Text(name, color = AppText, fontSize = 15.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(subtitle, color = AppMuted, fontSize = 13.sp, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
         }
-        Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = Color(0xFFB3B3B3))
+        Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = AppMuted)
     }
 }
 
@@ -327,7 +331,7 @@ private fun SavedInRow(
                 .weight(1f)
                 .padding(start = 14.dp, end = 8.dp),
         ) {
-            Text(name, color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(name, color = AppText, fontSize = 15.sp, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
             if (subtitle.isNotBlank()) {
                 Text(subtitle, color = Color.Gray, fontSize = 13.sp, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
             }
@@ -335,7 +339,7 @@ private fun SavedInRow(
         if (saved) {
             Icon(Icons.Default.CheckCircle, contentDescription = stringResource(R.string.curation_button_saved_text), tint = SpotifyGreen, modifier = Modifier.size(26.dp))
         } else {
-            Icon(Icons.Default.Add, contentDescription = stringResource(R.string.add_to_playlist_new_playlist_button_text), tint = Color(0xFFB3B3B3), modifier = Modifier.size(26.dp))
+            Icon(Icons.Default.Add, contentDescription = stringResource(R.string.add_to_playlist_new_playlist_button_text), tint = AppMuted, modifier = Modifier.size(26.dp))
         }
     }
 }

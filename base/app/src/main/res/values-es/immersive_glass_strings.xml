@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_liquid_glass_title">Liquid Glass</string>
+    <string name="settings_liquid_glass_detail">Las barras se curvan y reflejan la página que hay detrás, como el cristal</string>
+    <string name="settings_liquid_glass_unsupported">Requiere Android 12 o posterior</string>
+    <string name="settings_liquid_glass_reduced">Se usa un efecto esmerilado mientras el teléfono reduce el desenfoque o las animaciones</string>
+    <string name="immersive_expand_tab_bar">Mostrar todas las pestañas</string>
+</resources>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="immersive_lyrics_instrumental">Strumentale</string>
+    <string name="immersive_lyrics_none">Nessun testo per questo brano</string>
+    <string name="immersive_queue_title">Coda</string>
+    <string name="immersive_queue_now_playing">In riproduzione</string>
+    <string name="immersive_queue_empty">Niente in coda</string>
+    <string name="immersive_queue_remove">Rimuovi dalla coda</string>
+    <string name="immersive_queue_reorder">Sposta nella coda</string>
+    <string name="immersive_queue_shuffle">Casuale</string>
+    <string name="immersive_queue_repeat">Ripeti</string>
+</resources>

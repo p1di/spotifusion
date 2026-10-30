@@ -17,7 +17,6 @@
     <string name="snackbar_added_to_liked_songs" formatted="false">लाईक केलेल्या गाण्यामध्ये जोडले.</string>
     <string name="snackbar_removed_from_liked_songs" formatted="false">लाइक केलेल्या गाण्यांमधून हटवले.</string>
     <string name="content_description_context_menu" formatted="false">अधिक पर्याय</string>
-    <string name="close_button_content_description" formatted="false">बंद करा</string>
     <string name="add_to_playlist_saved_in_section_header" formatted="false">मध्ये सेव्ह केले</string>
     <string name="add_to_playlist_new_playlist_button_text" formatted="false">नवीन प्लेलिस्ट</string>
     <string name="add_to_playlist_button_cancel" formatted="false">रद्द करा</string>
@@ -25,8 +24,6 @@
     <string name="lyrics_card_title" formatted="false">गाण्याचे बोल</string>
     <string name="lyrics_card_title_preview" formatted="false">गाण्याच्या बोलाचे पूर्वावलोकन</string>
     <string name="lyrics_card_show_lyrics_button" formatted="false">गाण्याचे बोल दर्शवा</string>
-    <string name="lyrics_card_expand_button_content_description" formatted="false">फुलस्क्रीन गाण्याचे बोल उघडा</string>
-    <string name="lyrics_card_share_button_content_description" formatted="false">गाण्याचे बोल शेअर करा</string>
     <string name="lyrics_credential_note" formatted="false">गीत %1$s द्वारे शब्दबद्ध केले आहेत</string>
     <string name="lyrics_fullscreen_chip_label_share" formatted="false">शेअर करा</string>
     <string name="lyrics_fullscreen_chip_label_translate" formatted="false">भाषांतर करा</string>
@@ -49,7 +46,6 @@
     <string name="artist_popular_tracks" formatted="false">लोकप्रिय</string>
     <string name="curation_button_follow_state_text" formatted="false">फॉलो करा</string>
     <string name="curation_button_following_state_text" formatted="false">फॉलो करत आहे</string>
-    <string name="search_main_entity_subtitle_artist" formatted="false">कलाकार</string>
     <string name="connect_phone_is_self" formatted="false">हा फोन</string>
     <string name="settings_item_canvas_title" formatted="false">Canvas</string>
     <string name="video_settings_canvas_subtitle" formatted="false">गाणे प्ले होत असताना लहान, लूपमध्ये चालणारी व्हिज्युअल.</string>
@@ -107,8 +103,6 @@
     <string name="library_search_text_hint" formatted="false">तुमची लायब्ररी शोधा</string>
     <string name="account_title" formatted="false">खाते</string>
     <string name="song_dna_search_chip_followed_artists" formatted="false">फॉलो केलेले कलाकार</string>
-    <string name="settings_item_crossfade_title" formatted="false">क्रॉसफेड</string>
-    <string name="playback_settings_crossfade_slider_seconds" formatted="false">%1$d से</string>
     <string name="local_files_title" formatted="false">स्थानिक फाइल्स</string>
     <string name="local_files_empty_section_title" formatted="false">तुमच्या स्वतःच्या ऑडिओ फाइल तुमच्या लायब्ररीमध्ये जोडा</string>
     <string name="local_files_empty_section_subtitle" formatted="false">Spotify वर नसलेले गाणे किंवा वैयक्तिक पॉडकास्ट मिळाले?</string>
@@ -138,14 +132,10 @@
     <string name="assisted_curation_search_filter_artists" formatted="false">कलाकार</string>
     <string name="assisted_curation_search_filter_albums" formatted="false">अल्बम</string>
     <string name="assisted_curation_search_filter_playlists" formatted="false">प्लेलिस्ट</string>
-    <string name="assisted_curation_search_filter_clear_content_description" formatted="false">फिल्टर साफ करा</string>
-    <string name="ad_category_title_music" formatted="false">संगीत</string>
-    <string name="made_for_you_hub_title" formatted="false">तुमच्यासाठी बनवलेले</string>
     <string name="settings_item_app_language_title" formatted="false">अ‍ॅप भाषा</string>
     <string name="create_menu_item_folder_title" formatted="false">फोल्‍डर</string>
     <string name="create_folder_name_suggested_folder_name" formatted="false">नवीन फोल्‍डर</string>
     <string name="context_menu_rename_folder" formatted="false">फोल्डरचे नाव बदला</string>
-    <string name="your_library_messaging_folder_rename_hint" formatted="false">फोल्डरचे नाव</string>
     <string name="create_playlist_content_description" formatted="false">प्लेलिस्ट तयार करा</string>
     <string name="actions_picker_delete" formatted="false">हटवा</string>
     <string name="filter_and_sort_sort_section_title" formatted="false">द्वारा क्रमवारी</string>

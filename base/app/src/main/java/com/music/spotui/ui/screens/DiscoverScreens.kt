@@ -1,5 +1,10 @@
 package com.music.spotui.ui.screens
 
+import com.music.spotui.ui.components.wideClickable
+import com.music.spotui.ui.theme.tone
+import com.music.spotui.ui.theme.AppText
+import com.music.spotui.ui.theme.AppMuted
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -24,6 +29,7 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
@@ -57,10 +63,12 @@ import com.music.spotui.data.local.ListenHistory
 import com.music.spotui.di.Graph
 import com.music.spotui.di.SongPlayer
 import com.music.spotui.ui.navigation.albumRoute
+import com.music.spotui.ui.navigation.episodeRoute
+import com.music.spotui.ui.navigation.showRoute
 import com.music.spotui.ui.theme.AppAccent
 
 private val Background: Color get() = com.music.spotui.ui.theme.AppBackground
-private val Subtle = Color(0xFFB3B3B3)
+private val Subtle: androidx.compose.ui.graphics.Color get() = AppMuted
 
 @Composable
 private fun ScreenHeader(title: String, navController: NavController) {
@@ -71,24 +79,30 @@ private fun ScreenHeader(title: String, navController: NavController) {
         Icon(
             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
             contentDescription = stringResource(R.string.accessibility_navigate_back),
-            tint = Color.White,
-            modifier = Modifier.size(40.dp).clip(RoundedCornerShape(20.dp)).clickable { navController.popBackStack() }.padding(8.dp),
+            tint = AppText,
+            modifier = Modifier.wideClickable(horizontal = 8.dp, vertical = 10.dp) { navController.popBackStack() }.size(40.dp).padding(8.dp),
         )
-        Text(title, fontWeight = FontWeight.Bold, color = Color.White, fontSize = 22.sp, maxLines = 1,
+        Text(title, fontWeight = FontWeight.Bold, color = AppText, fontSize = 22.sp, maxLines = 1,
             overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(start = 6.dp))
     }
 }
 
 @Composable
-private fun Loading() = Box(Modifier.fillMaxWidth().padding(40.dp), contentAlignment = Alignment.Center) {
-    CircularProgressIndicator(color = AppAccent)
-}
+private fun Loading() = com.music.spotui.ui.components.SkeletonList(count = 7)
 
 @Composable
 private fun SectionTitle(text: String) =
-    Text(text, color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(16.dp, 18.dp, 16.dp, 8.dp))
+    Text(text, color = AppText, fontSize = 20.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(16.dp, 18.dp, 16.dp, 8.dp))
 
-private data class ReleaseTile(val id: String, val name: String, val artists: String, val cover: String, val detail: String)
+/** [kind] is the Spotify uri type ("album", "show" or "episode"): the what's-new feed also carries followed podcasts. */
+internal data class ReleaseTile(val id: String, val name: String, val artists: String, val cover: String, val detail: String, val kind: String = "album")
+
+/** The page a tile opens: a show and an episode have their own pages, an album tile opens the album. */
+internal fun ReleaseTile.route(): String = when (kind) {
+    "show" -> showRoute(id, name)
+    "episode" -> episodeRoute(id, name)
+    else -> albumRoute(name, artists, id)
+}
 
 /** "New releases": what the followed artists just released, then the latest albums Spotify features. */
 @OptIn(ExperimentalGlideComposeApi::class)
@@ -98,7 +112,8 @@ fun NewReleasesScreen(navController: NavController) {
         value = runCatching {
             MyspotiRuntime.api.home.whatsNew(0, 50).items.map { a ->
                 ReleaseTile(a.uri.substringAfterLast(':'), a.name, a.artists.joinToString(", ") { it.name },
-                    a.images.best(300)?.url.orEmpty(), listOfNotNull(a.type.lowercase().replaceFirstChar { it.uppercase() }, a.releaseDate?.take(10)).joinToString(" • "))
+                    a.images.best(300)?.url.orEmpty(), listOfNotNull(a.type.lowercase().replaceFirstChar { it.uppercase() }, a.releaseDate?.take(10)).joinToString(" • "),
+                    a.uri.split(':').getOrElse(1) { "album" })
             }
         }.getOrDefault(emptyList())
     }
@@ -110,7 +125,7 @@ fun NewReleasesScreen(navController: NavController) {
     Column(Modifier.fillMaxSize().background(Background).statusBarsPadding()) {
         ScreenHeader(stringResource(R.string.browse_new_releases), navController)
         LazyVerticalGrid(
-            columns = GridCells.Fixed(2),
+            columns = GridCells.Fixed(com.music.spotui.ui.components.windowSize().columns(2, 200.dp)),
             contentPadding = PaddingValues(12.dp, 0.dp, 12.dp, com.music.spotui.ui.components.bottomBarsSpace()),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -124,12 +139,12 @@ fun NewReleasesScreen(navController: NavController) {
                         Text(stringResource(R.string.nothing_here), color = Subtle, fontSize = 14.sp, modifier = Modifier.padding(16.dp, 4.dp))
                     }
                     else -> items(list, key = { "$title:${it.id}" }) { t ->
-                        Column(Modifier.clickable { navController.navigate(albumRoute(t.name, t.artists, t.id)) }) {
+                        Column(Modifier.clickable { navController.navigate(t.route()) }) {
                             GlideImage(transition = CrossFade, model = t.cover, contentDescription = null, contentScale = ContentScale.Crop,
                                 modifier = Modifier.fillMaxWidth().aspectRatio(1f).clip(RoundedCornerShape(6.dp)))
-                            Text(t.name, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold, lineHeight = 16.sp, minLines = 2, maxLines = 2,
+                            Text(t.name, color = AppText, fontSize = 13.sp, fontWeight = FontWeight.Bold, lineHeight = 16.sp, minLines = 2, maxLines = 2,
                                 overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 6.dp))
-                            Text(t.detail.ifBlank { t.artists }, color = Color.Gray, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Text(t.detail.ifBlank { t.artists }, color = AppMuted, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         }
                     }
                 }
@@ -145,13 +160,32 @@ fun NewReleasesScreen(navController: NavController) {
 @Composable
 fun EpisodesScreen(navController: NavController) {
     val episodes by produceState<List<com.music.spotui.data.entity.SongsModel>?>(null) { value = Graph.api.getSavedEpisodes() }
+    var filter by remember { mutableStateOf(com.music.spotui.data.preferences.PodcastPrefs.libraryFilter()) }
     Column(Modifier.fillMaxSize().background(Background).statusBarsPadding()) {
         ScreenHeader(stringResource(R.string.your_episodes_title), navController)
         when (val list = episodes) {
             null -> Loading()
             else -> if (list.isEmpty()) Text(stringResource(R.string.your_episodes_empty), color = Subtle, fontSize = 14.sp, modifier = Modifier.padding(20.dp))
             else LazyColumn(contentPadding = PaddingValues(bottom = com.music.spotui.ui.components.bottomBarsSpace())) {
-                items(list, key = { it.url }) { e ->
+                item(key = "filter") {
+                    Text(
+                        text = stringResource(com.music.spotui.ui.components.episodeFilterLabel(filter)),
+                        color = if (filter == com.music.spotui.data.preferences.EpisodeFilter.ALL) AppText.copy(alpha = 0.8f) else AppAccent,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier
+                            .clickable {
+                                filter = filter.next()
+                                com.music.spotui.data.preferences.PodcastPrefs.setLibraryFilter(filter)
+                            }
+                            .padding(16.dp, 12.dp),
+                    )
+                }
+                val shown = filter.apply(list) { it.played }
+                if (shown.isEmpty()) item(key = "all-played") {
+                    Text(stringResource(R.string.show_filter_all_played), color = Subtle, fontSize = 14.sp, modifier = Modifier.padding(20.dp))
+                }
+                items(shown, key = { it.url }) { e ->
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.fillMaxWidth().clickable {
@@ -162,9 +196,14 @@ fun EpisodesScreen(navController: NavController) {
                         GlideImage(transition = CrossFade, model = e.coverUri, contentDescription = null, contentScale = ContentScale.Crop,
                             modifier = Modifier.size(56.dp).clip(RoundedCornerShape(6.dp)))
                         Column(Modifier.padding(start = 12.dp).weight(1f)) {
-                            Text(e.title, color = Color.White, fontSize = 15.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                            Text(e.title, color = AppText, fontSize = 15.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
                             Text(e.singer + " • " + formatMinutes(e.durationMs / 60_000L), color = Subtle, fontSize = 12.sp, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                            if (!e.played) {
+                                Spacer(Modifier.height(4.dp))
+                                com.music.spotui.ui.components.EpisodeProgressBar(e.playedPositionMs, e.durationMs, AppAccent, AppText.copy(alpha = 0.15f))
+                            }
                         }
+                        if (e.played) Icon(Icons.Default.Check, contentDescription = stringResource(R.string.episode_marked_played), tint = AppAccent, modifier = Modifier.padding(start = 8.dp).size(18.dp))
                     }
                 }
             }
@@ -192,21 +231,24 @@ fun RecapScreen(navController: NavController) {
         }
     }
     val recap = loaded ?: ListenHistory.Recap(0, 0, emptyMap(), emptyList(), emptyList(), emptyList())
+    // Spotify's ranking of the account first (the official "Listening stats"), then this phone's counter.
+    var tab by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(0) }
     Column(Modifier.fillMaxSize().background(Background).statusBarsPadding()) {
         ScreenHeader(stringResource(R.string.recap_title), navController)
-        LazyColumn(contentPadding = PaddingValues(bottom = com.music.spotui.ui.components.bottomBarsSpace())) {
+        StatsTabs(tab) { tab = it }
+        if (tab == 0) SpotifyStatsTab(navController) else LazyColumn(contentPadding = PaddingValues(bottom = com.music.spotui.ui.components.bottomBarsSpace())) {
             item {
-                Row(Modifier.padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(Modifier.padding(16.dp, 12.dp, 16.dp, 0.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     periods.forEachIndexed { i, (label, _) ->
                         FilterChip(selected = i == period, onClick = { period = i }, label = { Text(stringResource(label)) },
                             colors = FilterChipDefaults.filterChipColors(selectedContainerColor = AppAccent, selectedLabelColor = Color.Black,
-                                labelColor = Color.White, containerColor = Color(0xFF2A2A2A)))
+                                labelColor = AppText, containerColor = tone(0xFF2A2A2A)))
                     }
                 }
             }
             item {
                 Column(Modifier.padding(16.dp, 20.dp)) {
-                    Text(stringResource(R.string.recap_minutes, recap.minutes), color = Color.White, fontSize = 30.sp, fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.recap_minutes, recap.minutes), color = AppText, fontSize = 30.sp, fontWeight = FontWeight.Bold)
                     Text(stringResource(R.string.recap_listens, recap.listens), color = Subtle, fontSize = 14.sp)
                     Spacer(Modifier.height(10.dp))
                     val src = recap.bySource
@@ -215,6 +257,7 @@ fun RecapScreen(navController: NavController) {
                         color = Subtle, fontSize = 13.sp)
                 }
             }
+            item { WeeklyMinutesChart() }
             if (recap.listens == 0) item {
                 Text(stringResource(R.string.recap_empty), color = Subtle, fontSize = 14.sp, modifier = Modifier.padding(16.dp))
             }
@@ -228,7 +271,7 @@ fun RecapScreen(navController: NavController) {
                         GlideImage(transition = CrossFade, model = r.cover, contentDescription = null, contentScale = ContentScale.Crop,
                             modifier = Modifier.size(48.dp).clip(RoundedCornerShape(4.dp)))
                         Column(Modifier.padding(start = 12.dp).weight(1f)) {
-                            Text(r.name, color = Color.White, fontSize = 15.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Text(r.name, color = AppText, fontSize = 15.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                             Text(listOf(r.subtitle, stringResource(R.string.recap_plays, r.count)).filter { it.isNotBlank() }.joinToString(" • "),
                                 color = Subtle, fontSize = 12.sp, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
                         }

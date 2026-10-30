@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="immersive_screens_account">Λογαριασμός</string>
+    <string name="immersive_screens_account_page">Σελίδα λογαριασμού</string>
+    <string name="immersive_screens_account_page_detail">Πρόγραμμα, απόρρητο και συσκευές</string>
+    <string name="immersive_screens_top_result">Κορυφαίο αποτέλεσμα</string>
+    <string name="immersive_screens_reset_order">Επιστροφή στην προεπιλεγμένη σειρά</string>
+</resources>

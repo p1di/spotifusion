@@ -1,5 +1,11 @@
 package com.music.spotui.ui.components
 
+import com.music.spotui.ui.theme.tone
+import com.music.spotui.ui.theme.AppText
+import com.music.spotui.ui.theme.AppMuted
+import com.music.spotui.ui.theme.AppBackground
+import com.music.spotui.ui.theme.AppAccent
+
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -88,7 +94,7 @@ fun BetaLogButton(modifier: Modifier = Modifier) {
     ) {
         val g = grow.value
         BugIcon(
-            color = androidx.compose.ui.graphics.lerp(Color(0xFFB3B3B3), Color(0xFF1DB954), g),
+            color = androidx.compose.ui.graphics.lerp(AppMuted, AppAccent, g),
             modifier = Modifier.size((16 + 12 * g).dp),
         )
     }
@@ -125,19 +131,20 @@ private const val HOLD_MS = 900
 
 @Composable
 private fun LogsDialog(onDismiss: () -> Unit) {
+    com.music.spotui.extensions.ProtectedSurfaceEffect(app.myspoti.extensions.ProtectedSurface.REPORT)
     val context = LocalContext.current
     var text by remember { mutableStateOf<String?>(null) }
     LaunchedEffect(Unit) { text = BetaLogs.recent() }
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
-        Column(Modifier.fillMaxSize().background(Color(0xFF121212)).statusBarsPadding().navigationBarsPadding()) {
+        Column(Modifier.fillMaxSize().background(AppBackground).statusBarsPadding().navigationBarsPadding()) {
             Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text(stringResource(R.string.beta_logs_title, BetaLogs.MINUTES), color = Color.White, fontSize = 17.sp,
+                Text(stringResource(R.string.beta_logs_title, BetaLogs.MINUTES), color = AppText, fontSize = 17.sp,
                     modifier = Modifier.weight(1f).padding(start = 8.dp))
-                TextButton(onClick = onDismiss) { Text(stringResource(R.string.beta_logs_close), color = Color(0xFFB3B3B3)) }
+                TextButton(onClick = onDismiss) { Text(stringResource(R.string.beta_logs_close), color = AppMuted) }
             }
             Box(Modifier.weight(1f).fillMaxWidth().padding(horizontal = 8.dp)) {
                 val logs = text
-                if (logs == null) CircularProgressIndicator(Modifier.align(Alignment.Center), color = Color(0xFF1DB954))
+                if (logs == null) CircularProgressIndicator(Modifier.align(Alignment.Center), color = AppAccent)
                 else SelectionContainer {
                     // The newest lines matter most: the view opens scrolled to the end.
                     val scroll = rememberScrollState()
@@ -148,10 +155,10 @@ private fun LogsDialog(onDismiss: () -> Unit) {
             }
             Row(Modifier.fillMaxWidth().padding(8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)) {
                 TextButton(onClick = { text?.let { share(context, it) } }, enabled = text != null) {
-                    Text(stringResource(R.string.beta_logs_share), color = Color.White)
+                    Text(stringResource(R.string.beta_logs_share), color = AppText)
                 }
                 TextButton(onClick = { text?.let { copy(context, it) } }, enabled = text != null,
-                    modifier = Modifier.background(Color(0xFF1DB954), RoundedCornerShape(20.dp))) {
+                    modifier = Modifier.background(AppAccent, RoundedCornerShape(20.dp))) {
                     Text(stringResource(R.string.beta_logs_copy), color = Color.Black)
                 }
             }

@@ -43,15 +43,9 @@ object PlaybackCacheManager {
                 if (id.isBlank() || OfflineStore.isDownloaded(id) || PlaybackCacheStore.isCached(id)) continue
                 runCatching {
                     val audioFile = PlaybackCacheStore.createCacheFile(id)
-                    val hit = com.music.spotui.video.YouTubeSource.findSong(song.title, song.singer, song.durationMs.toLong())
-                        ?: com.music.spotui.video.YouTubeSource.findAudio(song.title, song.singer, song.durationMs.toLong())
-                    if (hit != null) {
-                        com.music.spotui.video.MusicVideoController.downloadAudioFile(hit.url, audioFile)
-                    } else {
-                        val fallback = OfflineDownloader.fetchFallbackAudioFile(id, song.title, song.singer, song.durationMs.toLong())
-                        if (fallback != null && fallback.isFile && fallback.length() > 10_000L) {
-                            fallback.copyTo(audioFile, overwrite = true)
-                        }
+                    val fallback = OfflineDownloader.fetchFallbackAudioFile(id, song.title, song.singer, song.durationMs.toLong())
+                    if (fallback != null && fallback.isFile && fallback.length() > 10_000L) {
+                        fallback.copyTo(audioFile, overwrite = true)
                     }
                     if (audioFile.isFile && audioFile.length() > 10_000L) {
                         PlaybackCacheStore.addTrack(
@@ -88,5 +82,9 @@ object PlaybackCacheManager {
     fun onTrackReplayed(trackId: String) {
         if (trackId.isBlank()) return
         PlaybackCacheStore.cancelPendingPurge(trackId)
+    }
+
+    fun clearCache() {
+        PlaybackCacheStore.clearAll()
     }
 }

@@ -1,13 +1,10 @@
 package com.music.spotui.data.offline
 
-import android.net.Uri
-import android.util.Base64
 import android.util.Log
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.snapshots.SnapshotStateMap
 import com.music.spotui.data.entity.SongsModel
-import com.music.spotui.data.preferences.DownloadQuality
-import com.music.spotui.data.preferences.isLosslessEnabled
+import com.music.spotui.data.preferences.isDownloadsEnabled
 import com.music.spotui.di.Graph
 import com.music.spotui.video.InterruptibleHttp
 import com.music.spotui.video.YouTubeSource
@@ -24,48 +21,51 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runInterruptible
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import okhttp3.HttpUrl.Companion.toHttpUrl
+import kotlinx.coroutines.sync.withPermit
 import org.json.JSONArray
 import org.json.JSONObject
+import java.io.File
+import java.io.IOException
+import java.io.RandomAccessFile
+import java.util.Locale
+import javax.crypto.Cipher
+import javax.crypto.spec.SecretKeySpec
+import kotlin.math.abs
+import android.net.Uri
+import android.util.Base64
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import org.schabi.newpipe.extractor.MediaFormat
 import org.schabi.newpipe.extractor.services.youtube.linkHandler.YoutubeSearchQueryHandlerFactory
 import org.schabi.newpipe.extractor.stream.AudioStream
 import org.schabi.newpipe.extractor.stream.DeliveryMethod
-import java.io.File
-import java.io.IOException
-import java.io.RandomAccessFile
-import java.net.HttpURLConnection
-import java.net.URL
-import java.util.Locale
+import com.music.spotui.extensions.MediaHttp
 import java.util.concurrent.ConcurrentHashMap
-import javax.crypto.Cipher
-import javax.crypto.spec.SecretKeySpec
-import kotlin.math.abs
 
 /**
- * Downloads songs for offline listening using BitChord's download mechanism:
+ * Downloads songs for offline listening. Spotify only gives the track (title, artist,
+ * duration, ISRC); where the audio file is, and that it is the right recording, is the job
+ * of a `download-source` extension (docs/extensions/API.md §3), which answers the files it
+ * has, best first. Myspoti then:
  *
- * 1. **TrackMatcher**: Matches Spotify metadata (`title`, `artist`, `album`, `durationMs`)
- *    against YouTube Music `SONGS` (and JioSaavn 320kbps AAC/MP4 when available), rejecting
- *    version mismatches (`remix`, `live`, `instrumental`, `karaoke`, `acapella`, `cover`,
- *    `sped up`, `slowed`, `reverb`, `nightcore`, `8d`, etc. unless present in the target title)
- *    and scoring by title core, artist overlap, and tight duration match.
- * 2. **StreamResolver**: Serializes NewPipeExtractor `StreamInfo` extraction via `extractionGate`
- *    so Rhino JS deobfuscation never contends across download workers, selecting progressive
- *    M4A (`.m4a`) or WebM/Opus (`.webm`) audio streams according to the chosen quality.
- * 3. **PlayerClient + Range-Chunked Downloader**: Recovers the minting client (`IOS`,
- *    `ANDROID_VR`, `ANDROID_MUSIC`, `ANDROID`, `WEB_REMIX`, `WEB`, `TVHTML5`, `VISIONOS`) from
- *    the `googlevideo.com` URL's `c=` and `cver=` query params, attaches its exact `User-Agent`,
- *    `Origin`, and `Referer` headers, and downloads in bounded range chunks (`1 MB`, or `512 KB`
- *    for `ANDROID_VR`) to bypass `googlevideo.com` continuous-GET throttling, re-resolving once
- *    on HTTP 403/404/410.
+ * 1. fetches the first file that works (a FLAC, a DASH manifest of FLAC frames joined
+ *    into one FLAC, or an M4A / MP3);
+ * 2. checks what any file must pass, whoever sent it: real, decodable audio whose length
+ *    is the song's (Spotify's duration), so a preview or another cut is refused;
+ * 3. keeps it encrypted ([OfflineCrypto]), with its cover, in the Downloaded list.
+ *
+ * No extension giving download files: downloads say to install one. Nothing that fails the
+ * check is kept: the song is marked unavailable instead.
  */
 object OfflineDownloader {
     private const val TAG = "Offline"
     private const val WORKERS = 3
+    /** A file may be this much shorter than the song (seconds): more is a preview or a cut. */
+    private const val SHORTER_MAX = 5
+    /** And this much longer (trailing silence, a longer intro): more is another version. */
+    private const val LONGER_MAX = 15
 
     data class Request(
         val trackId: String,
@@ -96,6 +96,9 @@ object OfflineDownloader {
 
     private class Unavailable(message: String) : Exception(message)
 
+    /** Two AAC encodes at once at most: the CPU stays free for the rest of the app. */
+    private val encodeSlots = kotlinx.coroutines.sync.Semaphore(2)
+
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     /** Songs queued, downloading, or whose download did not succeed (for the Downloaded list). */
     val requests: SnapshotStateMap<String, Request> = mutableStateMapOf()
@@ -103,8 +106,6 @@ object OfflineDownloader {
     /** Requests not finished yet, in order (persisted: a restart resumes them). */
     private val pending = LinkedHashMap<String, Request>()
     private val running = ConcurrentHashMap<String, Job>()
-    /** BitChord extraction gate: serializes NewPipe Rhino JS signature deobfuscation. */
-    private val extractionGate = Mutex()
     @Volatile private var started = false
 
     private fun start() {
@@ -118,53 +119,75 @@ object OfflineDownloader {
 
     /** Re-queues what was waiting when the app last stopped. */
     fun resumePending() {
-        val saved = runCatching {
-            val a = JSONArray(OfflineStore.pendingFile.readText())
-            (0 until a.length()).map { Request.fromJson(a.getJSONObject(it)) }
-        }.getOrDefault(emptyList())
-        if (saved.isNotEmpty()) enqueueAll(saved)
+        // Read off the main thread (the app is already drawing): the queue fills a moment later.
+        scope.launch {
+            val saved = runCatching {
+                val a = JSONArray(OfflineStore.pendingFile.readText())
+                (0 until a.length()).map { Request.fromJson(a.getJSONObject(it)) }
+            }.getOrDefault(emptyList())
+            if (saved.isNotEmpty()) enqueueAll(saved)
+        }
     }
 
     /**
      * Downloads [songs] in [quality] (asked when the setting is "ask each time"), else in
-     * the quality chosen in Settings. No SpotiFLAC verification gate is required.
+     * the quality chosen in Settings.
      */
-    fun enqueue(
-        songs: List<SongsModel>,
-        quality: DownloadQuality? = null,
-        verifiedOrSkipped: Boolean = false,
-        /** Started by the app (a downloaded list keeping in step), not by a tap. */
-        auto: Boolean = false,
-    ) {
-        if (!isLosslessEnabled(Graph.app)) {
+    /**
+     * Whether a download can start now, said in a toast when not: downloads switched off in
+     * Settings (instead of a list of failed songs), or no extension giving download files (where to
+     * get one, for a download the user asked for). A list is only marked downloaded when this holds.
+     */
+    fun ready(auto: Boolean = false): Boolean {
+        if (!isDownloadsEnabled(Graph.app)) {
             scope.launch(Dispatchers.Main) {
                 android.widget.Toast.makeText(Graph.app, app.myspoti.engine.R.string.downloads_off_toast, android.widget.Toast.LENGTH_LONG).show()
             }
-            return
+            return false
         }
-        if (auto) {
-            if (com.music.spotui.data.DataSaver.metered || !OfflineStore.isOnline(Graph.app)) {
-                OfflineCollections.waitForWifi()
-                return
+        if (!com.music.spotui.extensions.Extensions.hasDownloadSource()) {
+            if (!auto) scope.launch(Dispatchers.Main) {
+                android.widget.Toast.makeText(Graph.app, app.myspoti.engine.R.string.downloads_need_source, android.widget.Toast.LENGTH_LONG).show()
             }
-        } else {
-            val prefs = Graph.app.getSharedPreferences("offline_stats_warning", android.content.Context.MODE_PRIVATE)
-            if (!prefs.getBoolean("dont_show_again", false)) {
+            return false
+        }
+        return true
+    }
+
+    fun enqueue(
+        songs: List<SongsModel>,
+        quality: com.music.spotui.data.preferences.DownloadQuality? = null,
+        /** Started by the app (a downloaded list keeping in step), not by a tap. */
+        auto: Boolean = false,
+    ) {
+        if (!ready(auto)) return
+        if (!auto) {
+            val prefs = Graph.app.getSharedPreferences("myspoti_prefs", android.content.Context.MODE_PRIVATE)
+            if (!prefs.getBoolean("hide_offline_stats_warning", false)) {
                 scope.launch(Dispatchers.Main) {
                     com.music.spotui.offlineStatsWarningOpen.value = true
                 }
             }
-            if (com.music.spotui.data.DataSaver.metered) scope.launch(Dispatchers.Main) {
+        }
+        if (auto) {
+            // Automatic downloads wait for Wi-Fi (never the user's mobile data): the next sync takes them.
+            if (com.music.spotui.data.DataSaver.metered || !OfflineStore.isOnline(Graph.app)) { OfflineCollections.waitForWifi(); return }
+        } else if (com.music.spotui.data.DataSaver.metered) {
+            // Asked for by the user on mobile data: it goes ahead, but they are told.
+            scope.launch(Dispatchers.Main) {
                 android.widget.Toast.makeText(Graph.app, app.myspoti.engine.R.string.download_on_mobile_data, android.widget.Toast.LENGTH_LONG).show()
             }
         }
-        val q = quality?.let { DownloadQuality.saved(it.name) }?.name.orEmpty()
+        val q = quality?.let { com.music.spotui.data.preferences.DownloadQuality.saved(it.name) }?.name.orEmpty()
+        // Episodes go to PodcastDownloader: their id is no track id, so the download-source lookup
+        // would 404 (or worse, match an unrelated recording by title).
         enqueueAll(songs.filter { it.spotifyTrackId.isNotBlank() && !isEpisodeKey(it.spotifyTrackId) }.map { Request.of(it).copy(quality = q) })
     }
 
     private fun enqueueAll(list: List<Request>) {
         val added = synchronized(pending) {
             list.filter { r ->
+                // Last guard before the track download path, whatever the caller (resume, retry, list).
                 !isEpisodeKey(r.trackId) &&
                     !OfflineStore.isDownloaded(r.trackId) && pending.putIfAbsent(r.trackId, r) == null
             }.also { if (it.isNotEmpty()) savePending() }
@@ -177,6 +200,20 @@ object OfflineDownloader {
         added.forEach { queue.trySend(it) }
     }
 
+    /**
+     * The account's downloads are put away (sign-out, another account signing in): the queue is
+     * dropped from memory only (its file goes with the account's folder) and the running downloads
+     * stop, waited for a moment so none finishes into the next account's folder.
+     */
+    internal suspend fun forgetSession() {
+        synchronized(pending) { pending.clear() }
+        val jobs = running.values.toList()
+        running.clear()
+        jobs.forEach { it.cancel() }
+        kotlinx.coroutines.withTimeoutOrNull(5_000) { jobs.forEach { it.join() } }
+        withContext(Dispatchers.Main) { requests.clear() }
+    }
+
     /** Stops a queued or running download (and forgets a failed one). */
     fun cancel(trackId: String) {
         synchronized(pending) { if (pending.remove(trackId) != null) savePending() }
@@ -187,12 +224,17 @@ object OfflineDownloader {
 
     /**
      * Stops every running and queued download and empties the queue. Unlike [removeAll], it
-     * deletes nothing: finished songs stay in [OfflineStore.tracks] and in the index.
+     * deletes nothing: finished songs stay in [OfflineStore.tracks] and in the index, and a
+     * cancelled download only drops its own partial file in the temp folder.
      */
     fun stopAll() {
+        // The queue survives a restart through pending.json: clearing it here is what makes the
+        // stop stick, instead of the downloads resuming at the next launch.
         val ids = synchronized(pending) { pending.keys.toList().also { pending.clear(); savePending() } }
+        // Running jobs may not all be in `pending` any more; cancel them by their own handle.
         running.values.forEach { it.cancel() }
         running.clear()
+        // Snapshot state: the badges and the list are read from the UI, so write them there.
         scope.launch(Dispatchers.Main) {
             ids.forEach { OfflineStore.status.remove(it); requests.remove(it) }
         }
@@ -207,6 +249,7 @@ object OfflineDownloader {
     /** Removes the song: the file if downloaded, else its download. */
     fun remove(trackId: String) {
         cancel(trackId)
+        // File deletion on the IO scope, not the (UI) caller's thread.
         scope.launch { OfflineStore.remove(trackId) }
     }
 
@@ -215,6 +258,7 @@ object OfflineDownloader {
         ids.forEach { running.remove(it)?.cancel() }
         running.values.forEach { it.cancel() }
         requests.clear()
+        // Deleting a large library can take a while: IO scope, not the caller.
         scope.launch { OfflineCollections.removeAll(); OfflineStore.removeAll() }
     }
 
@@ -222,7 +266,7 @@ object OfflineDownloader {
         runCatching {
             val a = JSONArray()
             pending.values.forEach { a.put(it.toJson()) }
-            OfflineStore.pendingFile.writeText(a.toString())
+            com.music.spotui.data.writeTextSafely(OfflineStore.pendingFile, a.toString())
         }
     }
 
@@ -231,15 +275,18 @@ object OfflineDownloader {
     }
 
     private suspend fun work(r: Request) {
+        // Cancelled while it waited in the queue.
         if (synchronized(pending) { !pending.containsKey(r.trackId) }) return
+        // Data saver on mobile data: downloads wait for Wi-Fi.
         while (com.music.spotui.data.DataSaver.active) {
-            delay(5_000)
+            kotlinx.coroutines.delay(5_000)
             if (synchronized(pending) { !pending.containsKey(r.trackId) }) return
         }
         val job = scope.launch {
             val outcome: OfflineStatus? = try {
                 setStatus(r.trackId, OfflineStatus.Downloading(-1f))
                 val t = download(r)
+                // Already on the IO scope: the index rewrite stays off the main thread.
                 OfflineStore.add(t)
                 withContext(Dispatchers.Main) { requests.remove(r.trackId) }
                 null
@@ -261,37 +308,53 @@ object OfflineDownloader {
     }
 
     private suspend fun download(r: Request): OfflineTrack {
-        if (!isLosslessEnabled(Graph.app)) throw Unavailable("downloads are off")
+        if (!isDownloadsEnabled(Graph.app)) throw Unavailable("downloads are off")
         val quality = qualityOf(r)
-        val maxKbps = if (quality == DownloadQuality.SMALL) 96 else Int.MAX_VALUE
         val tmp = OfflineStore.tmpDir
         val audioTmp = File(tmp, "${r.trackId}.part")
         try {
             val meta = spotifyMeta(r)
+            Log.i(TAG, "${meta.title}: isrc=${meta.isrc ?: "-"}")
+
+            // ── The files the download-source extensions give, tried in their order; each one
+            // is checked (real audio, the song's length) before it is taken.
+            val file = resolveAndFetch(r, meta, audioTmp, quality)
             currentCoroutineContext().ensureActive()
 
-            val resolved = resolveAndFetchBitChord(r.trackId, meta, maxKbps, audioTmp)
-                ?: throw Unavailable("no matching audio stream found")
-            currentCoroutineContext().ensureActive()
-
-            val out = File(OfflineStore.audioDir, "${r.trackId}.${resolved.ext}")
-            if (out.exists()) out.delete()
-            if (!audioTmp.renameTo(out)) {
-                audioTmp.copyTo(out, overwrite = true)
-                audioTmp.delete()
+            val out: File
+            if (file.lossy != null) {
+                // A small file as the source served it (M4A, MP3): kept as it is.
+                out = File(OfflineStore.audioDir, "${r.trackId}.${file.lossy}")
+                if (!audioTmp.renameTo(out)) throw IOException("could not move the file")
+            } else if (quality == com.music.spotui.data.preferences.DownloadQuality.SMALL) {
+                // "Smallest": the checked FLAC becomes AAC, encoded on the phone.
+                out = File(OfflineStore.audioDir, "${r.trackId}.m4a")
+                val aacTmp = File(OfflineStore.tmpDir, "${r.trackId}.m4apart")
+                try {
+                    // Encoding is long: a few at a time, the other downloads go on meanwhile.
+                    encodeSlots.withPermit { runInterruptible(Dispatchers.Default) { AacTranscoder.transcode(audioTmp, aacTmp) } }
+                    if (aacTmp.length() < 10_000 || !aacTmp.renameTo(out)) throw IOException("could not encode the small file")
+                } finally {
+                    aacTmp.delete()
+                }
+            } else {
+                out = File(OfflineStore.audioDir, "${r.trackId}.flac")
+                if (!audioTmp.renameTo(out)) throw IOException("could not move the file")
             }
-
+            // The audio is complete on disk from here on: "stop all" must not interrupt this last
+            // part, or the file would stay out of the index and be swept as a stray at startup.
             return withContext(NonCancellable) {
+                // Kept encrypted: the file only plays in Myspoti, on this phone.
                 runInterruptible(Dispatchers.IO) { OfflineCrypto.encryptInPlace(Graph.app, out) }
                 val cover = runCatching {
                     val c = File(OfflineStore.coverDir, "${r.trackId}.jpg")
-                    httpGet(meta.coverUrl, c); c.name
+                    httpGet(app.myspoti.host.android.Covers.large(meta.coverUrl), c); c.name
                 }.getOrDefault("")
                 OfflineTrack(
                     trackId = r.trackId, title = meta.title, artist = meta.artist, album = meta.album,
                     albumId = meta.albumId, durationMs = meta.durationMs, coverUrl = meta.coverUrl,
-                    file = out.name, cover = cover, source = resolved.sourceLabel, verified = true,
-                    bytes = out.length(), addedAt = System.currentTimeMillis(),
+                    file = out.name, cover = cover, source = file.provider, verified = file.isrcMatched,
+                    bytes = out.length(), addedAt = System.currentTimeMillis(), providerId = file.extensionId,
                 )
             }
         } finally {
@@ -299,26 +362,86 @@ object OfflineDownloader {
         }
     }
 
-    private data class ResolvedAudio(val url: String, val ext: String, val sourceLabel: String)
+    private class Fetched(
+        val provider: String,
+        val isrcMatched: Boolean,
+        /** The id of the download-source extension that supplied it. */
+        val extensionId: String,
+        /** The extension of a lossy file kept as served (m4a, mp3); null for a FLAC. */
+        val lossy: String? = null,
+    )
+
+    /** This download's quality: the one chosen when it started, else Settings (CD when Settings says "ask"). */
+    private fun qualityOf(r: Request): com.music.spotui.data.preferences.DownloadQuality =
+        com.music.spotui.data.preferences.DownloadQuality.saved(r.quality)
+            ?: com.music.spotui.data.preferences.DownloadQuality.saved(com.music.spotui.data.preferences.getDownloadQuality(Graph.app).name)
+            ?: com.music.spotui.data.preferences.DownloadQuality.CD
+
+    /** The quality as a download-source extension is asked for it. */
+    internal fun queryQuality(q: com.music.spotui.data.preferences.DownloadQuality): String = when (q) {
+        com.music.spotui.data.preferences.DownloadQuality.HI_RES -> "hi-res"
+        com.music.spotui.data.preferences.DownloadQuality.SMALL -> "small"
+        else -> "cd"
+    }
 
     /**
-     * BitChord's download pipeline:
-     * 1. For high quality (`maxKbps > 160`), first tries JioSaavn 320kbps AAC/MP4 if an exact
-     *    title+artist+duration (`<= 3s`) match with `320kbps == "true"` is available.
-     * 2. Otherwise resolves the best YouTube Music `SONGS` candidate using BitChord's
-     *    `TrackMatcher` scoring (with fallback to official audio videos), extracts its best
-     *    progressive audio stream (`M4A` or `WEBMA_OPUS`) under `extractionGate`, and downloads
-     *    it in bounded range chunks with `PlayerClient` header dressing.
-     * 3. If the CDN returns HTTP 403/404/410 during chunked download, evicts the cached
-     *    `StreamInfo` and re-resolves once, just as BitChord's `Downloader.download` does.
+     * Asks the download-source extensions for [meta]'s files and saves the first one that works
+     * into [out]. Falls back to built-in BitChord downloader (JioSaavn 320kbps AAC + YouTube Music)
+     * when no extension has a file, or none of them could be used.
      */
+    private suspend fun resolveAndFetch(r: Request, meta: Meta, out: File, quality: com.music.spotui.data.preferences.DownloadQuality): Fetched {
+        val track = com.music.spotui.extensions.Extensions.trackInfo(r.trackId, meta.title, meta.artist, meta.album, meta.durationMs, meta.coverUrl)
+            .copy(isrc = meta.isrc)
+        val extResult = com.music.spotui.extensions.Extensions.downloadFiles(track, queryQuality(quality))
+        if (extResult != null) {
+            val (extensionId, extension, files) = extResult
+            for (file in files) {
+                currentCoroutineContext().ensureActive()
+                setStatus(r.trackId, OfflineStatus.Downloading(-1f))
+                val label = listOfNotNull(file.provider ?: extension, file.bitDepth?.takeIf { file.lossless }?.let { "$it-bit" }).joinToString(" ")
+                val ok = try {
+                    when {
+                        file.format == "dash-flac" -> runInterruptible(Dispatchers.IO) {
+                            DashFlacRemux.download("data:application/dash+xml;base64,${file.manifest}", out, file.headers)
+                        }
+                        else -> fetchWithProgress(r.trackId, file.url!!, out, file.headers)
+                    } && out.length() >= 10_000
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    Log.w(TAG, "${meta.title}: $label ${file.format}: ${e.message}")
+                    false
+                }
+                if (!ok) continue
+                val refused = runCatching {
+                    if (file.lossless) checkFlacHeader(out, meta, file.bitDepth) else checkAudio(out, meta)
+                }.exceptionOrNull()
+                if (refused != null) { Log.i(TAG, "${meta.title}: $label: ${refused.message}"); continue }
+                if (!file.lossless) {
+                    Log.i(TAG, "${meta.title}: saved $label ${file.format}")
+                    return Fetched(label, file.isrcMatched, extensionId, lossy = file.format)
+                }
+                Log.i(TAG, "${meta.title}: saved FLAC from $label")
+                return Fetched(label, file.isrcMatched, extensionId)
+            }
+        }
+        // Built-in BitChord fallback (JioSaavn 320kbps AAC + YouTube Music / Opus / M4A)
+        val maxKbps = if (quality == com.music.spotui.data.preferences.DownloadQuality.SMALL) 96 else Int.MAX_VALUE
+        val bc = resolveAndFetchBitChord(r.trackId, meta, maxKbps, out)
+            ?: throw Unavailable("no download source has this song")
+        return Fetched(bc.sourceLabel, isrcMatched = true, extensionId = "bitchord", lossy = bc.ext)
+    }
+
+    private val extractionGate = Mutex()
+    private data class ResolvedAudio(val url: String, val ext: String, val sourceLabel: String)
+    private class StreamExpiredException(val code: Int) : IOException("Stream HTTP $code")
+
     private suspend fun resolveAndFetchBitChord(
         trackId: String,
         meta: Meta,
         maxKbps: Int,
         out: File,
     ): ResolvedAudio? {
-        // 1. Try JioSaavn 320kbps AAC/MP4 when high quality is requested
         if (maxKbps > 160) {
             val saavnUrl = runCatching {
                 runInterruptible(Dispatchers.IO) { matchJioSaavn320(meta) }
@@ -334,9 +457,7 @@ object OfflineDownloader {
             }
         }
 
-        // 2. Match against YouTube Music SONGS + fallback to YouTube official audio via BitChord TrackMatcher
         val ytUrl = runInterruptible(Dispatchers.IO) { matchYouTubeTrack(meta) } ?: return null
-
         for (attempt in 0..1) {
             val fresh = attempt > 0
             val stream = extractionGate.withLock {
@@ -362,21 +483,17 @@ object OfflineDownloader {
         return null
     }
 
-    private class StreamExpiredException(val code: Int) : IOException("Stream HTTP $code")
-
     /**
      * Resolves and downloads a temporary audio file for immediate local fallback playback
-     * when Spotify refuses a track due to country/account restrictions or missing Widevine DRM.
+     * or queue preloading.
      */
     suspend fun fetchFallbackAudioFile(trackId: String, title: String, artist: String, durationMs: Long): File? {
         if (title.isBlank()) return null
         val dir = File(Graph.app.cacheDir, "playback_fallback").apply { mkdirs() }
-        // Reuse existing cached file if already fetched
         dir.listFiles()?.firstOrNull { it.name.startsWith("$trackId.") && it.length() >= 10_000L }?.let {
             it.setLastModified(System.currentTimeMillis())
             return it
         }
-        // Keep cache bounded (at most 15 recent fallback songs)
         dir.listFiles()?.sortedByDescending { it.lastModified() }?.drop(15)?.forEach { runCatching { it.delete() } }
 
         val meta = Meta(title = title, artist = artist, album = "", albumId = "", durationMs = durationMs, coverUrl = "", isrc = null)
@@ -391,8 +508,6 @@ object OfflineDownloader {
         if (finalFile.exists()) finalFile.delete()
         return if (tmp.renameTo(finalFile)) finalFile else tmp.takeIf { it.exists() && it.length() >= 10_000L }
     }
-
-    // ── BitChord TrackMatcher (YouTube Music SONGS + official audio fallback) ──
 
     private val VERSION_WORDS = listOf(
         "remix", "live", "instrumental", "karaoke", "acapella",
@@ -414,10 +529,8 @@ object OfflineDownloader {
         cleanNorm(FEAT_TAIL.replace(HYPHEN_NOISE.replace(BRACKET_NOISE.replace(s, ""), ""), ""))
 
     private fun matchYouTubeTrack(meta: Meta): String? {
-        // First try Spotifusion's strict 3s YouTube Music song finder
         YouTubeSource.findSong(meta.title, meta.artist, meta.durationMs)?.let { return it.url }
 
-        // Next run BitChord's full TrackMatcher over YouTube Music SONGS
         val primaryArtist = meta.artist.split(",", "&", "/", ";").firstOrNull()?.trim().orEmpty()
         val query = "${meta.title} $primaryArtist".trim()
         val songHits = runCatching {
@@ -426,14 +539,12 @@ object OfflineDownloader {
 
         pickBestBitChordHit(meta, songHits, minScore = 40, maxDurDiffSec = 35L)?.let { return it.url }
 
-        // Fallback to official audio on YouTube VIDEOS (still filtered by BitChord's version/duration rules)
         YouTubeSource.findAudio(meta.title, meta.artist, meta.durationMs)?.let { return it.url }
         val videoHits = runCatching {
             YouTubeSource.searchCandidates("$query official audio", YoutubeSearchQueryHandlerFactory.VIDEOS)
         }.getOrDefault(emptyList())
         pickBestBitChordHit(meta, videoHits, minScore = 38, maxDurDiffSec = 45L)?.let { return it.url }
 
-        // Final relaxed fallback search on YouTube VIDEOS for indie/regional/untagged tracks
         val plainVideoHits = runCatching {
             YouTubeSource.searchCandidates(query, YoutubeSearchQueryHandlerFactory.VIDEOS)
         }.getOrDefault(emptyList())
@@ -457,16 +568,12 @@ object OfflineDownloader {
             val cCore = coreTitle(c.name)
             val uNorm = cleanNorm(c.uploader)
 
-            // Hard filter: reject version mismatches (remix, live, sped up, slowed, etc.) using word boundaries on title
             val badVersion = VERSION_REGEXES.any { (_, rx) ->
                 rx.containsMatchIn(cNorm) && !rx.containsMatchIn(tNorm)
             }
             if (badVersion) continue
-
-            // Hard filter: reject large duration difference when both durations are known
             if (targetDurSec > 0 && c.durationSec > 0 && abs(targetDurSec - c.durationSec) > maxDurDiffSec) continue
 
-            // Score title (0..45)
             val titleScore = when {
                 cNorm == tNorm -> 45
                 cCore.isNotEmpty() && cCore == tCore -> 42
@@ -481,7 +588,6 @@ object OfflineDownloader {
             }
             if (titleScore < 12) continue
 
-            // Score artist (0..35)
             val cleanUploader = uNorm.removeSuffix(" - topic").removeSuffix(" topic").trim()
             val primary = targetArtists.firstOrNull().orEmpty()
             var artistScore = when {
@@ -494,7 +600,6 @@ object OfflineDownloader {
                 artistScore = minOf(35, artistScore + 5)
             }
 
-            // Score duration (-20..25)
             val durScore = if (targetDurSec > 0 && c.durationSec > 0) {
                 val diff = abs(targetDurSec - c.durationSec)
                 when {
@@ -516,8 +621,6 @@ object OfflineDownloader {
         return if (bestScore >= minScore) best else null
     }
 
-    // ── BitChord StreamResolver (NewPipe progressive audio stream selection) ──
-
     private fun resolveYouTubeAudioStream(ytUrl: String, maxKbps: Int, fresh: Boolean): ResolvedAudio? {
         val info = YouTubeSource.info(ytUrl, fresh = fresh)
         val streams = info.audioStreams.orEmpty()
@@ -530,13 +633,11 @@ object OfflineDownloader {
 
         val capped = progressive.filter { it.averageBitrate in 1..maxKbps }.ifEmpty { progressive }
         val picked: AudioStream = if (maxKbps <= 96) {
-            // Smallest quality: prefer M4A around 48-96kbps, or highest under cap
             capped.sortedWith(
                 compareByDescending<AudioStream> { it.format == MediaFormat.M4A }
                     .thenByDescending { it.averageBitrate }
             ).first()
         } else {
-            // High quality: prefer highest bitrate Opus/M4A
             capped.maxByOrNull { it.averageBitrate } ?: capped.first()
         }
 
@@ -545,8 +646,6 @@ object OfflineDownloader {
         val codec = if (ext == "m4a") "AAC" else "Opus"
         return ResolvedAudio(picked.content, ext, "$codec ${kbps}kbps")
     }
-
-    // ── BitChord JioSaavn 320kbps AAC/MP4 Resolver ──
 
     private val SAAVN_DES_KEY = "38346591".toByteArray(Charsets.UTF_8)
 
@@ -563,7 +662,7 @@ object OfflineDownloader {
             .build().toString()
         val req = okhttp3.Request.Builder()
             .url(url)
-            .header("User-Agent", LosslessUa)
+            .header("User-Agent", DownloadUa)
             .build()
         val body = InterruptibleHttp.read(YouTubeSource.http.newCall(req)) { res ->
             if (!res.isSuccessful) return@read ""
@@ -603,66 +702,22 @@ object OfflineDownloader {
         if (use320) decrypted.replace("_96.mp4", "_320.mp4") else decrypted
     }.getOrNull()
 
-    // ── BitChord PlayerClient + Range-Chunked Fetcher ──
-
     private enum class PlayerClient(
         val id: String,
         val userAgent: String,
         val origin: String? = null,
         val referer: String? = null,
         val defaultVersion: String,
-        /** ANDROID_VR throttles ranges >= 1 MB; 512 KB keeps it on the fast path. */
         val maxRangeBytes: Long = 1024 * 1024L,
     ) {
-        IOS(
-            id = "IOS",
-            userAgent = "com.google.ios.youtube/%s (iPhone16,2; U; CPU iOS 18_1_0 like Mac OS X;)",
-            defaultVersion = "20.03.02",
-        ),
-        ANDROID_VR(
-            id = "ANDROID_VR",
-            userAgent = "com.google.android.apps.youtube.vr.oculus/%s (Linux; U; Android 12L; eureka-user Build/SQ3A.220605.009.A1) gzip",
-            defaultVersion = "1.60.19",
-            maxRangeBytes = 512 * 1024L,
-        ),
-        ANDROID_MUSIC(
-            id = "ANDROID_MUSIC",
-            userAgent = "com.google.android.apps.youtube.music/%s (Linux; U; Android 14; Pixel 8 Build/UQ1A.240205.004) gzip",
-            defaultVersion = "7.27.52",
-        ),
-        ANDROID(
-            id = "ANDROID",
-            userAgent = "com.google.android.youtube/%s (Linux; U; Android 14; Pixel 8 Build/UQ1A.240205.004) gzip",
-            defaultVersion = "19.44.38",
-        ),
-        WEB_REMIX(
-            id = "WEB_REMIX",
-            userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
-            origin = "https://music.youtube.com",
-            referer = "https://music.youtube.com/",
-            defaultVersion = "1.20250929.01.00",
-        ),
-        WEB(
-            id = "WEB",
-            userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
-            origin = "https://www.youtube.com",
-            referer = "https://www.youtube.com/",
-            defaultVersion = "2.20250925.01.00",
-        ),
-        TVHTML5(
-            id = "TVHTML5",
-            userAgent = "Mozilla/5.0 (ChromiumStylePlatform) Cobalt/Version",
-            origin = "https://www.youtube.com",
-            referer = "https://www.youtube.com/tv",
-            defaultVersion = "7.20250924.13.00",
-        ),
-        VISIONOS(
-            id = "VISIONOS",
-            userAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/605.1.15",
-            origin = "https://www.youtube.com",
-            referer = "https://www.youtube.com/",
-            defaultVersion = "0.1",
-        );
+        IOS("IOS", "com.google.ios.youtube/%s (iPhone16,2; U; CPU iOS 18_1_0 like Mac OS X;)", defaultVersion = "20.03.02"),
+        ANDROID_VR("ANDROID_VR", "com.google.android.apps.youtube.vr.oculus/%s (Linux; U; Android 12L; eureka-user Build/SQ3A.220605.009.A1) gzip", defaultVersion = "1.60.19", maxRangeBytes = 512 * 1024L),
+        ANDROID_MUSIC("ANDROID_MUSIC", "com.google.android.apps.youtube.music/%s (Linux; U; Android 14; Pixel 8 Build/UQ1A.240205.004) gzip", defaultVersion = "7.27.52"),
+        ANDROID("ANDROID", "com.google.android.youtube/%s (Linux; U; Android 14; Pixel 8 Build/UQ1A.240205.004) gzip", defaultVersion = "19.44.38"),
+        WEB_REMIX("WEB_REMIX", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36", "https://music.youtube.com", "https://music.youtube.com/", "1.20250929.01.00"),
+        WEB("WEB", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36", "https://www.youtube.com", "https://www.youtube.com/", "2.20250925.01.00"),
+        TVHTML5("TVHTML5", "Mozilla/5.0 (ChromiumStylePlatform) Cobalt/Version", "https://www.youtube.com", "https://www.youtube.com/tv", "7.20250924.13.00"),
+        VISIONOS("VISIONOS", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/605.1.15", "https://www.youtube.com", "https://www.youtube.com/", "0.1");
 
         fun renderUserAgent(cver: String?): String =
             if (userAgent.contains("%s")) userAgent.format(cver?.takeIf { it.isNotBlank() } ?: defaultVersion)
@@ -699,12 +754,6 @@ object OfflineDownloader {
         return this
     }
 
-    /**
-     * BitChord's range-chunked downloader:
-     * - Reads `clen` from the URL query parameter (or probes `bytes=0-0` for `Content-Range`).
-     * - Fetches in bounded range chunks (`client.maxRangeBytes`, `1 MB` or `512 KB` for `ANDROID_VR`)
-     *   to stay on `googlevideo.com`'s initial-burst fast path (~5.7 MB/s instead of ~15 KB/s).
-     */
     private suspend fun fetchBitChordChunks(trackId: String, url: String, out: File): Boolean {
         val (client, _) = PlayerClient.forStreamUrl(url)
         val chunkSize = client.maxRangeBytes
@@ -801,11 +850,53 @@ object OfflineDownloader {
         }
     }.getOrDefault(-1L)
 
-    /** This download's quality: the one chosen when it started, else Settings (CD when Settings says "ask"). */
-    private fun qualityOf(r: Request): DownloadQuality =
-        DownloadQuality.saved(r.quality)
-            ?: DownloadQuality.saved(com.music.spotui.data.preferences.getDownloadQuality(Graph.app).name)
-            ?: DownloadQuality.CD
+    /**
+     * A STREAMINFO read on the saved file: anything that is not a FLAC file (an encrypted or
+     * AAC stream) is refused, a preview or another cut is caught (the header states the real
+     * length), and a misplaced 24-bit label shows up in the log.
+     */
+    private fun checkFlacHeader(file: File, meta: Meta, bitDepth: Int?) {
+        val seconds = runCatching {
+            file.inputStream().use { s ->
+                val head = ByteArray(42); var off = 0
+                while (off < head.size) { val n = s.read(head, off, head.size - off); if (n < 0) break; off += n }
+                flacDurationSec(head)
+            }
+        }.getOrNull() ?: throw Unavailable("the source did not send a FLAC file")
+        checkLength(seconds.toLong(), meta)
+        Log.d(TAG, "${meta.title}: FLAC ${seconds}s header check, labelled ${bitDepth ?: "-"}-bit")
+    }
+
+    /** An M4A / MP3 as served: the phone's own extractor must find an audio track of the song's length. */
+    private fun checkAudio(file: File, meta: Meta) {
+        val extractor = android.media.MediaExtractor()
+        val seconds = try {
+            extractor.setDataSource(file.path)
+            val format = (0 until extractor.trackCount).map { extractor.getTrackFormat(it) }
+                .firstOrNull { it.getString(android.media.MediaFormat.KEY_MIME)?.startsWith("audio/") == true }
+                ?: throw Unavailable("the source did not send an audio file")
+            if (format.containsKey(android.media.MediaFormat.KEY_DURATION)) format.getLong(android.media.MediaFormat.KEY_DURATION) / 1_000_000 else -1L
+        } catch (e: IOException) {
+            throw Unavailable("the file could not be read: ${e.message}")
+        } finally {
+            extractor.release()
+        }
+        // No length in the track's header (some MP3 streams): the file's own metadata is asked next.
+        val known = seconds.takeIf { it > 0 } ?: runCatching {
+            android.media.MediaMetadataRetriever().let { r ->
+                try {
+                    r.setDataSource(file.path)
+                    r.extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLongOrNull()?.div(1000)
+                } finally { r.release() }
+            }
+        }.getOrNull()?.takeIf { it > 0 }
+        if (known != null) checkLength(known, meta)
+        else Log.w(TAG, "${meta.title}: length of the file unknown, not compared with the song's")
+    }
+
+    private fun checkLength(seconds: Long, meta: Meta) {
+        lengthMismatch(seconds, meta.durationMs)?.let { throw Unavailable("backed out: $it") }
+    }
 
     private data class Meta(
         val title: String, val artist: String, val album: String, val albumId: String,
@@ -816,11 +907,8 @@ object OfflineDownloader {
     private suspend fun spotifyMeta(r: Request): Meta {
         val api = app.myspoti.host.android.MyspotiRuntime.api
         val uri = "spotify:track:${r.trackId}"
-        val t = runCatching {
-            if (r.title.isBlank() || r.artist.isBlank() || r.durationMs <= 0L || r.coverUrl.isBlank()) {
-                api.catalog.track(uri)
-            } else null
-        }.onFailure { Log.w(TAG, "${r.title}: Spotify track: $it") }.getOrNull()
+        val t = runCatching { api.catalog.track(uri) }.onFailure { Log.w(TAG, "${r.title}: Spotify track: $it") }.getOrNull()
+        val isrc = runCatching { api.catalog.isrc(uri) }.onFailure { Log.w(TAG, "${r.title}: ISRC: $it") }.getOrNull()
         val cover = r.coverUrl.ifBlank { t?.album?.images?.maxByOrNull { it.width ?: 0 }?.url.orEmpty() }
         return Meta(
             title = r.title.ifBlank { t?.name.orEmpty() },
@@ -829,7 +917,7 @@ object OfflineDownloader {
             albumId = r.albumId.ifBlank { t?.album?.uri?.substringAfterLast(':').orEmpty() },
             durationMs = r.durationMs.takeIf { it > 0 } ?: t?.durationMs ?: 0L,
             coverUrl = cover,
-            isrc = null,
+            isrc = isrc?.let(::normalizeIsrc),
         ).also { if (it.title.isBlank() || it.artist.isBlank()) throw Unavailable("no track metadata") }
     }
 
@@ -842,16 +930,39 @@ object OfflineDownloader {
     }
 
     /**
+     * Downloads the file URL into [out] with HTTP **Range** requests in chunks,
+     * reporting progress: a plain streaming GET with a browser User-Agent and the
+     * extension's headers, retried per chunk on resets.
+     */
+    private suspend fun fetchWithProgress(trackId: String, url: String, out: File, headers: Map<String, String> = emptyMap()): Boolean {
+        // A quick HEAD for the size: the progress bar needs it (-1 when the server says nothing).
+        val total = runInterruptible(Dispatchers.IO) { contentLength(url, headers) }
+        val watcher = if (total > 0) scope.launch {
+            while (isActive) {
+                setStatus(trackId, OfflineStatus.Downloading((out.length().toFloat() / total).coerceIn(0f, 1f)))
+                delay(400)
+            }
+        } else null
+        try {
+            return runInterruptible(Dispatchers.IO) { rangedDownload(url, out, total, headers) }
+        } finally {
+            watcher?.cancel()
+            setStatus(trackId, OfflineStatus.Downloading(-1f))
+        }
+    }
+
+    /**
      * The byte range loop, shared with [PodcastDownloader]: a publisher's MP3 is fetched the
      * same way (follows the 302s to podtrac/radiofrance/simplecast, restarts from zero when a
      * server ignores Range, retries each chunk three times).
      */
-    internal fun rangedDownload(url: String, out: File, knownTotal: Long): Boolean {
+    internal fun rangedDownload(url: String, out: File, knownTotal: Long, headers: Map<String, String> = emptyMap()): Boolean {
         val chunk = 4L * 1024 * 1024 // 4 MB: the stream gets its turn between two chunks
         var total = knownTotal
-        RandomAccessFile(out, "rw").use { output ->
+        java.io.RandomAccessFile(out, "rw").use { output ->
             output.setLength(0)
             while (true) {
+                // A chunk is [start, end]; a retry resumes where the bytes stopped, never re-appends.
                 val end = if (total > 0) minOf(output.length() + chunk - 1, total - 1) else output.length() + chunk - 1
                 var done = false
                 var attempt = 0
@@ -859,40 +970,46 @@ object OfflineDownloader {
                 while (true) {
                     attempt++
                     val position = output.length()
-                    val conn = (URL(url).openConnection() as HttpURLConnection).apply {
-                        connectTimeout = 20_000
-                        readTimeout = 60_000
-                        instanceFollowRedirects = true
-                        setRequestProperty("User-Agent", LosslessUa)
-                        setRequestProperty("Range", "bytes=$position-$end")
-                    }
+                    // The safe client (see MediaHttp): redirects followed by hand and re-checked, the headers kept on their own host only.
                     try {
-                        val code = conn.responseCode
-                        if (code == 416 && total <= 0 && position > 0) { done = true; break }
-                        if (code !in 200..299) throw IOException("stream HTTP $code")
-                        val full = code != 206
-                        if (full) output.setLength(0)
-                        if (total <= 0) total = contentRangeTotal(conn.getHeaderField("Content-Range")) ?: -1L
-                        output.seek(output.length())
-                        val expected = if (full) -1L else end - position + 1
-                        var got = 0L
-                        conn.inputStream.use { input ->
-                            val buf = ByteArray(256 * 1024)
-                            while (true) {
-                                val n = input.read(buf)
-                                if (n < 0) break
-                                output.write(buf, 0, n)
-                                got += n
+                        MediaHttp.open(url, headers = headers, fixed = mapOf("User-Agent" to DownloadUa, "Range" to "bytes=$position-$end"), timeoutMs = 60_000).use { conn ->
+                            val code = conn.response.code
+                            // Asked past the end of a file whose size was unknown: it is complete.
+                            if (code == 416 && total <= 0 && position > 0) { done = true; return@use }
+                            if (code !in 200..299) throw IOException("stream HTTP $code")
+                            val full = code != 206 // server ignored Range → the whole body, from byte 0
+                            if (full) output.setLength(0)
+                            // A part must be the one asked for: bytes from elsewhere in the file would be
+                            // written at the wrong place and make a file that plays wrong.
+                            if (!full) {
+                                val span = contentRangeSpan(conn.response.header("Content-Range"))
+                                if (span == null || span.first != position || span.last > end)
+                                    throw IOException("stream sent ${conn.response.header("Content-Range") ?: "no Content-Range"} for bytes $position-$end")
                             }
+                            if (total <= 0) total = contentRangeTotal(conn.response.header("Content-Range")) ?: -1L
+                            output.seek(output.length())
+                            val expected = if (full) -1L else end - position + 1
+                            var got = 0L
+                            conn.response.body.byteStream().use { input ->
+                                val buf = ByteArray(256 * 1024)
+                                while (true) {
+                                    val n = input.read(buf)
+                                    if (n < 0) break
+                                    // Never more than the part asked for, whatever the server sends after it.
+                                    val keep = if (expected >= 0) minOf(n.toLong(), expected - got).toInt() else n
+                                    output.write(buf, 0, keep)
+                                    got += keep
+                                    if (expected in 0..got) break
+                                }
+                            }
+                            if (full) done = true
+                            // A short chunk with the size still unknown is the end of the stream.
+                            else if (total <= 0 && got < expected) done = true
                         }
-                        if (full) done = true
-                        else if (total <= 0 && got < expected) done = true
                         break
                     } catch (e: IOException) {
-                        if (attempt >= 3) throw e
+                        if (attempt >= 3 || e is app.myspoti.extensions.ExtensionMediaHttp.Refused || app.myspoti.extensions.SafeNet.isRefusal(e)) throw e
                         Log.w(TAG, "chunk at ${output.length()} failed (attempt $attempt): ${e.message}")
-                    } finally {
-                        conn.disconnect()
                     }
                 }
                 if (done) break
@@ -902,6 +1019,10 @@ object OfflineDownloader {
         return true
     }
 
+    /**
+     * The song playing here is loading: downloads wait (up to 30 s) so they do not starve
+     * it, or the player's stall watchdog would take it for stuck and skip it.
+     */
     private fun yieldToPlayer() {
         var waited = 0
         while (waited < 30_000 && playerStarving()) {
@@ -914,41 +1035,56 @@ object OfflineDownloader {
             com.music.spotui.di.SongPlayer.activeDevice.value == null && !com.music.spotui.di.LocalPlayer.active.value
     }.getOrDefault(false)
 
+    private fun contentLength(url: String, headers: Map<String, String> = emptyMap()): Long =
+        runCatching {
+            MediaHttp.open(url, "HEAD", headers, mapOf("User-Agent" to DownloadUa)).use { conn ->
+                conn.response.header("Content-Length")?.toLongOrNull()?.takeIf { it > 0 } ?: -1L
+            }
+        }.getOrDefault(-1L)
+
     // ── Pure helpers (unit-tested) ──
 
-    internal const val LosslessUa =
+    /** File hosts expect a browser-ish User-Agent on downloads. */
+    internal const val DownloadUa =
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
-            "(KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36"
+            "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+
+    /** Length from a FLAC STREAMINFO header, or null if [head] is not one. */
+    internal fun flacDurationSec(head: ByteArray): Int? {
+        if (head.size < 26 || String(head, 0, 4, Charsets.US_ASCII) != "fLaC") return null
+        // Bytes 18..25: sample rate (20 bits), channels (3), bits/sample (5), total samples (36).
+        var bits = 0L
+        for (i in 18..25) bits = (bits shl 8) or (head[i].toLong() and 0xFF)
+        val sampleRate = (bits ushr 44).toInt()
+        val totalSamples = bits and 0xFFFFFFFFFL
+        if (sampleRate <= 0 || totalSamples <= 0) return null
+        return (totalSamples / sampleRate).toInt()
+    }
+
+    /** Why a file of [seconds] is not the song of [durationMs], or null when it is (or the song's length is unknown). */
+    internal fun lengthMismatch(seconds: Long, durationMs: Long): String? {
+        val expected = durationMs / 1000
+        return when {
+            expected <= 0 -> null
+            seconds < expected - SHORTER_MAX -> "the file is ${seconds}s, the song ${expected}s (a preview)"
+            seconds > expected + LONGER_MAX -> "the file is ${seconds}s, the song ${expected}s (another version)"
+            else -> null
+        }
+    }
 
     /** "bytes 0-99/1234" → 1234; null when absent or "*". */
+    /** "bytes 100-199/1234" → 100..199; null when absent or not that shape. */
+    fun contentRangeSpan(header: String?): LongRange? {
+        val m = Regex("""^\s*bytes\s+(\d+)-(\d+)/(\d+|\*)\s*$""", RegexOption.IGNORE_CASE).find(header ?: return null) ?: return null
+        val first = m.groupValues[1].toLongOrNull() ?: return null
+        val last = m.groupValues[2].toLongOrNull() ?: return null
+        return if (last >= first) first..last else null
+    }
+
     fun contentRangeTotal(header: String?): Long? =
         header?.substringAfterLast('/', "")?.trim()?.toLongOrNull()?.takeIf { it > 0 }
 
     /** "US-UM7-17-03861" / "usum71703861" → "USUM71703861"; null when not an ISRC. */
     fun normalizeIsrc(raw: String): String? =
         raw.uppercase().filter { it.isLetterOrDigit() }.takeIf { Regex("[A-Z]{2}[A-Z0-9]{3}\\d{7}").matches(it) }
-
-    data class PreviewHit(val url: String, val title: String, val artist: String, val durationSec: Long)
-
-    private fun folded(s: String) = java.text.Normalizer.normalize(s, java.text.Normalizer.Form.NFD)
-        .replace(Regex("""\p{M}+"""), "").lowercase()
-
-    /** Title without "(feat. …)", "[Remastered]", " - Radio Edit"…, letters and digits only. */
-    internal fun titleKey(s: String) = folded(s)
-        .replace(Regex("""\(.*?\)|\[.*?]"""), " ")
-        .replace(Regex("""\s+-\s+.*$"""), " ")
-        .replace(Regex("""\b(?:feat|ft)\.?\s.*$"""), " ")
-        .filter { it.isLetterOrDigit() }
-
-    /** The search result that is the same song: title, main artist, and duration within 3 s. */
-    fun pickPreview(results: List<PreviewHit>, title: String, artist: String, durationMs: Long): String? {
-        if (durationMs <= 0) return null
-        val t = titleKey(title)
-        val a = folded(artist).filter { it.isLetterOrDigit() }
-        return results.firstOrNull { h ->
-            h.url.startsWith("http") && h.durationSec > 0 &&
-                abs(h.durationSec * 1000 - durationMs) <= 3000 &&
-                titleKey(h.title) == t && folded(h.artist).filter { it.isLetterOrDigit() } == a
-        }?.url
-    }
 }

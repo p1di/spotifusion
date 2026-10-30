@@ -1,8 +1,7 @@
 package com.music.spotui.ui.theme
 
 import android.app.Activity
-import android.graphics.Color.toArgb
-import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
@@ -58,7 +57,6 @@ private fun spotifyColorScheme(accent: Color) = darkColorScheme(
 
 @Composable
 fun SpotuiTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit
 ) {
     val energy by app.myspoti.power.EnergySettings.state.collectAsStateWithLifecycle()
@@ -66,20 +64,25 @@ fun SpotuiTheme(
     androidx.compose.runtime.LaunchedEffect(policy.videoMaxHeight, policy.allowBackgroundLookups) {
         com.music.spotui.video.MusicVideoController.onEnergyPolicyChanged()
     }
-    // The app is always dark, like Spotify: a phone in light mode must not turn the
-    // surfaces white (an empty or failed page then showed white text on white).
-    val visualScheme = spotifyColorScheme(AppAccent)
+    // Dark only, like Spotify: a saved choice from the withdrawn light palette is ignored.
+    val visualScheme: ColorScheme = spotifyColorScheme(AppAccent)
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
             window.attributes = window.attributes.apply { preferredRefreshRate = policy.displayRefreshCap }
             window.statusBarColor = Color.Transparent.toArgb()
-            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = false // always-dark app: white status bar icons
+            // White icons on the dark palette.
+            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = false
             // B19: the navigation bar was left to the system — a white band under the always-dark
             // UI (reported in the modal sheets, where the bar was opaque) with dark icons on it.
             window.navigationBarColor = Color.Transparent.toArgb()
+            // Without this Android lays its own translucent scrim on a transparent bar (API 29+),
+            // which showed as a differently coloured strip under the full-screen Canvas.
+            window.isNavigationBarContrastEnforced = false
             WindowCompat.getInsetsController(window, view).isAppearanceLightNavigationBars = false
+            // Behind the first frame and under overscroll: the palette's page colour.
+            window.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(AppBackground.toArgb()))
         }
     }
 
@@ -88,11 +91,12 @@ fun SpotuiTheme(
         typography = Typography,
     ) {
         // Bare Text() uses LocalTextStyle, which MaterialTheme does NOT derive
-        // from typography — so provide AppSans (Spotify Mix) as the global default so
+        // from the typography — so provide Montserrat as the global default so
         // every screen picks it up without touching each Text call.
         androidx.compose.material3.ProvideTextStyle(
             value = androidx.compose.material3.LocalTextStyle.current.copy(
-                fontFamily = AppSans,
+                fontFamily = Montserrat,
+                letterSpacing = (-0.2).sp,
             ),
             content = content,
         )

@@ -17,7 +17,6 @@
     <string name="snackbar_added_to_liked_songs" formatted="false">Lisätty tykättyihin kappaleisiin.</string>
     <string name="snackbar_removed_from_liked_songs" formatted="false">Poistettu tykätyistä kappaleista.</string>
     <string name="content_description_context_menu" formatted="false">Lisää vaihtoehtoja</string>
-    <string name="close_button_content_description" formatted="false">Sulje</string>
     <string name="add_to_playlist_saved_in_section_header" formatted="false">Tallennuspaikka</string>
     <string name="add_to_playlist_new_playlist_button_text" formatted="false">Uusi soittolista</string>
     <string name="add_to_playlist_button_cancel" formatted="false">Peruuta</string>
@@ -25,8 +24,6 @@
     <string name="lyrics_card_title" formatted="false">Sanat</string>
     <string name="lyrics_card_title_preview" formatted="false">Sanojen esikatselu</string>
     <string name="lyrics_card_show_lyrics_button" formatted="false">Näytä sanat</string>
-    <string name="lyrics_card_expand_button_content_description" formatted="false">Avaa sanat koko näytön tilassa</string>
-    <string name="lyrics_card_share_button_content_description" formatted="false">Jaa sanat</string>
     <string name="lyrics_credential_note" formatted="false">Sanat tarjoaa %1$s</string>
     <string name="lyrics_fullscreen_chip_label_share" formatted="false">Jaa</string>
     <string name="lyrics_fullscreen_chip_label_translate" formatted="false">Käännä</string>
@@ -49,7 +46,6 @@
     <string name="artist_popular_tracks" formatted="false">Suositut</string>
     <string name="curation_button_follow_state_text" formatted="false">Seuraa</string>
     <string name="curation_button_following_state_text" formatted="false">Seurataan</string>
-    <string name="search_main_entity_subtitle_artist" formatted="false">Artisti</string>
     <string name="connect_phone_is_self" formatted="false">Tämä puhelin</string>
     <string name="settings_item_canvas_title" formatted="false">Canvas</string>
     <string name="video_settings_canvas_subtitle" formatted="false">Lyhyet videosilmukat kappaleen soidessa.</string>
@@ -107,8 +103,6 @@
     <string name="library_search_text_hint" formatted="false">Hae omasta kirjastosta</string>
     <string name="account_title" formatted="false">Tili</string>
     <string name="song_dna_search_chip_followed_artists" formatted="false">Seuratut artistit</string>
-    <string name="settings_item_crossfade_title" formatted="false">Ristihäivytys</string>
-    <string name="playback_settings_crossfade_slider_seconds" formatted="false">%1$d s</string>
     <string name="local_files_title" formatted="false">Paikalliset tiedostot</string>
     <string name="local_files_empty_section_title" formatted="false">Lisää omia äänitiedostoja Omaan kirjastoon</string>
     <string name="local_files_empty_section_subtitle" formatted="false">Onko sinulla kappale tai henkilökohtainen podcast, jota ei ole Spotifyssa?</string>
@@ -138,14 +132,10 @@
     <string name="assisted_curation_search_filter_artists" formatted="false">Artistit</string>
     <string name="assisted_curation_search_filter_albums" formatted="false">Albumit</string>
     <string name="assisted_curation_search_filter_playlists" formatted="false">Soittolistat</string>
-    <string name="assisted_curation_search_filter_clear_content_description" formatted="false">Poista suodatin</string>
-    <string name="ad_category_title_music" formatted="false">Musiikki</string>
-    <string name="made_for_you_hub_title" formatted="false">Luotu sinulle</string>
     <string name="settings_item_app_language_title" formatted="false">Sovelluksen kieli</string>
     <string name="create_menu_item_folder_title" formatted="false">Kansio</string>
     <string name="create_folder_name_suggested_folder_name" formatted="false">Uusi kansio</string>
     <string name="context_menu_rename_folder" formatted="false">Nimeä kansio uudelleen</string>
-    <string name="your_library_messaging_folder_rename_hint" formatted="false">Kansion nimi</string>
     <string name="create_playlist_content_description" formatted="false">Luo soittolista</string>
     <string name="actions_picker_delete" formatted="false">Poista</string>
     <string name="filter_and_sort_sort_section_title" formatted="false">Lajitteluperuste:</string>

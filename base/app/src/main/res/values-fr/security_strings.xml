@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="action_playback_mirror">Garde Spotify en lecture silencieuse ici ; compte des écoutes sur votre compte</string>
+    <string name="action_attest">Prouver que c\'est Myspoti</string>
+    <string name="mirror_indicator">Spotify en miroir par %1$s</string>
+</resources>

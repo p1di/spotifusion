@@ -17,7 +17,7 @@ object Graph {
         // The Spotify session: hidden Web Player + API (operation hashes refresh themselves).
         MyspotiRuntime.start(application, loadPage = !com.music.spotui.data.DataSaver.active)
         // The streaming quality the user chose, set on the player at every page load.
-        com.music.spotui.data.preferences.applyStreamingQuality(com.music.spotui.data.preferences.getStreamingQuality(application))
+        com.music.spotui.data.preferences.applyStreamingQuality(application)
         // The crossfade length (0 = off), in the player from the first song on.
         com.music.spotui.data.preferences.applyCrossfade(com.music.spotui.data.preferences.getCrossfadeSeconds(application))
         com.music.spotui.data.local.ListenHistory.init(application)
@@ -26,6 +26,7 @@ object Graph {
         com.music.spotui.data.api.SupportReminder.init(application)
         com.music.spotui.data.offline.OfflineStore.init(application)
         com.music.spotui.data.offline.OfflineCollections.init(application)
+        SongPlayer.startLibraryOutbox(application)
         com.music.spotui.data.offline.OfflineCollections.refreshAll(application)
         com.music.spotui.data.local.LocalPlaylists.init(application)
         com.music.spotui.data.local.LibraryOrder.init(application)
@@ -33,7 +34,8 @@ object Graph {
         com.music.spotui.data.offline.OfflineDownloader.resumePending()
         // Episodes have their own queue and their own file: resumed the same way.
         com.music.spotui.data.offline.PodcastDownloader.resumePending()
-        // Proactive playback caching and queue preloading
+        // Installed extensions: each enabled one loads in its own sandbox, off the main thread.
+        com.music.spotui.extensions.Extensions.init(application)
         QueuePreloader.init()
     }
 

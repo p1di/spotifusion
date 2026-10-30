@@ -17,7 +17,6 @@
     <string name="snackbar_added_to_liked_songs" formatted="false">Įtraukta į grojaraštį „Patinkančios dainos“.</string>
     <string name="snackbar_removed_from_liked_songs" formatted="false">Pašalinta iš aplanko „Patinkančios dainos“.</string>
     <string name="content_description_context_menu" formatted="false">Daugiau parinkčių</string>
-    <string name="close_button_content_description" formatted="false">Uždaryti</string>
     <string name="add_to_playlist_saved_in_section_header" formatted="false">Įrašyta</string>
     <string name="add_to_playlist_new_playlist_button_text" formatted="false">Naujas grojaraštis</string>
     <string name="add_to_playlist_button_cancel" formatted="false">Atšaukti</string>
@@ -25,8 +24,6 @@
     <string name="lyrics_card_title" formatted="false">Dainų tekstai</string>
     <string name="lyrics_card_title_preview" formatted="false">Dainos teksto peržiūra</string>
     <string name="lyrics_card_show_lyrics_button" formatted="false">Rodyti dainos tekstą</string>
-    <string name="lyrics_card_expand_button_content_description" formatted="false">Atidaryti dainos tekstą per visą ekraną</string>
-    <string name="lyrics_card_share_button_content_description" formatted="false">Bendrinti dainos tekstą</string>
     <string name="lyrics_credential_note" formatted="false">Dainos tekstą pateikė %1$s</string>
     <string name="lyrics_fullscreen_chip_label_share" formatted="false">Dalintis</string>
     <string name="lyrics_fullscreen_chip_label_translate" formatted="false">Išversti</string>
@@ -49,7 +46,6 @@
     <string name="artist_popular_tracks" formatted="false">Populiarūs</string>
     <string name="curation_button_follow_state_text" formatted="false">Stebėti</string>
     <string name="curation_button_following_state_text" formatted="false">Stebi</string>
-    <string name="search_main_entity_subtitle_artist" formatted="false">Atlikėjas</string>
     <string name="connect_phone_is_self" formatted="false">šiame telefone</string>
     <string name="settings_item_canvas_title" formatted="false">„Canvas“</string>
     <string name="video_settings_canvas_subtitle" formatted="false">Trumpos pasikartojančios vizualizacijos, rodomos klausantis dainos.</string>
@@ -107,8 +103,6 @@
     <string name="library_search_text_hint" formatted="false">Ieškok aplanke „Mano biblioteka“</string>
     <string name="account_title" formatted="false">Paskyra</string>
     <string name="song_dna_search_chip_followed_artists" formatted="false">Stebimi atlikėjai</string>
-    <string name="settings_item_crossfade_title" formatted="false">Leisti sujungiant</string>
-    <string name="playback_settings_crossfade_slider_seconds" formatted="false">%1$d sek.</string>
     <string name="local_files_title" formatted="false">Failai šiame įrenginyje</string>
     <string name="local_files_empty_section_title" formatted="false">Įtrauk savo garso failus į aplanką „Mano biblioteka“</string>
     <string name="local_files_empty_section_subtitle" formatted="false">Turi dainą ar asmeninę tinklalaidę, kurios nėra „Spotify“?</string>
@@ -138,14 +132,10 @@
     <string name="assisted_curation_search_filter_artists" formatted="false">Atlikėjai</string>
     <string name="assisted_curation_search_filter_albums" formatted="false">Albumai</string>
     <string name="assisted_curation_search_filter_playlists" formatted="false">Grojaraščiai</string>
-    <string name="assisted_curation_search_filter_clear_content_description" formatted="false">Išvalyti filtrą</string>
-    <string name="ad_category_title_music" formatted="false">Muzika</string>
-    <string name="made_for_you_hub_title" formatted="false">Sukurta tau</string>
     <string name="settings_item_app_language_title" formatted="false">Programėlės kalba</string>
     <string name="create_menu_item_folder_title" formatted="false">Aplankas</string>
     <string name="create_folder_name_suggested_folder_name" formatted="false">Naujas aplankas</string>
     <string name="context_menu_rename_folder" formatted="false">Pervardinti aplanką</string>
-    <string name="your_library_messaging_folder_rename_hint" formatted="false">Aplanko pavadinimas</string>
     <string name="create_playlist_content_description" formatted="false">Kurti grojaraštį</string>
     <string name="actions_picker_delete" formatted="false">Naikinti</string>
     <string name="filter_and_sort_sort_section_title" formatted="false">Rikiuoti pagal</string>

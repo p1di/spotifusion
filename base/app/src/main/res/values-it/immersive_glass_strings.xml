@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_liquid_glass_title">Liquid Glass</string>
+    <string name="settings_liquid_glass_detail">Le barre si piegano e riflettono la pagina dietro di loro, come il vetro</string>
+    <string name="settings_liquid_glass_unsupported">Richiede Android 12 o successivo</string>
+    <string name="settings_liquid_glass_reduced">Effetto smerigliato finché il telefono riduce la sfocatura o le animazioni</string>
+    <string name="immersive_expand_tab_bar">Mostra tutte le schede</string>
+</resources>

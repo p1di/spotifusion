@@ -1,5 +1,7 @@
 package com.music.spotui.ui.components
 
+import com.music.spotui.ui.theme.AppText
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Box
@@ -60,7 +62,7 @@ fun FastScrollbar(state: LazyListState, modifier: Modifier = Modifier, minItems:
                 .offset { IntOffset(0, (fraction * travel).roundToInt()) }
                 .padding(end = 3.dp)
                 .size(width = 5.dp, height = 56.dp)
-                .background(Color.White.copy(alpha = if (dragging) 0.8f else 0.5f), RoundedCornerShape(50))
+                .background(AppText.copy(alpha = if (dragging) 0.8f else 0.5f), RoundedCornerShape(50))
         )
         // A wider invisible strip so the thin thumb is easy to grab.
         Box(

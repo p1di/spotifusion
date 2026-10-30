@@ -30,7 +30,7 @@ class NowPlayingWidget : AppWidgetProvider() {
     override fun onReceive(context: Context, intent: Intent) {
         when (intent.action) {
             ACTION_PREVIOUS -> SongPlayer.previous()
-            ACTION_TOGGLE -> if (SongPlayer.isPlaying()) SongPlayer.pause() else SongPlayer.play()
+            ACTION_TOGGLE -> if (SongPlayer.isPlaying()) SongPlayer.pause(by = "widget") else SongPlayer.play(by = "widget")
             ACTION_NEXT -> SongPlayer.next()
             else -> super.onReceive(context, intent)
         }

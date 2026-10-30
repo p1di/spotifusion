@@ -3,6 +3,7 @@ package com.music.spotui.ui.viewmodel
 import com.music.spotui.di.Graph
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.music.spotui.data.api.LibraryEdits
 import com.music.spotui.data.api.Response
 import com.music.spotui.data.entity.AccountModel
 import com.music.spotui.data.entity.LibraryEntry
@@ -14,6 +15,7 @@ import com.music.spotui.ui.repository.AppRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 
 class LibraryViewModel constructor(
@@ -31,16 +33,41 @@ class LibraryViewModel constructor(
         MutableStateFlow(emptyList())
     val followedArtists: StateFlow<List<com.music.spotui.data.entity.ArtistsModel>> = _followedArtists
 
+    /** The list as Spotify gave it; [entries] is this with the changes not yet in Spotify's list on top. */
+    @Volatile private var server: List<LibraryEntry>? = null
+
+    private fun show() {
+        val list = server ?: return
+        _entries.value = Response.Success(LibraryEdits.applyTo(null, list))
+    }
+
     init {
         // Seed UI with the last-seen library immediately so it's visible offline.
         val cached = getCachedLibraryEntries(context)
-        if (cached.isNotEmpty()) _entries.value = Response.Success(cached)
+        if (cached.isNotEmpty()) { server = cached; show() }
+        // A delete, rename or new playlist is shown at once, and taken back if Spotify refuses.
+        viewModelScope.launch { LibraryEdits.version.drop(1).collect { show() } }
+        viewModelScope.launch { LibraryEdits.reloads.collect { load() } }
         val cachedArtists = getCachedFollowedArtists(context)
         if (cachedArtists.isNotEmpty()) _followedArtists.value = cachedArtists
 
         load()
         loadAccount()
         loadFollowedArtists()
+    }
+
+    private val _refreshing = MutableStateFlow(false)
+    /** A pull-to-refresh is reading the library again. */
+    val refreshing: StateFlow<Boolean> = _refreshing
+
+    fun refresh() {
+        if (_refreshing.value) return
+        _refreshing.value = true
+        viewModelScope.launch {
+            // Both flows end when Spotify has answered (or failed): that is when the spinner goes.
+            kotlinx.coroutines.joinAll(load(), loadFollowedArtists())
+            _refreshing.value = false
+        }
     }
 
     fun load() = viewModelScope.launch(Dispatchers.IO) {
@@ -53,8 +80,11 @@ class LibraryViewModel constructor(
                 _entries.value = Response.Success(emptyList())
                 return@collect
             }
-            _entries.value = response
-            if (response is Response.Success) cacheLibraryEntries(context, response.data)
+            if (response is Response.Success) {
+                server = response.data
+                show()
+                cacheLibraryEntries(context, response.data)
+            } else _entries.value = response
         }
     }
 

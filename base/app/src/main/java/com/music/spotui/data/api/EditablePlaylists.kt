@@ -20,11 +20,56 @@ data class EditablePlaylist(
 }
 
 object EditablePlaylists {
+    /** Ids of the playlists this account can change, read at most every [IDS_TTL_MS]. */
+    @Volatile private var ids: Set<String>? = null
+    @Volatile private var idsAt = 0L
+    private const val IDS_TTL_MS = 5 * 60_000L
+
+    suspend fun ids(): Set<String> {
+        val now = System.currentTimeMillis()
+        ids?.takeIf { now - idsAt < IDS_TTL_MS }?.let { return it }
+        return runCatching { load().mapTo(HashSet()) { it.id } }.getOrNull()?.also { ids = it; idsAt = now } ?: ids.orEmpty()
+    }
+
     /** The user's own and collaborative playlists, in library order, folders flattened. */
     suspend fun load(): List<EditablePlaylist> =
         runCatching { MyspotiRuntime.api.playlists.editable() }.getOrDefault(emptyList()).map {
             EditablePlaylist(it.uri.substringAfterLast(':'), it.name, it.trackCount, it.images.best(160)?.url)
         }
+
+    /**
+     * [load] for the pickers that show covers. Reported: "Add to another playlist" showed grey
+     * squares. Spotify's playlist list has no cover for a playlist without one of its own (the
+     * mosaic of its albums); the library has it, so those are read from there, folders walked.
+     */
+    suspend fun loadWithCovers(): List<EditablePlaylist> {
+        val list = load()
+        if (list.all { it.imageUrl != null }) return list
+        val covers = libraryCovers()
+        return list.map { if (it.imageUrl != null) it else it.copy(imageUrl = covers["spotify:playlist:${it.id}"]) }
+    }
+
+    /** Playlist uri → cover, as the library shows them, folders included. */
+    private suspend fun libraryCovers(): Map<String, String> {
+        val api = MyspotiRuntime.api
+        val out = HashMap<String, String>()
+        suspend fun walk(folderUri: String?, depth: Int) {
+            var offset = 0
+            repeat(40) {
+                val page = runCatching {
+                    api.library.items(filter = LibraryFilter.ALL, folderUri = folderUri, offset = offset, limit = 50)
+                }.getOrNull() ?: return
+                for (item in page.items) when (item.kind) {
+                    MediaKind.FOLDER -> if (depth < 5) walk(item.uri, depth + 1)
+                    MediaKind.PLAYLIST -> item.images.best(160)?.url?.let { out[item.uri] = it }
+                    else -> Unit
+                }
+                offset = page.nextOffset ?: return
+            }
+        }
+        walk(null, 0)
+        return out
+    }
 
     /**
      * One level of the library as Spotify shows it: its folders, then the playlists the user

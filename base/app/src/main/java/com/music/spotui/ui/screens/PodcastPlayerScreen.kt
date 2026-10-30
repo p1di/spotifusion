@@ -68,6 +68,61 @@ import com.music.spotui.ui.theme.AppBackground
 import kotlinx.coroutines.launch
 
 /**
+ * The seek bar and the two clocks, with their own ticker: the position moves every half second,
+ * and only this part of the player follows it (as [ElapsedLabel] does for the music player).
+ */
+@Composable
+private fun PodcastProgress(playing: Boolean, uri: String, duration: Long) {
+    // Tapping the time flips it, as in the official player (it opens on what is left).
+    var showRemaining by remember { mutableStateOf(true) }
+    var drag by remember { mutableStateOf<Float?>(null) }
+    var position by remember { mutableStateOf(SongPlayer.getCurrentPosition()) }
+    LaunchedEffect(playing, uri) {
+        while (true) {
+            position = SongPlayer.getCurrentPosition()
+            if (!playing) break
+            kotlinx.coroutines.delay(500)
+        }
+    }
+    val fraction = when {
+        drag != null -> drag!!
+        duration > 0 -> (position.toFloat() / duration).coerceIn(0f, 1f)
+        else -> 0f
+    }
+    val shown = drag?.let { (it * duration).toLong() } ?: position
+    SpotifySeekBar(
+        fraction = { fraction },
+        onDrag = { f -> drag = f },
+        onRelease = {
+            val f = drag ?: return@SpotifySeekBar
+            drag = null
+            if (duration > 0) {
+                position = (f * duration).toLong()
+                SongPlayer.seekTo(position)
+            }
+        },
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 4.dp),
+    )
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
+    ) {
+        Text(episodeClock(shown), color = Color.White.copy(alpha = 0.7f), fontSize = 12.sp)
+        // The stock player's right-hand clock is a button: elapsed <-> remaining.
+        Text(
+            text = if (showRemaining) episodeClock((duration - shown).coerceAtLeast(0)) else episodeClock(shown),
+            color = Color.White.copy(alpha = 0.7f),
+            fontSize = 12.sp,
+            modifier = Modifier.clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+            ) { showRemaining = !showRemaining },
+        )
+    }
+}
+
+/**
  * The player, when a podcast episode plays: Spotify gives it its own controls — ±15 s instead
  * of previous / next, a speed selector, a sleep timer and no shuffle or repeat. Music keeps
  * the music player ([PlayerScreen]).
@@ -92,26 +147,9 @@ fun PodcastPlayerScreen(navController: NavController) {
     var showDevices by remember { mutableStateOf(false) }
     var showQueue by remember { mutableStateOf(false) }
     var showMenu by remember { mutableStateOf(false) }
-    // Tapping the time flips it, as in the official player (it opens on what is left).
-    var showRemaining by remember { mutableStateOf(true) }
-    var drag by remember { mutableStateOf<Float?>(null) }
-    var position by remember { mutableStateOf(SongPlayer.getCurrentPosition()) }
     val scope = androidx.compose.runtime.rememberCoroutineScope()
 
     val duration = SongPlayer.getDuration()
-    LaunchedEffect(playing, np.uri) {
-        while (true) {
-            position = SongPlayer.getCurrentPosition()
-            if (!playing) break
-            kotlinx.coroutines.delay(500)
-        }
-    }
-    val fraction = when {
-        drag != null -> drag!!
-        duration > 0 -> (position.toFloat() / duration).coerceIn(0f, 1f)
-        else -> 0f
-    }
-
     val song = SongsModel(
         id = ("uri:$uri").hashCode() and 0x7fffffff,
         title = title,
@@ -252,37 +290,7 @@ fun PodcastPlayerScreen(navController: NavController) {
                 LikeButton(liked = saved, size = 28.dp) { SongPlayer.setSaved(uri, !saved) }
             }
 
-            SpotifySeekBar(
-                fraction = { fraction },
-                onDrag = { f -> drag = f },
-                onRelease = {
-                    val f = drag ?: return@SpotifySeekBar
-                    drag = null
-                    if (duration > 0) {
-                        position = (f * duration).toLong()
-                        SongPlayer.seekTo(position)
-                    }
-                },
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 4.dp),
-            )
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
-            ) {
-                Text(episodeClock(if (drag != null) (drag!! * duration).toLong() else position), color = Color.White.copy(alpha = 0.7f), fontSize = 12.sp)
-                // The stock player's right-hand clock is a button: elapsed ↔ remaining.
-                Text(
-                    text = if (showRemaining) episodeClock((duration - if (drag != null) (drag!! * duration).toLong() else position).coerceAtLeast(0))
-                    else episodeClock(if (drag != null) (drag!! * duration).toLong() else position),
-                    color = Color.White.copy(alpha = 0.7f),
-                    fontSize = 12.sp,
-                    modifier = Modifier.clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null,
-                    ) { showRemaining = !showRemaining },
-                )
-            }
+            PodcastProgress(playing = playing, uri = np.uri, duration = duration)
 
             // Podcast transport: speed, −15 s, play, +15 s, sleep timer. No shuffle, no repeat:
             // the official app does not put them on an episode.
@@ -369,5 +377,5 @@ private fun SkipIcon(back: Boolean) {
 }
 
 /** The show id carried by the played context ("spotify:show:<id>"), "" when there is none. */
-private fun episodeShowId(contextUri: String): String =
+internal fun episodeShowId(contextUri: String): String =
     contextUri.takeIf { it.startsWith("spotify:show:") }?.removePrefix("spotify:show:").orEmpty()

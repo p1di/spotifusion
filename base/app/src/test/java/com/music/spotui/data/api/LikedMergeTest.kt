@@ -26,4 +26,15 @@ class LikedMergeTest {
         assertEquals(52, merged.size)
         assertEquals(listOf("old1", "old2"), ids(merged).takeLast(2))
     }
+
+    @Test fun aShortHeadIsTheWholeList() {
+        assertEquals(true, Api.LikedCache.reaches(listOf("a", "b").map(::song), listOf("z").map(::song)))
+    }
+
+    @Test fun aFullHeadReachesTheListOnlyThroughASongKnown() {
+        val head = (1..50).map { song("n$it") }
+        assertEquals(true, Api.LikedCache.reaches(head, listOf(song("n50"), song("old"))))
+        // More than a page of new likes: nothing links the head to the list known.
+        assertEquals(false, Api.LikedCache.reaches(head, listOf(song("old1"), song("old2"))))
+    }
 }

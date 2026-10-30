@@ -106,7 +106,17 @@ object LocalFolders {
     private const val PREFS = "local_folders"
     private const val KEY_OUT = "excluded"
     private const val KEY_SEEN = "seen"
-    private val defaultOut = Regex("""(?i)whatsapp|telegram|signal|messenger|recordings?|enregistrements|voice|notifications|ringtones|alarms|call""")
+    private const val KEY_RULES = "rules"
+    /**
+     * Messaging, recorder and system-sound folders, matched on a whole folder name: matched
+     * anywhere in the path, "call", "voice" or "signal" also hid music folders ("Calling You",
+     * "Voices", "Signal Fire" — tester report after beta.9).
+     */
+    private val defaultOut = Regex("""(?i)whatsapp.*|telegram.*|signal|messenger|recordings?|enregistrements|voice ?(notes|recorder|memos|recordings?)?|notifications|ringtones|alarms|call ?(recordings?|recorder)?|callrecord(ing|ings)?""")
+    /** The earlier rule, kept only to take back what it hid on its own. */
+    private val oldDefaultOut = Regex("""(?i)whatsapp|telegram|signal|messenger|recordings?|enregistrements|voice|notifications|ringtones|alarms|call""")
+
+    private fun autoOut(folder: String) = folder.split('/').any { defaultOut.matches(it.trim()) }
 
     private fun prefs(context: Context) = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 
@@ -114,10 +124,15 @@ object LocalFolders {
     fun excluded(context: Context, known: Set<String>): Set<String> {
         val p = prefs(context)
         val out = p.getStringSet(KEY_OUT, emptySet()).orEmpty().toMutableSet()
+        // Once: the folders the old rule hid on its own and the new one would not are shown again.
+        if (p.getInt(KEY_RULES, 1) < 2) {
+            out.removeAll { oldDefaultOut.containsMatchIn(it) && !autoOut(it) }
+            p.edit().putStringSet(KEY_OUT, out).putInt(KEY_RULES, 2).apply()
+        }
         val seen = p.getStringSet(KEY_SEEN, emptySet()).orEmpty()
         val fresh = known - seen
         if (fresh.isNotEmpty()) {
-            out += fresh.filter { defaultOut.containsMatchIn(it) }
+            out += fresh.filter { autoOut(it) }
             p.edit().putStringSet(KEY_OUT, out).putStringSet(KEY_SEEN, seen + fresh).apply()
         }
         return out

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Texts of the Immersive look's Home, Search, Library and Category screens (English default). -->
+<resources>
+    <string name="immersive_screens_account">Account</string>
+    <string name="immersive_screens_account_page">Account page</string>
+    <string name="immersive_screens_account_page_detail">Plan, privacy and devices</string>
+    <string name="immersive_screens_top_result">Top result</string>
+    <string name="immersive_screens_reset_order">Back to the default order</string>
+</resources>

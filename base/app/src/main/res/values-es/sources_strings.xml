@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="sources_audio_title">Fuentes de audio</string>
+    <string name="sources_download_title">Fuentes de descarga</string>
+    <string name="sources_audio_footer">Se consultan de arriba abajo para cada canción: la primera que la tenga la reproduce. Usa las flechas para cambiar el orden.</string>
+    <string name="sources_download_footer">Se consultan de arriba abajo: la primera fuente que tenga la canción da el archivo. Usa las flechas para cambiar el orden.</string>
+    <string name="sources_spotify">Spotify</string>
+    <string name="sources_spotify_detail">Se reproduce cuando ninguna fuente de arriba tiene la canción</string>
+    <string name="sources_ready">Lista</string>
+    <string name="sources_details_show">Mostrar detalles</string>
+    <string name="sources_details_hide">Ocultar detalles</string>
+    <string name="sources_detail_version">Versión %1$s · por %2$s</string>
+    <string name="sources_last_used">Última: %1$s, %2$s</string>
+    <string name="sources_open">Abrir la extensión</string>
+    <string name="sources_order_hint">Las fuentes se consultan en el orden definido en Ajustes (Reproducción, Descargas).</string>
+    <string name="sources_below_spotify">No se consulta: Spotify está arriba</string>
+</resources>

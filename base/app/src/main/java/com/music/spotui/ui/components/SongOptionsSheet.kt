@@ -1,5 +1,9 @@
 package com.music.spotui.ui.components
 
+import com.music.spotui.ui.theme.tone
+import com.music.spotui.ui.theme.AppText
+import com.music.spotui.ui.theme.AppMuted
+
 import app.myspoti.engine.R
 
 import androidx.compose.ui.res.stringResource
@@ -70,8 +74,8 @@ import com.music.spotui.data.entity.SongsModel
 import com.music.spotui.di.SongPlayer
 import com.music.spotui.ui.navigation.albumRoute
 
-private val MenuSheetColor = Color(0xFF282828)
-private val MenuIconColor = Color(0xFFB3B3B3)
+private val MenuSheetColor: androidx.compose.ui.graphics.Color get() = tone(0xFF282828)
+private val MenuIconColor: androidx.compose.ui.graphics.Color get() = AppMuted
 private val MenuGreen: Color get() = com.music.spotui.ui.theme.AppAccent
 
 /**
@@ -150,11 +154,11 @@ fun SongOptionsSheet(
                 )
                 Spacer(modifier = Modifier.width(12.dp))
                 Column {
-                    Text(song.title, color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(song.title, color = AppText, fontSize = 16.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Text(song.singer, color = MenuIconColor, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
             }
-            HorizontalDivider(color = Color(0xFF3E3E3E), thickness = 0.5.dp)
+            HorizontalDivider(color = tone(0xFF3E3E3E), thickness = 0.5.dp)
             Spacer(Modifier.height(8.dp))
 
             MenuRow(
@@ -304,10 +308,7 @@ fun SongOptionsSheet(
                 MenuRow(Icons.Outlined.Speed, stringResource(R.string.playback_speed)) { showSpeed = true }
             }
             MenuRow(Icons.Outlined.Share, stringResource(R.string.context_menu_share), enabled = hasId) {
-                val send = Intent(Intent.ACTION_SEND)
-                    .setType("text/plain")
-                    .putExtra(Intent.EXTRA_TEXT, "https://open.spotify.com/track/${song.spotifyTrackId}")
-                context.startActivity(Intent.createChooser(send, context.getString(R.string.action_share_label)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                SpotifyCode.show(ShareTarget("spotify:track:${song.spotifyTrackId}", song.title, song.singer, song.coverUri))
                 onDismiss()
             }
             if (nowPlaying) {
@@ -318,6 +319,10 @@ fun SongOptionsSheet(
                     tint = if (active) MenuGreen else MenuIconColor,
                 ) { showSleep = true }
             }
+            // Entries from extensions (menu.items), after the app's own; each names its extension.
+            if (hasId) com.music.spotui.extensions.ExtensionMenuEntries(
+                app.myspoti.extensions.Surface.TRACK_MENU, "spotify:track:${song.spotifyTrackId}", song.title, song.singer, onDone = onDismiss,
+            )
             Spacer(Modifier.height(12.dp))
         }
     }
@@ -358,7 +363,7 @@ private fun MenuRow(
             }
         }
         Spacer(modifier = Modifier.width(16.dp))
-        Text(label, color = Color.White.copy(alpha = alpha), fontSize = 16.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Text(label, color = AppText.copy(alpha = alpha), fontSize = 16.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
 
@@ -366,23 +371,33 @@ private fun MenuRow(
 /** The track's credits (performers, writers, producers), as Spotify lists them. */
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
-private fun CreditsSheet(song: SongsModel, onDismiss: () -> Unit) {
+internal fun CreditsSheet(song: SongsModel, onDismiss: () -> Unit) {
     val credits by androidx.compose.runtime.produceState<app.myspoti.api.Credits?>(null, song.spotifyTrackId) {
         value = runCatching { app.myspoti.host.android.MyspotiRuntime.api.extras.credits("spotify:track:${song.spotifyTrackId}") }
             .getOrDefault(app.myspoti.api.Credits(emptyList()))
     }
-    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = Color(0xFF282828), sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
-        Column(Modifier.fillMaxWidth().padding(bottom = 24.dp)) {
-            Text(stringResource(R.string.track_credits), color = Color.White, fontSize = 20.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+    LookSheet(onDismissRequest = onDismiss, containerColor = tone(0xFF282828), sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
+        Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(bottom = 24.dp)) {
+            Text(stringResource(R.string.track_credits), color = AppText, fontSize = 20.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
                 modifier = Modifier.padding(20.dp, 8.dp))
-            Text(song.title, color = Color(0xFFB3B3B3), fontSize = 14.sp, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, modifier = Modifier.padding(horizontal = 20.dp))
+            Text(song.title, color = AppMuted, fontSize = 14.sp, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, modifier = Modifier.padding(horizontal = 20.dp))
             val roles = credits?.roles
             if (roles == null) androidx.compose.material3.LinearProgressIndicator(Modifier.fillMaxWidth().padding(20.dp))
             else roles.forEach { role ->
                 Column(Modifier.padding(20.dp, 10.dp)) {
-                    Text(role.artists.joinToString(", ") { it.name }, color = Color.White, fontSize = 16.sp)
-                    Text(role.role, color = Color(0xFFB3B3B3), fontSize = 13.sp)
+                    Text(role.artists.joinToString(", ") { it.name }, color = AppText, fontSize = 16.sp)
+                    Text(role.role, color = AppMuted, fontSize = 13.sp)
                 }
+            }
+            // What extensions add about the song (trackinfo.provide), under Spotify's credits.
+            if (song.spotifyTrackId.isNotBlank()) {
+                val info = androidx.compose.runtime.remember(song.spotifyTrackId) {
+                    com.music.spotui.extensions.Extensions.trackInfo(song.spotifyTrackId, song.title, song.singer, song.album, song.durationMs.toLong(), song.coverUri)
+                }
+                com.music.spotui.extensions.ExtensionBlocks(
+                    app.myspoti.extensions.Hook.TRACK_INFO, app.myspoti.extensions.Surface.TRACK_INFO, info.toJson(),
+                    context = com.music.spotui.extensions.placeJson("track", info.uri, info.title, info.artist),
+                )
             }
         }
     }
@@ -391,13 +406,13 @@ private fun CreditsSheet(song: SongsModel, onDismiss: () -> Unit) {
 /** Podcast playback speed (Spotify refuses speed changes on music). */
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
-private fun SpeedSheet(onDismiss: () -> Unit) {
-    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = Color(0xFF282828)) {
+internal fun SpeedSheet(onDismiss: () -> Unit) {
+    LookSheet(onDismissRequest = onDismiss, containerColor = tone(0xFF282828)) {
         Column(Modifier.fillMaxWidth().padding(bottom = 24.dp)) {
-            Text(stringResource(R.string.playback_speed), color = Color.White, fontSize = 20.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+            Text(stringResource(R.string.playback_speed), color = AppText, fontSize = 20.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
                 modifier = Modifier.padding(20.dp, 8.dp))
             listOf(0.5, 0.8, 1.0, 1.2, 1.5, 1.8, 2.0, 3.0).forEach { speed ->
-                Text("${speed}×", color = Color.White, fontSize = 16.sp,
+                Text("${speed}×", color = AppText, fontSize = 16.sp,
                     modifier = Modifier.fillMaxWidth().clickable { SongPlayer.setSpeed(speed); onDismiss() }.padding(20.dp, 12.dp))
             }
         }

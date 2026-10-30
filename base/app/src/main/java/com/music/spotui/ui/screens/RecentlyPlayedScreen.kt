@@ -1,5 +1,10 @@
 package com.music.spotui.ui.screens
 
+import com.music.spotui.ui.components.wideClickable
+import com.music.spotui.ui.theme.tone
+import com.music.spotui.ui.theme.AppText
+import com.music.spotui.ui.theme.AppMuted
+
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -72,9 +77,9 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 private val Background: Color get() = com.music.spotui.ui.theme.AppBackground
-private val Subtle = Color(0xFFB3B3B3)
+private val Subtle: androidx.compose.ui.graphics.Color get() = AppMuted
 /** The pill and chevron greys of Spotify's own page. */
-private val ChipIdle = Color(0xFF282828)
+private val ChipIdle: androidx.compose.ui.graphics.Color get() = tone(0xFF282828)
 private val ChevronRing = Color(0xFF8A8A8A)
 
 /** Rows per request: what the Web Player asks for its own list page. */
@@ -146,13 +151,13 @@ fun RecentlyPlayedScreen(navController: NavController) {
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                 contentDescription = stringResource(R.string.accessibility_navigate_back),
-                tint = Color.White,
-                modifier = Modifier.size(40.dp).clip(RoundedCornerShape(20.dp))
-                    .clickable { navController.popBackStack() }.padding(8.dp),
+                tint = AppText,
+                modifier = Modifier.wideClickable(horizontal = 8.dp, vertical = 10.dp) { navController.popBackStack() }
+                    .size(40.dp).padding(8.dp),
             )
             Text(
                 stringResource(R.string.recents_title),
-                fontWeight = FontWeight.Bold, color = Color.White, fontSize = 24.sp, maxLines = 1,
+                fontWeight = FontWeight.Bold, color = AppText, fontSize = 24.sp, maxLines = 1,
                 overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(start = 4.dp),
             )
         }
@@ -168,9 +173,7 @@ fun RecentlyPlayedScreen(navController: NavController) {
                 stringResource(R.string.recently_played_failed, failure.orEmpty()),
                 color = Subtle, fontSize = 14.sp, modifier = Modifier.padding(20.dp),
             )
-            entries == null -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = com.music.spotui.ui.theme.AppAccent)
-            }
+            entries == null -> com.music.spotui.ui.components.SkeletonList(count = 9)
             sections.isEmpty() -> Text(
                 stringResource(R.string.recently_played_empty),
                 color = Subtle, fontSize = 14.sp, modifier = Modifier.padding(20.dp),
@@ -216,7 +219,7 @@ fun RecentlyPlayedScreen(navController: NavController) {
 private fun DayHeader(dayMs: Long?) {
     Text(
         dayLabel(dayMs),
-        color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold,
+        color = AppText, fontSize = 18.sp, fontWeight = FontWeight.Bold,
         modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 20.dp, bottom = 6.dp),
     )
 }
@@ -225,13 +228,13 @@ private fun DayHeader(dayMs: Long?) {
 private fun Pill(label: String, selected: Boolean, onClick: () -> Unit) {
     Box(
         Modifier.clip(RoundedCornerShape(50))
-            .background(if (selected) Color.White else ChipIdle)
+            .background(if (selected) AppText else ChipIdle)
             .clickable(onClick = onClick)
             .padding(horizontal = 14.dp, vertical = 7.dp),
     ) {
         Text(
             label,
-            color = if (selected) Color.Black else Color.White,
+            color = if (selected) Color.Black else AppText,
             fontSize = 13.sp, fontWeight = FontWeight.Medium, maxLines = 1,
         )
     }
@@ -258,7 +261,7 @@ private fun GroupRow(group: RecentGroup, expanded: Boolean, onToggle: () -> Unit
             val count = countLabel(group.count, group.saved)
             Text(
                 group.context.title.ifBlank { count },
-                color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold,
+                color = AppText, fontSize = 16.sp, fontWeight = FontWeight.Bold,
                 maxLines = 1, overflow = TextOverflow.Ellipsis,
             )
             if (group.context.title.isNotBlank()) {
@@ -279,7 +282,7 @@ private fun GroupRow(group: RecentGroup, expanded: Boolean, onToggle: () -> Unit
                 contentDescription = stringResource(
                     if (expanded) R.string.recents_collapse else R.string.recents_expand,
                 ),
-                tint = Color.White,
+                tint = AppText,
                 modifier = Modifier.size(18.dp).rotate(rotation),
             )
         }
@@ -303,7 +306,7 @@ private fun PlayRow(item: RecentItem, modifier: Modifier = Modifier, onClick: ()
             modifier = Modifier.size(40.dp).clip(RoundedCornerShape(3.dp)),
         )
         Column(Modifier.padding(start = 12.dp).weight(1f)) {
-            Text(item.title, color = Color.White, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(item.title, color = AppText, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
             item.subtitle?.let {
                 Text(it, color = Subtle, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
@@ -337,7 +340,7 @@ private fun RecentCover(context: RecentItem, size: Dp) {
                 Icon(
                     Icons.Filled.Favorite,
                     contentDescription = stringResource(R.string.collection_liked_songs_title),
-                    tint = Color.White,
+                    tint = AppText,
                     modifier = Modifier.size(13.dp),
                 )
             }

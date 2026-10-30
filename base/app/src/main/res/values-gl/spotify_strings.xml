@@ -17,7 +17,6 @@
     <string name="snackbar_added_to_liked_songs" formatted="false">Engadiuse a Cancións que che gustan.</string>
     <string name="snackbar_removed_from_liked_songs" formatted="false">Quitouse de Cancións que che gustan.</string>
     <string name="content_description_context_menu" formatted="false">Máis opcións</string>
-    <string name="close_button_content_description" formatted="false">Pechar</string>
     <string name="add_to_playlist_saved_in_section_header" formatted="false">Gardouse en</string>
     <string name="add_to_playlist_new_playlist_button_text" formatted="false">Nova lista</string>
     <string name="add_to_playlist_button_cancel" formatted="false">Cancelar</string>
@@ -25,8 +24,6 @@
     <string name="lyrics_card_title" formatted="false">Letra</string>
     <string name="lyrics_card_title_preview" formatted="false">Vista previa da letra</string>
     <string name="lyrics_card_show_lyrics_button" formatted="false">Mostrar letra</string>
-    <string name="lyrics_card_expand_button_content_description" formatted="false">Abrir a letra en pantalla completa</string>
-    <string name="lyrics_card_share_button_content_description" formatted="false">Compartir letra</string>
     <string name="lyrics_credential_note" formatted="false">Letra proporcionada por %1$s</string>
     <string name="lyrics_fullscreen_chip_label_share" formatted="false">Compartir</string>
     <string name="lyrics_fullscreen_chip_label_translate" formatted="false">Traducir</string>
@@ -49,7 +46,6 @@
     <string name="artist_popular_tracks" formatted="false">Popular</string>
     <string name="curation_button_follow_state_text" formatted="false">Seguir</string>
     <string name="curation_button_following_state_text" formatted="false">Seguindo</string>
-    <string name="search_main_entity_subtitle_artist" formatted="false">Artista</string>
     <string name="connect_phone_is_self" formatted="false">Este teléfono</string>
     <string name="settings_item_canvas_title" formatted="false">Canvas</string>
     <string name="video_settings_canvas_subtitle" formatted="false">Elementos visuais breves e en bucle mentres se reproduce unha canción.</string>
@@ -107,8 +103,6 @@
     <string name="library_search_text_hint" formatted="false">Fai buscas na túa mediateca</string>
     <string name="account_title" formatted="false">Conta</string>
     <string name="song_dna_search_chip_followed_artists" formatted="false">Artistas que segues</string>
-    <string name="settings_item_crossfade_title" formatted="false">Transición gradual</string>
-    <string name="playback_settings_crossfade_slider_seconds" formatted="false">%1$d s</string>
     <string name="local_files_title" formatted="false">Ficheiros locais</string>
     <string name="local_files_empty_section_title" formatted="false">Engade os teus propios ficheiros de audio á túa mediateca</string>
     <string name="local_files_empty_section_subtitle" formatted="false">Tes unha canción ou un podcast persoal que non estea en Spotify?</string>
@@ -138,14 +132,10 @@
     <string name="assisted_curation_search_filter_artists" formatted="false">Artistas</string>
     <string name="assisted_curation_search_filter_albums" formatted="false">Álbums</string>
     <string name="assisted_curation_search_filter_playlists" formatted="false">Listas</string>
-    <string name="assisted_curation_search_filter_clear_content_description" formatted="false">Borrar o filtro</string>
-    <string name="ad_category_title_music" formatted="false">Música</string>
-    <string name="made_for_you_hub_title" formatted="false">Especialmente para ti</string>
     <string name="settings_item_app_language_title" formatted="false">Idioma da aplicación</string>
     <string name="create_menu_item_folder_title" formatted="false">Cartafol</string>
     <string name="create_folder_name_suggested_folder_name" formatted="false">Novo cartafol</string>
     <string name="context_menu_rename_folder" formatted="false">Cambiar nome do cartafol</string>
-    <string name="your_library_messaging_folder_rename_hint" formatted="false">Nome do cartafol</string>
     <string name="create_playlist_content_description" formatted="false">Crear a lista</string>
     <string name="actions_picker_delete" formatted="false">Eliminar</string>
     <string name="filter_and_sort_sort_section_title" formatted="false">Ordenar por</string>

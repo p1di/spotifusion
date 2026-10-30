@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_liquid_glass_title">液态玻璃</string>
+    <string name="settings_liquid_glass_detail">栏会像玻璃一样弯曲并映出身后的页面</string>
+    <string name="settings_liquid_glass_unsupported">需要 Android 12 或更高版本</string>
+    <string name="settings_liquid_glass_reduced">手机减少模糊或动画时，改用磨砂效果</string>
+    <string name="immersive_expand_tab_bar">显示所有标签</string>
+</resources>

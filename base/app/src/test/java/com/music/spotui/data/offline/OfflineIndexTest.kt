@@ -20,6 +20,14 @@ class OfflineIndexTest {
         return root
     }
 
+    @Test fun theProvidingExtensionIsKeptAndOlderEntriesHaveNone() {
+        val old = OfflineTrack.fromJson(entry("a"))
+        assertEquals(null, old.providerId)
+        val kept = OfflineTrack.fromJson(old.copy(providerId = "io.github.x.dl").toJson())
+        assertEquals("io.github.x.dl", kept.providerId)
+        assertFalse(old.toJson().has("providerId"))
+    }
+
     @Test fun truncatedIndexKeepsEveryFile() {
         val root = folder("[{\"id\":\"a\",\"file\":\"a.m4a\"", "a", "b")
         OfflineStore.load(root)

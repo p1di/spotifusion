@@ -8,6 +8,7 @@ import app.myspoti.api.Album
 import app.myspoti.api.Artist
 import app.myspoti.api.Image
 import app.myspoti.api.LibraryFilter
+import app.myspoti.api.LocalFile
 import app.myspoti.api.MediaCard
 import app.myspoti.api.MediaKind
 import app.myspoti.api.MyspotiApi
@@ -29,9 +30,12 @@ import com.music.spotui.data.entity.PodcastModel
 import com.music.spotui.data.entity.SearchResults
 import com.music.spotui.data.entity.ShowPage
 import com.music.spotui.data.entity.SongsModel
+import com.music.spotui.data.local.LocalFileMatch
+import com.music.spotui.data.local.LocalMusic
 import com.music.spotui.di.Graph
 import com.music.spotui.di.SongPlayer
 import kotlinx.coroutines.async
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -78,8 +82,12 @@ class Api constructor(
         /** Contents of the library folders opened so far, by folder uri. */
         val folders = java.util.concurrent.ConcurrentHashMap<String, List<LibraryEntry>>()
 
+        /** A playlist's songs were changed from the app: the next page of it reads them again. */
+        fun invalidatePlaylist(playlistId: String) = PlaylistFresh.drop("spotify:playlist:$playlistId")
+
         /** Drop all cached feeds (e.g. on logout / account switch). */
         fun clear() {
+            PlaylistFresh.drop(null)
             albums = null; artists = null; home = null; library = null
             libraryRoot = null; folders.clear()
             facets.clear()
@@ -114,6 +122,13 @@ class Api constructor(
          * [head] (the newest liked songs, from Spotify) then the rest of [known] after them.
          * A song unliked inside the head's span is gone from it, so it goes from the list too.
          */
+        /** True when [head] ends inside [known] (or is the whole list), so [merge] loses nothing. */
+        fun reaches(head: List<SongsModel>, known: List<SongsModel>): Boolean {
+            if (head.size < 50) return true
+            val last = head.last().spotifyTrackId
+            return known.any { it.spotifyTrackId == last }
+        }
+
         fun merge(head: List<SongsModel>, known: List<SongsModel>): List<SongsModel> {
             val ids = head.mapTo(HashSet()) { it.spotifyTrackId }
             val lastHead = head.lastOrNull()?.spotifyTrackId
@@ -152,6 +167,21 @@ class Api constructor(
             durationMs = t.durationMs.toInt(),
             addedAt = t.addedAt.orEmpty(),
             playable = t.playable,
+            rowUid = t.uid.orEmpty(),
+        )
+        // A local file of the user's computer: the uri holds its tags, nothing else. Greyed out
+        // until [LocalFileMatch] finds the same song on this device.
+        if (LocalFile.isLocal(t.uri)) return SongsModel(
+            id = stableId("local:${t.uri}"),
+            title = t.name.take(128),
+            album = t.album?.name.orEmpty(),
+            singer = singer,
+            coverUri = "",
+            url = t.uri,
+            durationMs = t.durationMs.toInt(),
+            addedAt = t.addedAt.orEmpty(),
+            playable = false,
+            rowUid = t.uid.orEmpty(),
         )
         return SongsModel(
             id = stableId("track:$id"),
@@ -167,7 +197,14 @@ class Api constructor(
             addedAt = t.addedAt.orEmpty(),
             playable = t.playable,
             artistIds = t.artists.map { it.uri.substringAfterLast(':') },
+            rowUid = t.uid.orEmpty(),
         )
+    }
+
+    /** [songs] with the playlist's local files played from this device's own copy, when there is one. */
+    private suspend fun withDeviceFiles(songs: List<SongsModel>): List<SongsModel> {
+        if (songs.none { it.url.startsWith(LocalFileMatch.SPOTIFY_PREFIX) }) return songs
+        return LocalFileMatch.resolve(songs, LocalMusic.tracks(context))
     }
 
     private fun episodeSong(e: app.myspoti.api.Episode): SongsModel {
@@ -198,7 +235,7 @@ class Api constructor(
         artists = a.artists.joinToString(", ") { it.name },
         coverUri = cover(a.images),
         name = a.name,
-        time = a.releaseDate?.take(4).orEmpty(),
+        time = a.releaseDate?.take(10).orEmpty(),
         type = a.type,
     )
 
@@ -216,12 +253,12 @@ class Api constructor(
         val id = c.uri.substringAfterLast(':')
         val image = cover(c.images)
         return when (c.kind) {
-            MediaKind.ALBUM -> HomeItem.Album(id = id, name = c.title, imageUrl = image, subtitle = c.subtitle ?: "Album", artists = c.subtitle.orEmpty())
+            MediaKind.ALBUM -> HomeItem.Album(id = id, name = c.title, imageUrl = image, subtitle = c.subtitle ?: context.getString(R.string.album_type_album), artists = c.subtitle.orEmpty())
             MediaKind.ARTIST -> HomeItem.Artist(name = c.title, imageUrl = image, id = id)
-            MediaKind.PLAYLIST -> HomeItem.Playlist(name = c.title, imageUrl = image, subtitle = c.subtitle?.let { "Playlist • $it" } ?: "Playlist", id = id)
+            MediaKind.PLAYLIST -> HomeItem.Playlist(name = c.title, imageUrl = image, subtitle = c.subtitle?.let { context.getString(R.string.assisted_curation_search_playlist) + " • $it" } ?: context.getString(R.string.assisted_curation_search_playlist), id = id)
             MediaKind.SHOW, MediaKind.AUDIOBOOK -> HomeItem.Show(id = id, name = c.title, imageUrl = image, subtitle = c.subtitle.orEmpty(), isEpisode = false)
             MediaKind.EPISODE, MediaKind.CHAPTER -> HomeItem.Show(id = id, name = c.title, imageUrl = image, subtitle = c.subtitle.orEmpty(), isEpisode = true)
-            MediaKind.COLLECTION -> HomeItem.Playlist(name = c.title, imageUrl = image.ifBlank { LIKED_COVER }, subtitle = "Playlist", id = LIKED_SONGS_ID)
+            MediaKind.COLLECTION -> HomeItem.Playlist(name = c.title, imageUrl = image.ifBlank { LIKED_COVER }, subtitle = context.getString(R.string.assisted_curation_search_playlist), id = LIKED_SONGS_ID)
             else -> null
         }
     }
@@ -463,7 +500,7 @@ class Api constructor(
             publisher = head?.publisher?.takeIf { it.isNotBlank() }
                 ?: book?.authors?.joinToString(", ").orEmpty(),
             coverUri = cover,
-            description = stripHtml(head?.description ?: book?.description),
+            description = head?.description ?: book?.description?.let { app.myspoti.spotify.stripHtml(it) }.orEmpty(),
             rating = head?.rating ?: 0.0,
             saved = head?.saved == true,
             authors = book?.authors.orEmpty(),
@@ -512,6 +549,12 @@ class Api constructor(
     suspend fun getSavedEpisodes(): List<SongsModel> {
         if (!ready()) return emptyList()
         return runCatching { api.podcasts.savedEpisodes(limit = 100).items.map(::episodeSong) }.getOrDefault(emptyList())
+    }
+
+    /** Release date of a show's newest episode (one episode asked for), "" when unknown. */
+    suspend fun latestEpisodeDate(showId: String): String {
+        if (!ready()) return ""
+        return runCatching { api.podcasts.episodes("spotify:show:$showId", 0, 1).items.firstOrNull()?.releaseDate.orEmpty() }.getOrDefault("")
     }
 
     // ── Radio and categories ──
@@ -610,11 +653,12 @@ class Api constructor(
             name = page.artist.name.ifBlank { artistName },
             verified = page.artist.verified,
             monthlyListeners = page.artist.monthlyListeners,
-            biography = stripHtml(page.biography),
+            biography = page.biography,
             headerImage = big(page.headerImages).ifBlank { avatar },
             avatarImage = avatar,
             topTracks = top.map { (song, plays) -> ArtistTrackUi(song, plays) },
-            popularReleases = page.popularReleases.map(::albumOf),
+            // Newest first (the sort is stable: same-day releases keep Spotify's order).
+            popularReleases = page.popularReleases.sortedByDescending { it.releaseDate.orEmpty().take(10) }.map(::albumOf),
             appearsOn = page.appearsOn.map(::albumOf),
             relatedArtists = page.related.map(::artistOf),
         )
@@ -636,11 +680,33 @@ class Api constructor(
         }.getOrNull().orEmpty()
         val known = page.popularReleases.map { it.uri }.toSet()
         if (all.any { it.uri !in known }) {
-            val merged = (page.popularReleases + all).distinctBy { it.uri }.sortedByDescending { it.releaseDate.orEmpty() }
+            val merged = (page.popularReleases + all).distinctBy { it.uri }.sortedByDescending { it.releaseDate.orEmpty().take(10) }
             val full = model.copy(popularReleases = merged.map(::albumOf))
             ArtistCache.map[uri] = System.currentTimeMillis() to full
             emit(Response.Success(full))
         }
+    }
+
+    /**
+     * The songs of playlists read in full lately, by playlist uri (a few, small ones: a long list
+     * stays on the network). Dropped by an edit made from the app, see [invalidatePlaylist].
+     */
+    private object PlaylistFresh {
+        const val FRESH_MS = 5 * 60_000L
+        const val MAX_TRACKS = 1_000
+        private const val KEEP = 6
+        private val map = object : LinkedHashMap<String, Pair<Long, List<SongsModel>>>(8, 0.75f, true) {
+            override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Pair<Long, List<SongsModel>>>) = size > KEEP
+        }
+
+        @Synchronized fun get(uri: String): List<SongsModel>? =
+            map[uri]?.takeIf { System.currentTimeMillis() - it.first < FRESH_MS }?.second
+
+        @Synchronized fun put(uri: String, songs: List<SongsModel>) {
+            if (songs.isEmpty() || songs.size > MAX_TRACKS) map.remove(uri) else map[uri] = System.currentTimeMillis() to songs
+        }
+
+        @Synchronized fun drop(uri: String?) { if (uri == null) map.clear() else map.remove(uri) }
     }
 
     /** Artist pages shown lately, by artist uri, with when they were loaded. */
@@ -696,8 +762,13 @@ class Api constructor(
         )))
     }
 
-    /** Liked Songs as a page: cached list shown instantly, then refreshed page by page. */
-    suspend fun getLikedPage(): Flow<Response<ContextPageModel>> = flow {
+    /**
+     * Liked Songs as a page: cached list shown instantly, then refreshed. A list read in full less
+     * than [LIKED_FULL_MS] ago only has its newest page read again (the hearts of this account
+     * and a like or unlike anywhere else land there); after that, with no list on storage, or
+     * with [full] (a pull-to-refresh), every page is read.
+     */
+    suspend fun getLikedPage(full: Boolean = false): Flow<Response<ContextPageModel>> = flow {
         fun page(tracks: List<SongsModel>, complete: Boolean) = ContextPageModel(
             uri = "spotify:collection:tracks",
             type = "liked",
@@ -712,6 +783,24 @@ class Api constructor(
         if (LikedCache.tracks == null) LikedCache.tracks = withContext(Dispatchers.IO) { ScreenCache.liked.read() }
         LikedCache.tracks?.let { emit(Response.Success(page(it, true))) } ?: emit(Response.Loading())
         if (!ready()) { if (LikedCache.tracks == null) emit(Response.Error(notSignedIn())); return@flow }
+        val known = LikedCache.tracks
+        if (!full && known != null) {
+            val at = withContext(Dispatchers.IO) { ScreenCache.likedFullAt() }
+            if (at != null && System.currentTimeMillis() - at < LIKED_FULL_MS) {
+                val head = runCatching { likedHead() }.getOrElse { if (it is CancellationException) throw it; null }
+                // The list shown stays when Spotify cannot be reached.
+                if (head == null) return@flow
+                // A head that does not reach the list known (more than a page of new likes) cannot be merged.
+                if (LikedCache.reaches(head, known)) {
+                    val merged = LikedCache.merge(head, known)
+                    LikedCache.tracks = merged
+                    ScreenCache.liked.write(merged)
+                    SongPlayer.registerLikedSongs(merged.map { it.url })
+                    emit(Response.Success(page(merged, true)))
+                    return@flow
+                }
+            }
+        }
         val first = LikedCache.tracks == null
         // Cancellation must escape: emit() throws AbortFlowException (a CancellationException)
         // when the collector stops early (first { … }); catching it and emitting again
@@ -724,6 +813,7 @@ class Api constructor(
         }
         LikedCache.tracks = tracks
         ScreenCache.liked.write(tracks)
+        ScreenCache.markLikedFull()
         SongPlayer.registerLikedSongs(tracks.map { it.url })
         emit(Response.Success(page(tracks, true)))
     }
@@ -734,13 +824,17 @@ class Api constructor(
      */
     suspend fun mergeLikedHead(): List<SongsModel>? = runCatching {
         if (!ready()) return null
-        val head = api.library.likedTracks(0, 50).items.map { songOf(it.track).copy(addedAt = it.addedAt.orEmpty()) }
+        val head = likedHead()
         val merged = LikedCache.merge(head, LikedCache.tracks.orEmpty())
         LikedCache.tracks = merged
         withContext(Dispatchers.IO) { ScreenCache.liked.write(merged) }
         SongPlayer.registerLikedSongs(merged.map { it.url })
         merged
     }.getOrNull()
+
+    /** The newest Liked Songs: one page of 50. */
+    private suspend fun likedHead(): List<SongsModel> =
+        api.library.likedTracks(0, 50).items.map { songOf(it.track).copy(addedAt = it.addedAt.orEmpty()) }
 
     private suspend fun allLiked(onPage: suspend (List<SongsModel>) -> Unit): List<SongsModel> {
         val out = ArrayList<SongsModel>()
@@ -754,10 +848,20 @@ class Api constructor(
         return out
     }
 
-    suspend fun getAlbumPage(albumId: String): Flow<Response<ContextPageModel>> = flow {
+    /**
+     * An album as a page: the copy on storage (opened before) at once, then the album and its
+     * songs from Spotify, and the artist's avatar a moment after in a second emit. Without
+     * [stored] the copy on storage is left out (a sync that must see the album as it is now).
+     */
+    suspend fun getAlbumPage(albumId: String, stored: Boolean = true): Flow<Response<ContextPageModel>> = flow {
         emit(Response.Loading())
-        if (!ready()) { emit(Response.Error(notSignedIn())); return@flow }
         val uri = "spotify:album:$albumId"
+        val saved = if (stored) withContext(Dispatchers.IO) { ScreenCache.albumPage(albumId).read() } else null
+        if (saved != null) {
+            SongPlayer.registerContext(saved.tracks.map { it.url }, uri)
+            emit(Response.Success(saved))
+        }
+        if (!ready()) { if (saved == null) emit(Response.Error(notSignedIn())); return@flow }
         val (album, tracks) = runCatching {
             coroutineScope {
                 val a = async { api.catalog.album(uri) }
@@ -773,7 +877,7 @@ class Api constructor(
                 }
                 a.await() to t.await()
             }
-        }.getOrElse { emit(Response.Error(context.getString(R.string.album_not_found))); return@flow }
+        }.getOrElse { if (saved == null) emit(Response.Error(context.getString(R.string.album_not_found))); return@flow }
         val songs = tracks.map { songOf(it).copy(album = album.name, coverUri = cover(album.images), albumId = albumId) }
         SongPlayer.registerContext(songs.map { it.url }, uri)
         val type = context.getString(when (album.type) {
@@ -781,33 +885,53 @@ class Api constructor(
             "COMPILATION" -> R.string.album_type_compilation; else -> R.string.album_type_album
         })
         val firstArtist = album.artists.firstOrNull()
-        val avatar = firstArtist?.let { runCatching { api.catalog.artist(it.uri) }.getOrNull() }?.images?.let(::cover).orEmpty()
-        emit(Response.Success(ContextPageModel(
+        val page = ContextPageModel(
             uri = uri,
             type = "album",
             name = album.name,
             coverUri = big(album.images),
             ownerName = album.artists.joinToString(", ") { it.name },
-            ownerAvatar = avatar,
+            // The avatar of the copy on storage (same artist) until the new one is known.
+            ownerAvatar = saved?.takeIf { it.ownerUri == firstArtist?.uri.orEmpty() }?.ownerAvatar.orEmpty(),
             ownerUri = firstArtist?.uri.orEmpty(),
             metaLine = listOf(type, dateLabel(album.releaseDate)).filter { it.isNotBlank() }.joinToString(" • "),
             explicit = songs.any { it.explicit },
             tracks = songs,
-        )))
+        )
+        // Written before the first emit: a collector that only wants the first page stops the flow there.
+        ScreenCache.albumPage(albumId).write(page)
+        ScreenCache.pruneAlbumPages(ALBUM_PAGES_KEPT)
+        emit(Response.Success(page))
+        val avatar = firstArtist?.let { runCatching { api.catalog.artist(it.uri) }.getOrNull() }?.images?.let(::cover).orEmpty()
+        if (avatar.isNotBlank() && avatar != page.ownerAvatar) {
+            val withAvatar = page.copy(ownerAvatar = avatar)
+            ScreenCache.albumPage(albumId).write(withAvatar)
+            emit(Response.Success(withAvatar))
+        }
     }
 
-    suspend fun getPlaylistPage(playlistId: String): Flow<Response<ContextPageModel>> = flow {
+    /**
+     * A playlist as a page. Its details are always asked for; its songs are kept in memory for
+     * [PlaylistFresh.FRESH_MS] after a full read and reused when the playlist still has as many
+     * songs, so reopening it does not read every page again. An edit made here drops them
+     * ([invalidatePlaylist]); [force] (a reload) reads everything.
+     */
+    suspend fun getPlaylistPage(playlistId: String, force: Boolean = false): Flow<Response<ContextPageModel>> = flow {
         emit(Response.Loading())
         if (!ready()) { emit(Response.Error(notSignedIn())); return@flow }
         val uri = "spotify:playlist:$playlistId"
+        val fresh = if (force) null else PlaylistFresh.get(uri)
         // The first songs are asked for together with the playlist's details, not after them.
-        val firstPage = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.currentCoroutineContext()).async(Dispatchers.IO) {
+        val flowScope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.currentCoroutineContext())
+        fun startFirstPage() = flowScope.async(Dispatchers.IO) {
             runCatching { api.playlists.tracks(uri, 0, 100) }
         }
+        var firstPage = if (fresh == null) startFirstPage() else null
         val pl = runCatching { api.playlists.playlist(uri) }.getOrElse {
-            firstPage.cancel()
+            firstPage?.cancel()
             emit(Response.Error(context.getString(R.string.playlist_not_found))); return@flow
         }
+        if (fresh != null && fresh.size != pl.trackCount) firstPage = startFirstPage()
         val saves = pl.followers?.takeIf { it > 0 }?.let {
             context.resources.getQuantityString(R.plurals.profile_list_item_saves_count, it.coerceAtMost(Int.MAX_VALUE.toLong()).toInt(), it)
         }.orEmpty()
@@ -821,20 +945,59 @@ class Api constructor(
             ownerAvatar = cover(pl.ownerImages),
             ownerUri = pl.ownerUri.orEmpty(),
             metaLine = saves,
+            isBlend = pl.isBlend,
+            canLeave = pl.canLeave,
         )
+        // The first page gives the total: the rest is asked for PLAYLIST_PARALLEL pages at a time
+        // and shown in order as it lands, at most every PLAYLIST_EMIT_MS. One page after the
+        // other, each followed by the whole list shown and registered again, a 6000-song
+        // playlist took about two minutes (tester report).
         val songs = ArrayList<SongsModel>()
-        var offset = 0
         var failed = false
-        while (true) {
-            val result = if (offset == 0) firstPage.await() else runCatching { api.playlists.tracks(uri, offset, 100) }
-            val page = result.getOrElse { failed = true; null } ?: break
-            songs += page.items.map(::songOf)
+        fun publish(done: Boolean): Response<ContextPageModel> {
             SongPlayer.registerContext(songs.map { it.url }, uri)
+            // Kept before the emit: a collector that stops at the complete page ends the flow there.
+            if (done && !failed) PlaylistFresh.put(uri, songs.toList())
             val total = songs.sumOf { it.durationMs.toLong() }
-            val meta = listOf(saves, if (total > 0) durationLabel(total) else "").filter { it.isNotBlank() }.joinToString(" • ")
-            val done = page.nextOffset == null
-            emit(Response.Success(header.copy(metaLine = meta, tracks = songs.toList(), complete = done)))
-            offset = page.nextOffset ?: break
+            // The song count rides along with the duration ("1 h 2 min / 12 songs") so the two
+            // numbers that grow together as pages arrive stay next to each other.
+            val durationAndCount = if (songs.isNotEmpty()) {
+                val count = context.resources.getQuantityString(R.plurals.liked_songs_header_metadata_text, songs.size, songs.size)
+                if (total > 0) "${durationLabel(total)} / $count" else count
+            } else ""
+            val meta = listOf(saves, durationAndCount).filter { it.isNotBlank() }.joinToString(" • ")
+            // A playlist without a cover of its own shows the mosaic of its songs' albums, as in the official app.
+            val cover = header.coverUri.ifBlank { com.music.spotui.ui.components.mosaicCoverFor(songs.take(200).map { it.coverUri }) }
+            return Response.Success(header.copy(coverUri = cover, metaLine = meta, tracks = songs.toList(), complete = done))
+        }
+        if (firstPage == null) {
+            songs += fresh!!
+            emit(publish(done = true))
+            return@flow
+        }
+        val first = firstPage.await().getOrElse { failed = true; null }
+        if (first != null) {
+            songs += withDeviceFiles(first.items.map(::songOf))
+            val offsets = generateSequence(first.nextOffset) { (it + PLAYLIST_PAGE).takeIf { n -> n < first.total } }.toList()
+            emit(publish(done = offsets.isEmpty()))
+            if (offsets.isNotEmpty()) {
+                val gate = kotlinx.coroutines.sync.Semaphore(PLAYLIST_PARALLEL)
+                coroutineScope {
+                    val jobs = offsets.map { o -> async(Dispatchers.IO) { gate.withPermit { runCatching { api.playlists.tracks(uri, o, PLAYLIST_PAGE) }.getOrNull() } } }
+                    var lastEmit = System.currentTimeMillis()
+                    for ((i, job) in jobs.withIndex()) {
+                        val page = job.await()
+                        if (page == null) { failed = true; jobs.drop(i + 1).forEach { it.cancel() }; break }
+                        songs += withDeviceFiles(page.items.map(::songOf))
+                        val last = i == jobs.lastIndex
+                        if (last || System.currentTimeMillis() - lastEmit >= PLAYLIST_EMIT_MS) {
+                            emit(publish(done = last)); lastEmit = System.currentTimeMillis()
+                        }
+                    }
+                }
+                // A page that failed: what came before it stays, marked complete so nothing waits.
+                if (failed && songs.isNotEmpty()) emit(publish(done = true))
+            }
         }
         if (failed && songs.isEmpty()) emit(Response.Error(context.getString(R.string.couldnt_load, pl.name)))
     }
@@ -860,12 +1023,12 @@ class Api constructor(
         var offset = 0
         while (true) {
             val page = runCatching { api.playlists.tracks(uri, offset, 100) }.getOrNull() ?: break
-            songs += page.items.map(::songOf)
+            songs += withDeviceFiles(page.items.map(::songOf))
             SongPlayer.registerContext(songs.map { it.url }, uri)
             emit(Response.Success(songs.toList()))
             offset = page.nextOffset ?: break
         }
-        if (songs.isEmpty()) emit(Response.Error("Couldn't load this playlist"))
+        if (songs.isEmpty()) emit(Response.Error(context.getString(R.string.page_load_failed)))
     }
 
     // ── Library ──
@@ -893,8 +1056,7 @@ class Api constructor(
         val out = ArrayList<app.myspoti.api.LibraryItem>()
         var offset = 0
         repeat(40) {
-            val page = runCatching { api.library.items(filter = filter, folderUri = folderUri, offset = offset, limit = 50) }.getOrNull()
-                ?: if (out.isEmpty()) throw IllegalStateException("library fetch failed") else return out
+            val page = api.library.items(filter = filter, folderUri = folderUri, offset = offset, limit = 50)
             out += page.items
             offset = page.nextOffset ?: return out
         }
@@ -920,17 +1082,8 @@ class Api constructor(
         if (HomeCache.libraryRoot == null) HomeCache.libraryRoot = withContext(Dispatchers.IO) { ScreenCache.libraryRoot.read() }
         HomeCache.libraryRoot?.let { emit(Response.Success(it)) } ?: emit(Response.Loading())
         if (!ready()) { if (HomeCache.libraryRoot == null) emit(Response.Error(notSignedIn())); return@flow }
-        runCatching {
-            val rootItems = libraryLevel(null).mapNotNull(::entryOf)
-            val folderPlaylistIds = rootItems.filter { it.isFolder }.flatMap { folder ->
-                runCatching { libraryLevel(folder.folderUri).mapNotNull(::entryOf).map { it.spotifyId } }.getOrDefault(emptyList())
-            }.toSet()
-            val rootIds = rootItems.map { it.spotifyId }.toSet() + folderPlaylistIds
-            val extraPlaylists = runCatching { api.playlists.mine().map(::playlistEntry) }.getOrDefault(emptyList())
-                .filter { it.spotifyId !in rootIds }
-            listOf(likedEntry()) + rootItems + extraPlaylists
-        }.fold(
-            onSuccess = { HomeCache.libraryRoot = it; ScreenCache.libraryRoot.write(it); emit(Response.Success(it)) },
+        runCatching { listOf(likedEntry()) + libraryLevel(null).mapNotNull(::entryOf) }.fold(
+            onSuccess = { HomeCache.libraryRoot = it; ScreenCache.libraryRoot.write(it); PagePrefetch.schedule(it); emit(Response.Success(it)) },
             onFailure = { Log.e("Api", "getLibraryRoot failed", it); if (HomeCache.libraryRoot == null) emit(Response.Error(it.message ?: "error")) },
         )
     }
@@ -978,7 +1131,7 @@ class Api constructor(
                 LikedCache.tracks = songs
                 emit(Response.Success(songs))
             },
-            onFailure = { emit(Response.Error("Couldn't load Liked Songs")) },
+            onFailure = { emit(Response.Error(context.getString(R.string.couldnt_load, context.getString(R.string.collection_liked_songs_title)))) },
         )
     }
 
@@ -1012,19 +1165,10 @@ class Api constructor(
         )
     }
 
-    /** Descriptions/bios come as HTML (sometimes double-encoded with numeric entities like &#731;): decode cleanly. */
+    /** Playlist descriptions come as HTML: keep the text and link labels. */
     private fun stripHtml(raw: String?): String {
         if (raw.isNullOrBlank()) return ""
-        val pass1 = androidx.core.text.HtmlCompat.fromHtml(raw, androidx.core.text.HtmlCompat.FROM_HTML_MODE_LEGACY).toString()
-        val pass2 = androidx.core.text.HtmlCompat.fromHtml(pass1, androidx.core.text.HtmlCompat.FROM_HTML_MODE_LEGACY).toString()
-        return pass2
-            .replace(Regex("&#(\\d+);")) { m ->
-                runCatching { String(Character.toChars(m.groupValues[1].toInt())) }.getOrDefault(m.value)
-            }
-            .replace(Regex("&#[xX]([0-9a-fA-F]+);")) { m ->
-                runCatching { String(Character.toChars(m.groupValues[1].toInt(16))) }.getOrDefault(m.value)
-            }
-            .trim()
+        return androidx.core.text.HtmlCompat.fromHtml(raw, androidx.core.text.HtmlCompat.FROM_HTML_MODE_LEGACY).toString().trim()
     }
 
     /** Among same-named albums, prefer the exact name by the requested artist. */
@@ -1037,3 +1181,12 @@ class Api constructor(
         return nameMatches.firstOrNull(::artistMatches) ?: candidates.firstOrNull(::artistMatches) ?: nameMatches.firstOrNull() ?: candidates.first()
     }
 }
+
+/** Songs per playlist page, pages asked for at once, and the most often a growing list is shown again. */
+private const val PLAYLIST_PAGE = 100
+private const val PLAYLIST_PARALLEL = 4
+private const val PLAYLIST_EMIT_MS = 350L
+/** A Liked Songs list read in full is trusted this long: only its newest page is read again. */
+private const val LIKED_FULL_MS = 24 * 3_600_000L
+/** Album pages kept on storage. */
+private const val ALBUM_PAGES_KEPT = 30

@@ -125,24 +125,9 @@ class PlayerViewModel constructor(private val currentSongState: CurrentSongState
         }
     }
 
-    fun goToArtist(trackId: String, fallbackName: String, artistIndex: Int = 0, navigate: (route: String) -> Unit) {
-        viewModelScope.launch {
-            val targetName = fallbackName.substringBefore(",").trim()
-            val route = withContext(Dispatchers.IO) {
-                val artists = if (trackId.isNotBlank())
-                    runCatching { app.myspoti.host.android.MyspotiRuntime.api.catalog.track("spotify:track:$trackId") }.getOrNull()?.artists.orEmpty()
-                else emptyList()
-                val artist = artists.firstOrNull { it.name.equals(targetName, ignoreCase = true) }
-                    ?: artists.getOrNull(artistIndex)
-                    ?: artists.firstOrNull()
-                artistRoute(
-                    artist?.name?.ifBlank { null } ?: targetName,
-                    artist?.uri?.substringAfterLast(':').orEmpty(),
-                )
-            }
-            navigate(route)
-        }
-    }
+    /** The song's artist page; a song by several artists asks which one first (see ArtistChooser). */
+    fun goToArtist(trackId: String, fallbackName: String, navigate: (route: String) -> Unit) =
+        com.music.spotui.ui.components.ArtistChooser.goForTrack(trackId, fallbackName, navigate)
 
     /**
      * Play the track at an absolute [index] in [queueSongs]. Used by the now-playing
@@ -155,7 +140,7 @@ class PlayerViewModel constructor(private val currentSongState: CurrentSongState
         val song = queueSongs[index]
         if (song.id == currentSongId.value) return
         updateSongState(song.coverUri, song.title, song.singer, true, song.id, index, song.album)
-        SongPlayer.playSong(song.url, context)
+        SongPlayer.playSong(song.url, context, songs = queueSongs)
     }
 
     fun playPreviousSong(queueSongs : List<SongsModel>, context: Context) {

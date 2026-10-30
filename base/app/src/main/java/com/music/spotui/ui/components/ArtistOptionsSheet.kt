@@ -1,5 +1,9 @@
 package com.music.spotui.ui.components
 
+import com.music.spotui.ui.theme.tone
+import com.music.spotui.ui.theme.AppText
+import com.music.spotui.ui.theme.AppMuted
+
 import android.content.Intent
 import android.widget.Toast
 import androidx.compose.foundation.clickable
@@ -46,7 +50,7 @@ import kotlinx.coroutines.launch
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ArtistOptionsSheet(artistId: String, artistName: String, onDismiss: () -> Unit) {
+fun ArtistOptionsSheet(artistId: String, artistName: String, artistImage: String = "", onDismiss: () -> Unit) {
     val context = LocalContext.current
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val uri = "spotify:artist:$artistId"
@@ -57,21 +61,17 @@ fun ArtistOptionsSheet(artistId: String, artistName: String, onDismiss: () -> Un
             app.myspoti.host.android.MyspotiRuntime.api.extras.isArtistBanned(listOf(uri)).single()
         }.getOrNull()
     }
-    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState, containerColor = Color(0xFF282828)) {
+    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState, containerColor = tone(0xFF282828)) {
         Column(Modifier.navigationBarsPadding().verticalScroll(rememberScrollState())) {
             Text(
-                artistName, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold,
+                artistName, color = AppText, fontSize = 18.sp, fontWeight = FontWeight.Bold,
                 maxLines = 1, overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp),
             )
-            HorizontalDivider(color = Color(0xFF3E3E3E), thickness = 0.5.dp)
+            HorizontalDivider(color = tone(0xFF3E3E3E), thickness = 0.5.dp)
             Spacer(Modifier.height(8.dp))
             ArtistMenuRow(Icons.Default.Share, stringResource(R.string.share_link), enabled = artistId.isNotBlank()) {
-                val send = Intent(Intent.ACTION_SEND).apply {
-                    type = "text/plain"
-                    putExtra(Intent.EXTRA_TEXT, "https://open.spotify.com/artist/$artistId")
-                }
-                context.startActivity(Intent.createChooser(send, context.getString(R.string.action_share_label)))
+                SpotifyCode.show(ShareTarget("spotify:artist:$artistId", artistName, coverUri = artistImage))
                 onDismiss()
             }
             ArtistMenuRow(
@@ -92,6 +92,7 @@ fun ArtistOptionsSheet(artistId: String, artistName: String, onDismiss: () -> Un
                 com.music.spotui.di.Haptics.confirm()
                 onDismiss()
             }
+            com.music.spotui.extensions.ExtensionMenuEntries(app.myspoti.extensions.Surface.ARTIST_MENU, if (artistId.isBlank()) "" else uri, artistName, onDone = onDismiss)
             Spacer(Modifier.height(12.dp))
         }
     }
@@ -100,7 +101,7 @@ fun ArtistOptionsSheet(artistId: String, artistName: String, onDismiss: () -> Un
 /** One row of the artist menu, laid out like the track menu's rows. */
 @Composable
 private fun ArtistMenuRow(icon: ImageVector, label: String, enabled: Boolean = true, onClick: () -> Unit) {
-    val tint = if (enabled) Color.White else Color(0xFF6A6A6A)
+    val tint = if (enabled) AppText else Color(0xFF6A6A6A)
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
@@ -108,7 +109,7 @@ private fun ArtistMenuRow(icon: ImageVector, label: String, enabled: Boolean = t
             .clickable(enabled = enabled) { onClick() }
             .padding(horizontal = 20.dp, vertical = 14.dp),
     ) {
-        Icon(icon, contentDescription = null, tint = if (enabled) Color(0xFFB3B3B3) else Color(0xFF6A6A6A), modifier = Modifier.size(22.dp))
+        Icon(icon, contentDescription = null, tint = if (enabled) AppMuted else Color(0xFF6A6A6A), modifier = Modifier.size(22.dp))
         Text(label, color = tint, fontSize = 15.sp, modifier = Modifier.padding(start = 16.dp))
     }
 }

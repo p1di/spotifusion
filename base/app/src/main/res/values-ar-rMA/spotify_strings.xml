@@ -17,7 +17,6 @@
     <string name="snackbar_added_to_liked_songs" formatted="false">تزادت للأغاني اللي عاجباك.</string>
     <string name="snackbar_removed_from_liked_songs" formatted="false">تمسحات من الأغاني اللي عاجباك.</string>
     <string name="content_description_context_menu" formatted="false">اختيارات أخرى</string>
-    <string name="close_button_content_description" formatted="false">سد</string>
     <string name="add_to_playlist_saved_in_section_header" formatted="false">مسجّل في</string>
     <string name="add_to_playlist_new_playlist_button_text" formatted="false">قائمة أغاني جديدة</string>
     <string name="add_to_playlist_button_cancel" formatted="false">الغي</string>
@@ -25,8 +24,6 @@
     <string name="lyrics_card_title" formatted="false">كلمات الأغاني</string>
     <string name="lyrics_card_title_preview" formatted="false">معاينة الكلمات</string>
     <string name="lyrics_card_show_lyrics_button" formatted="false">اعرض الكلمات</string>
-    <string name="lyrics_card_expand_button_content_description" formatted="false">اعرض الكلمات فالشاشة كاملة</string>
-    <string name="lyrics_card_share_button_content_description" formatted="false">شارك كلمات الأغنية</string>
     <string name="lyrics_credential_note" formatted="false">الكلمات من عند %1$s</string>
     <string name="lyrics_fullscreen_chip_label_share" formatted="false">شارك</string>
     <string name="lyrics_fullscreen_chip_label_translate" formatted="false">ترجم</string>
@@ -49,7 +46,6 @@
     <string name="artist_popular_tracks" formatted="false">معروفة</string>
     <string name="curation_button_follow_state_text" formatted="false">تبّع</string>
     <string name="curation_button_following_state_text" formatted="false">متابع</string>
-    <string name="search_main_entity_subtitle_artist" formatted="false">فنان</string>
     <string name="connect_phone_is_self" formatted="false">هاد التليفون</string>
     <string name="settings_item_canvas_title" formatted="false">Canvas</string>
     <string name="video_settings_canvas_subtitle" formatted="false">مؤثرات بصرية قصيرة ومتكررة كنبان فاش كتكون الأغنية خدّامة.</string>
@@ -106,8 +102,6 @@
     <string name="library_search_text_hint" formatted="false">قلّب في مكتبتك</string>
     <string name="account_title" formatted="false">الحساب</string>
     <string name="song_dna_search_chip_followed_artists" formatted="false">فنانين متابعهم</string>
-    <string name="settings_item_crossfade_title" formatted="false">دمج</string>
-    <string name="playback_settings_crossfade_slider_seconds" formatted="false">%1$d ثانية</string>
     <string name="local_files_title" formatted="false">الفيشيات ديالك</string>
     <string name="local_files_empty_section_title" formatted="false">زيد الملفات الصوتية ديالك لمكتبتك الموسيقية</string>
     <string name="local_files_empty_section_subtitle" formatted="false">واش عندك أغنية أو بودكاست شخصي مكاينش في Spotify؟</string>
@@ -137,14 +131,10 @@
     <string name="assisted_curation_search_filter_artists" formatted="false">الفنانين</string>
     <string name="assisted_curation_search_filter_albums" formatted="false">الألبومات</string>
     <string name="assisted_curation_search_filter_playlists" formatted="false">قوائم الأغاني</string>
-    <string name="assisted_curation_search_filter_clear_content_description" formatted="false">امسح التصنيف</string>
-    <string name="ad_category_title_music" formatted="false">الموسيقى</string>
-    <string name="made_for_you_hub_title" formatted="false">مصممة على ودك</string>
     <string name="settings_item_app_language_title" formatted="false">اللغة ديال التطبيق</string>
     <string name="create_menu_item_folder_title" formatted="false">مجلّد</string>
     <string name="create_folder_name_suggested_folder_name" formatted="false">مجلّد جديد</string>
     <string name="context_menu_rename_folder" formatted="false">اعطي اسم جديد للمجلّد</string>
-    <string name="your_library_messaging_folder_rename_hint" formatted="false">اسم المجلّد</string>
     <string name="create_playlist_content_description" formatted="false">دير قائمة أغاني جديدة</string>
     <string name="actions_picker_delete" formatted="false">امسَح</string>
     <string name="filter_and_sort_sort_section_title" formatted="false">رتب حسب</string>

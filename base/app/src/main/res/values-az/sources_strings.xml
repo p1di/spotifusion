@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="sources_audio_title">Audio mənbələri</string>
+    <string name="sources_download_title">Yükləmə mənbələri</string>
+    <string name="sources_audio_footer">Hər mahnı üçün yuxarıdan aşağıya soruşulur: onu olan ilk mənbə oxudur. Sırasını dəyişmək üçün oxlardan istifadə edin.</string>
+    <string name="sources_download_footer">Yuxarıdan aşağıya soruşulur: mahnını olan ilk mənbə faylı verir. Sırasını dəyişmək üçün oxlardan istifadə edin.</string>
+    <string name="sources_spotify">Spotify</string>
+    <string name="sources_spotify_detail">Yuxarıdakı heç bir mənbədə mahnı olmadıqda çalınır</string>
+    <string name="sources_ready">Hazırdır</string>
+    <string name="sources_details_show">Təfərrüatları göstər</string>
+    <string name="sources_details_hide">Təfərrüatları gizlət</string>
+    <string name="sources_detail_version">Versiya %1$s · müəllif %2$s</string>
+    <string name="sources_last_used">Son: %1$s, %2$s</string>
+    <string name="sources_open">Genişləndirməni aç</string>
+    <string name="sources_order_hint">Mənbələr Parametrlərdə (Oxutma, Yükləmələr) təyin olunmuş sıra ilə soruşulur.</string>
+    <string name="sources_below_spotify">Soruşulmur: Spotify yuxarıdadır</string>
+</resources>

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="immersive_detail_pause">Pausa</string>
+    <string name="immersive_detail_save">Salva nella libreria</string>
+    <string name="immersive_detail_unsave">Rimuovi dalla libreria</string>
+    <string name="immersive_detail_find">Cerca nell\'elenco</string>
+    <string name="immersive_detail_smart_shuffle_on">Riproduzione casuale intelligente attiva: i consigli si uniscono all\'elenco mescolato.</string>
+    <string name="immersive_detail_more">Altro</string>
+    <string name="immersive_detail_less">Meno</string>
+    <string name="immersive_detail_featured_on">Presente in</string>
+    <string name="immersive_detail_remove_local">Rimuovi da questa playlist</string>
+    <string name="immersive_detail_follow">Segui</string>
+    <string name="immersive_detail_unfollow">Smetti di seguire</string>
+</resources>

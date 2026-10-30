@@ -1,5 +1,8 @@
 package com.music.spotui.ui.screens
 
+import com.music.spotui.ui.theme.AppText
+import com.music.spotui.ui.theme.AppMuted
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -73,23 +76,19 @@ fun FollowListScreen(navController: NavController, userId: String, followers: Bo
         item {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
-                    Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.accessibility_navigate_back), tint = Color.White,
+                    Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.accessibility_navigate_back), tint = AppText,
                     modifier = Modifier.pressable(0.96f) { navController.navigateUp() }.padding(16.dp).size(26.dp),
                 )
                 Text(
                     stringResource(if (followers) R.string.profile_followers_title else R.string.profile_following_title),
-                    color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold,
+                    color = AppText, fontSize = 22.sp, fontWeight = FontWeight.Bold,
                 )
             }
         }
         when {
-            list == null -> item {
-                Box(Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = AppAccent)
-                }
-            }
+            list == null -> item { com.music.spotui.ui.components.SkeletonList(count = 8, round = true) }
             list.isEmpty() -> item {
-                Text(stringResource(R.string.profile_list_empty), color = Color(0xFFB3B3B3), fontSize = 15.sp,
+                Text(stringResource(R.string.profile_list_empty), color = AppMuted, fontSize = 15.sp,
                     modifier = Modifier.padding(16.dp))
             }
             else -> items(list, key = { it.uri }) { u ->
@@ -107,7 +106,7 @@ fun FollowListScreen(navController: NavController, userId: String, followers: Bo
                         modifier = Modifier.size(52.dp).clip(CircleShape),
                     )
                     Spacer(Modifier.width(12.dp))
-                    Text(u.name, color = Color.White, fontSize = 16.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(u.name, color = AppText, fontSize = 16.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
             }
         }

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Texts of the Immersive look's bars and shared list components (English default). -->
+<resources>
+    <string name="immersive_shell_back">Back</string>
+    <string name="immersive_shell_more">More options</string>
+    <string name="immersive_shell_search_hint">Search</string>
+    <string name="immersive_shell_search_clear">Clear search</string>
+    <string name="immersive_shell_play">Play</string>
+    <string name="immersive_shell_shuffle">Shuffle</string>
+    <string name="immersive_shell_see_all">See all</string>
+    <string name="immersive_shell_now_playing">Now playing</string>
+    <string name="immersive_shell_explicit">Explicit</string>
+</resources>

@@ -69,7 +69,10 @@ object PlaybackCacheStore {
     private lateinit var indexFile: File
 
     val cachedTracks: SnapshotStateMap<String, CachedTrack> = mutableStateMapOf()
+    val tracks: SnapshotStateMap<String, CachedTrack> get() = cachedTracks
     private val pendingPurges = ConcurrentHashMap<String, Job>()
+
+    fun localIdOf(trackId: String): Long = ("cache_" + trackId).hashCode().toLong()
 
     fun init(context: Context) {
         if (::cacheDir.isInitialized) return
@@ -177,6 +180,8 @@ object PlaybackCacheStore {
         File(cacheDir, t.fileName).delete()
         saveIndex()
     }
+
+    fun enforceStorageThreshold(maxCapBytes: Long) = enforceCap(maxCapBytes)
 
     fun enforceCap(maxCapBytes: Long) {
         if (maxCapBytes <= 0) return // 0 = unlimited

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="update_code_title">Le code de %1$s a changé (%2$d lignes, +%3$d/−%4$d)</string>
+    <string name="update_code_body">Cette extension détient des droits puissants (actions critiques ou accès réseau étendu) : du nouveau code n\'est jamais exécuté sans votre accord.</string>
+    <string name="update_code_files">Fichiers modifiés : %1$s</string>
+    <string name="update_code_update">Mettre à jour</string>
+    <string name="update_code_later">Pas maintenant</string>
+    <string name="update_check_waiting">Mise à jour trouvée : elle s\'appliquera seule dans 24 heures</string>
+    <string name="update_check_repo_changed">Mise à jour refusée : le dépôt a changé de propriétaire</string>
+    <string name="update_repo_changed_title">Le dépôt a changé de propriétaire</string>
+    <string name="update_repo_changed_body">Ce dépôt a été recréé ou transféré sous le même nom : ses mises à jour sont bloquées. Désinstallez-la, ou réinstallez-la seulement si vous faites confiance au nouveau propriétaire.</string>
+    <string name="update_author_owner">par %1$s · dépôt de %2$s</string>
+    <string name="update_author_unverified">par %1$s · non vérifié</string>
+</resources>

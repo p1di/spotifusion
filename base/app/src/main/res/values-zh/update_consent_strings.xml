@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="update_code_title">%1$s 的代码已更改（%2$d 行，+%3$d/−%4$d）</string>
+    <string name="update_code_body">此扩展拥有强大权限（关键操作或广泛的网络访问），因此未经你同意绝不会运行新代码。</string>
+    <string name="update_code_files">已更改的文件：%1$s</string>
+    <string name="update_code_update">更新</string>
+    <string name="update_code_later">暂不</string>
+    <string name="update_check_waiting">发现更新：将在 24 小时后自动应用</string>
+    <string name="update_check_repo_changed">更新被拒绝：该仓库已更换所有者</string>
+    <string name="update_repo_changed_title">仓库已更换所有者</string>
+    <string name="update_repo_changed_body">该仓库以相同名称被重新注册或转移，因此其更新已被阻止。请卸载它，只有在信任新所有者时才重新安装。</string>
+    <string name="update_author_owner">作者 %1$s · 仓库所有者 %2$s</string>
+    <string name="update_author_unverified">作者 %1$s · 未验证</string>
+</resources>

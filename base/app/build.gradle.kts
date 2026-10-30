@@ -19,26 +19,28 @@ android {
     compileSdk = 37
 
     // Two channels that install side by side: betas ("2.0.0-beta.3") stay "app.myspoti",
-    // signed with the first key, as "Spotifusion Beta"; releases are "app.myspoti.stable",
-    // signed with their own key, as "Spotifusion".
+    // signed with the first key, as "Myspoti Beta"; releases are "app.myspoti.stable",
+    // signed with their own key, as "Myspoti".
     // Local builds (no version given) are on the beta side, like the phone test builds.
     val version = (findProperty("appVersionName") as String?) ?: "1.1.0"
-    val beta = findProperty("appVersionName") == null || version.contains("-")
+    // "-beta" as in UpdateChecker.isBeta, one predicate for the app id, the label and the log stripping.
+    val beta = findProperty("appVersionName") == null || version.contains("-beta")
     defaultConfig {
         applicationId = "com.spotifusion.app"
         manifestPlaceholders["appLabel"] = "Spotifusion"
+        // The adb command line (com.music.spotui.cli): betas and debug builds only.
+        manifestPlaceholders["cliEnabled"] = beta.toString()
         minSdk = 29
         targetSdk = 36
         // CI release builds pass the tag's version (-PappVersionName / -PappVersionCode).
-        versionCode = (findProperty("appVersionCode") as String?)?.toIntOrNull() ?: 2001
+        versionCode = (findProperty("appVersionCode") as String?)?.toIntOrNull() ?: 2002
         versionName = version
         // GitHub "owner/repo" whose releases the app checks for updates; empty = off
         // (local builds). CI sets it to the repository it builds.
-        // Inspectable hidden player in a test build (-PwebDebug=true); never in releases.
-        buildConfigField("boolean", "WEB_DEBUG", "${(findProperty("webDebug") as String?) == "true"}")
         buildConfigField("String", "UPDATE_REPO", "\"${(findProperty("updateRepo") as String?) ?: System.getenv("MYSPOTI_UPDATE_REPO") ?: "p1di/spotifusion"}\"")
         ndk {
-            abiFilters += listOf("arm64-v8a", "armeabi-v7a")
+            // -Pabis=arm64-v8a: a smaller test APK for one phone.
+            abiFilters += (findProperty("abis") as String?)?.split(",") ?: listOf("arm64-v8a", "armeabi-v7a")
         }
         // On-device tests (codecs): ./gradlew connectedDebugAndroidTest
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -52,6 +54,11 @@ android {
     // Release key from the CI secrets (env), else keystore/keystore.properties.
     val envStore = System.getenv("MYSPOTI_KEYSTORE")
     val hasReleaseKey = envStore != null || keystorePropertiesFile.exists()
+    // A stable release (a version without "-beta", given by CI) is never signed with the debug key:
+    // without the release key the build stops. Local builds (no version) and -PoverDev are not stable releases.
+    val stableRelease = !beta && findProperty("overDev") == null
+    if (stableRelease && !hasReleaseKey && gradle.startParameter.taskNames.any { Regex("(assemble|bundle|package|install)Release").containsMatchIn(it) })
+        throw GradleException("A stable release needs the release key: set MYSPOTI_KEYSTORE (CI) or add keystore/keystore.properties.")
     signingConfigs {
         create("release") {
             if (envStore != null) {
@@ -72,12 +79,19 @@ android {
         debug {
             // Installs next to the release apps (own data, own sign-in).
             applicationIdSuffix = ".dev"
-            manifestPlaceholders["appLabel"] = "Spotifusion"
+            manifestPlaceholders["appLabel"] = "Spotifusion dev"
+            manifestPlaceholders["cliEnabled"] = "true"
         }
         release {
             // Real key when provided (CI releases); otherwise the debug key, so a local
             // release build installs over the debug one while testing.
             signingConfig = signingConfigs.getByName(if (hasReleaseKey) "release" else "debug")
+            // -PoverDev: the optimised build under the dev app's id, to measure the speed of a
+            // beta on the test phone without replacing the signed beta installed there.
+            if (findProperty("overDev") != null) {
+                applicationIdSuffix = ".dev"
+                manifestPlaceholders["appLabel"] = "Spotifusion dev"
+            }
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(
@@ -96,10 +110,10 @@ android {
 
 dependencies {
     implementation(project(":host-android"))
+    // Third-party extensions: the sandbox (Rhino), manifests, packages and catalogues.
+    implementation(project(":extensions"))
     // Jam: scan the invite QR code (Google code scanner, no camera permission).
     implementation("com.google.android.gms:play-services-code-scanner:16.1.0")
-    // The SpotiFLAC verification opens in a browser tab, as SpotiFLAC Mobile does.
-    implementation("androidx.browser:browser:1.8.0")
     testImplementation("junit:junit:4.13.2")
     // The real org.json in unit tests (android.jar only has stubs).
     testImplementation("org.json:json:20240303")
@@ -128,10 +142,12 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.9.0")
     implementation("com.github.bumptech.glide:compose:1.0.0-beta01")
     implementation("androidx.palette:palette-ktx:1.0.0")
+    // Frosted (blurred) bars of the Immersive look. Apache-2.0.
+    implementation("dev.chrisbanes.haze:haze:1.3.1")
     // MediaTransferReceiver: lets the system output switcher transfer to our Connect routes
     implementation("androidx.mediarouter:mediarouter:1.8.1")
     implementation("androidx.compose.material:material-icons-extended:1.7.8")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.11.0")
     implementation(libs.serialization.json)
     implementation(libs.ktor.client.core)
     implementation(libs.ktor.client.okhttp)

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="update_code_title">Ο κώδικας του %1$s άλλαξε (%2$d γραμμές, +%3$d/−%4$d)</string>
+    <string name="update_code_body">Αυτή η επέκταση έχει ισχυρά δικαιώματα (κρίσιμες ενέργειες ή ευρεία πρόσβαση στο δίκτυο), οπότε νέος κώδικας δεν εκτελείται ποτέ χωρίς την έγκρισή σας.</string>
+    <string name="update_code_files">Αρχεία που άλλαξαν: %1$s</string>
+    <string name="update_code_update">Ενημέρωση</string>
+    <string name="update_code_later">Όχι τώρα</string>
+    <string name="update_check_waiting">Βρέθηκε ενημέρωση: θα εφαρμοστεί μόνη της σε 24 ώρες</string>
+    <string name="update_check_repo_changed">Η ενημέρωση απορρίφθηκε: το αποθετήριο άλλαξε ιδιοκτήτη</string>
+    <string name="update_repo_changed_title">Το αποθετήριο άλλαξε ιδιοκτήτη</string>
+    <string name="update_repo_changed_body">Αυτό το αποθετήριο καταχωρήθηκε ξανά ή μεταφέρθηκε με το ίδιο όνομα, γι\'αυτό οι ενημερώσεις του έχουν μπλοκαριστεί. Απεγκαταστήστε το ή εγκαταστήστε το ξανά μόνο αν εμπιστεύεστε τον νέο ιδιοκτήτη.</string>
+    <string name="update_author_owner">από %1$s · αποθετήριο του %2$s</string>
+    <string name="update_author_unverified">από %1$s · μη επαληθευμένο</string>
+</resources>

@@ -17,7 +17,6 @@
     <string name="snackbar_added_to_liked_songs" formatted="false">Dodano všečkanim skladbam.</string>
     <string name="snackbar_removed_from_liked_songs" formatted="false">Odstranjeno iz všečkanih skladb.</string>
     <string name="content_description_context_menu" formatted="false">Več možnosti</string>
-    <string name="close_button_content_description" formatted="false">Zapri</string>
     <string name="add_to_playlist_saved_in_section_header" formatted="false">Shranjeno v</string>
     <string name="add_to_playlist_new_playlist_button_text" formatted="false">Nov seznam predvajanja</string>
     <string name="add_to_playlist_button_cancel" formatted="false">Prekliči</string>
@@ -25,8 +24,6 @@
     <string name="lyrics_card_title" formatted="false">Besedilo</string>
     <string name="lyrics_card_title_preview" formatted="false">Predogled besedila</string>
     <string name="lyrics_card_show_lyrics_button" formatted="false">Pokaži besedilo</string>
-    <string name="lyrics_card_expand_button_content_description" formatted="false">Odpri celozaslonsko besedilo</string>
-    <string name="lyrics_card_share_button_content_description" formatted="false">Deli besedilo</string>
     <string name="lyrics_credential_note" formatted="false">Besedila zagotavlja %1$s</string>
     <string name="lyrics_fullscreen_chip_label_share" formatted="false">Deli</string>
     <string name="lyrics_fullscreen_chip_label_translate" formatted="false">Prevedi</string>
@@ -49,7 +46,6 @@
     <string name="artist_popular_tracks" formatted="false">Priljubljeno</string>
     <string name="curation_button_follow_state_text" formatted="false">Spremljaj</string>
     <string name="curation_button_following_state_text" formatted="false">Spremljaš</string>
-    <string name="search_main_entity_subtitle_artist" formatted="false">Izvajalec</string>
     <string name="connect_phone_is_self" formatted="false">Ta telefon</string>
     <string name="settings_item_canvas_title" formatted="false">Canvas</string>
     <string name="video_settings_canvas_subtitle" formatted="false">Kratke vizualne vsebine v zanki med predvajanjem skladbe.</string>
@@ -107,8 +103,6 @@
     <string name="library_search_text_hint" formatted="false">Preišči svojo zbirko</string>
     <string name="account_title" formatted="false">Račun</string>
     <string name="song_dna_search_chip_followed_artists" formatted="false">Spremljani izvajalci</string>
-    <string name="settings_item_crossfade_title" formatted="false">Postopen prehod</string>
-    <string name="playback_settings_crossfade_slider_seconds" formatted="false">%1$d s</string>
     <string name="local_files_title" formatted="false">Lokalne datoteke</string>
     <string name="local_files_empty_section_title" formatted="false">Dodaj lastne zvočne datoteke v svojo zbirko</string>
     <string name="local_files_empty_section_subtitle" formatted="false">Imaš skladbo ali osebni podkast, ki ni na Spotifyu?</string>
@@ -138,14 +132,10 @@
     <string name="assisted_curation_search_filter_artists" formatted="false">Izvajalci</string>
     <string name="assisted_curation_search_filter_albums" formatted="false">Albumi</string>
     <string name="assisted_curation_search_filter_playlists" formatted="false">Seznami predvajanja</string>
-    <string name="assisted_curation_search_filter_clear_content_description" formatted="false">Počisti filter</string>
-    <string name="ad_category_title_music" formatted="false">Glasba</string>
-    <string name="made_for_you_hub_title" formatted="false">Izbrano zate</string>
     <string name="settings_item_app_language_title" formatted="false">Jezik aplikacije</string>
     <string name="create_menu_item_folder_title" formatted="false">Mapa</string>
     <string name="create_folder_name_suggested_folder_name" formatted="false">Nova mapa</string>
     <string name="context_menu_rename_folder" formatted="false">Preimenuj mapo</string>
-    <string name="your_library_messaging_folder_rename_hint" formatted="false">Ime mape</string>
     <string name="create_playlist_content_description" formatted="false">Ustvari seznam predvajanja</string>
     <string name="actions_picker_delete" formatted="false">Izbriši</string>
     <string name="filter_and_sort_sort_section_title" formatted="false">Razvrsti po</string>

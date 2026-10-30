@@ -17,7 +17,6 @@
     <string name="snackbar_added_to_liked_songs" formatted="false">Hozzáadva a Kedvelt dalokhoz.</string>
     <string name="snackbar_removed_from_liked_songs" formatted="false">Eltávolítva a Kedvelt dalok közül.</string>
     <string name="content_description_context_menu" formatted="false">További lehetőségek</string>
-    <string name="close_button_content_description" formatted="false">Bezárás</string>
     <string name="add_to_playlist_saved_in_section_header" formatted="false">Elmentve itt:</string>
     <string name="add_to_playlist_new_playlist_button_text" formatted="false">Új műsorlista</string>
     <string name="add_to_playlist_button_cancel" formatted="false">Mégse</string>
@@ -25,8 +24,6 @@
     <string name="lyrics_card_title" formatted="false">Dalszöveg</string>
     <string name="lyrics_card_title_preview" formatted="false">Dalszöveg előnézete</string>
     <string name="lyrics_card_show_lyrics_button" formatted="false">Dalszöveg megjelenítése</string>
-    <string name="lyrics_card_expand_button_content_description" formatted="false">Dalszöveg megjelenítése teljes képernyőn</string>
-    <string name="lyrics_card_share_button_content_description" formatted="false">Dalszöveg megosztása</string>
     <string name="lyrics_credential_note" formatted="false">Dalszöveg tőle: %1$s</string>
     <string name="lyrics_fullscreen_chip_label_share" formatted="false">Megosztás</string>
     <string name="lyrics_fullscreen_chip_label_translate" formatted="false">Fordítás</string>
@@ -49,7 +46,6 @@
     <string name="artist_popular_tracks" formatted="false">Népszerű</string>
     <string name="curation_button_follow_state_text" formatted="false">Követés</string>
     <string name="curation_button_following_state_text" formatted="false">Követem</string>
-    <string name="search_main_entity_subtitle_artist" formatted="false">Előadó</string>
     <string name="connect_phone_is_self" formatted="false">Ez a telefon</string>
     <string name="settings_item_canvas_title" formatted="false">Canvas</string>
     <string name="video_settings_canvas_subtitle" formatted="false">Rövid, ismétlődő vizuálok megjelenítése dalok lejátszása közben.</string>
@@ -107,8 +103,6 @@
     <string name="library_search_text_hint" formatted="false">Keresés a Gyűjteményemben</string>
     <string name="account_title" formatted="false">Fiók</string>
     <string name="song_dna_search_chip_followed_artists" formatted="false">Követett előadók</string>
-    <string name="settings_item_crossfade_title" formatted="false">Áttűnés</string>
-    <string name="playback_settings_crossfade_slider_seconds" formatted="false">%1$d mp</string>
     <string name="local_files_title" formatted="false">Helyi fájlok</string>
     <string name="local_files_empty_section_title" formatted="false">Add hozzá a saját hangfájljaidat a Gyűjteményedhez</string>
     <string name="local_files_empty_section_subtitle" formatted="false">Van egy olyan dalod vagy személyes podcastod, amely még nem található meg a Spotifyon?</string>
@@ -138,14 +132,10 @@
     <string name="assisted_curation_search_filter_artists" formatted="false">Előadók</string>
     <string name="assisted_curation_search_filter_albums" formatted="false">Albumok</string>
     <string name="assisted_curation_search_filter_playlists" formatted="false">Műsorlisták</string>
-    <string name="assisted_curation_search_filter_clear_content_description" formatted="false">Szűrő eltávolítása</string>
-    <string name="ad_category_title_music" formatted="false">Zene</string>
-    <string name="made_for_you_hub_title" formatted="false">Neked készítettük</string>
     <string name="settings_item_app_language_title" formatted="false">Alkalmazás nyelve</string>
     <string name="create_menu_item_folder_title" formatted="false">Mappa</string>
     <string name="create_folder_name_suggested_folder_name" formatted="false">Új mappa</string>
     <string name="context_menu_rename_folder" formatted="false">Mappa átnevezése</string>
-    <string name="your_library_messaging_folder_rename_hint" formatted="false">Mappa neve</string>
     <string name="create_playlist_content_description" formatted="false">Műsorlista létrehozása</string>
     <string name="actions_picker_delete" formatted="false">Törlés</string>
     <string name="filter_and_sort_sort_section_title" formatted="false">Rendezési szempont</string>

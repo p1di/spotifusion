@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="immersive_screens_account">Cuenta</string>
+    <string name="immersive_screens_account_page">Página de la cuenta</string>
+    <string name="immersive_screens_account_page_detail">Plan, privacidad y dispositivos</string>
+    <string name="immersive_screens_top_result">Mejor resultado</string>
+    <string name="immersive_screens_reset_order">Volver al orden predeterminado</string>
+</resources>

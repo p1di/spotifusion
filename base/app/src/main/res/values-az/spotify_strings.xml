@@ -17,7 +17,6 @@
     <string name="snackbar_added_to_liked_songs" formatted="false">Bəyənilən Mahnılara əlavə edildi.</string>
     <string name="snackbar_removed_from_liked_songs" formatted="false">Bəyənilən mahnılardan silindi.</string>
     <string name="content_description_context_menu" formatted="false">Daha çox seçim</string>
-    <string name="close_button_content_description" formatted="false">Bağla</string>
     <string name="add_to_playlist_saved_in_section_header" formatted="false">Burada saxlanılıb</string>
     <string name="add_to_playlist_new_playlist_button_text" formatted="false">Yeni pleylist</string>
     <string name="add_to_playlist_button_cancel" formatted="false">Ləğv et</string>
@@ -25,8 +24,6 @@
     <string name="lyrics_card_title" formatted="false">Sözlər</string>
     <string name="lyrics_card_title_preview" formatted="false">Mahnı sözlərinə baxış</string>
     <string name="lyrics_card_show_lyrics_button" formatted="false">Mahnı sözlərini göstər</string>
-    <string name="lyrics_card_expand_button_content_description" formatted="false">Mahnı sözlərini tam ekranda aç</string>
-    <string name="lyrics_card_share_button_content_description" formatted="false">Mahnı sözlərini paylaş</string>
     <string name="lyrics_credential_note" formatted="false">%1$s tərəfindən təqdim olunan mahnı sözləri</string>
     <string name="lyrics_fullscreen_chip_label_share" formatted="false">Paylaş</string>
     <string name="lyrics_fullscreen_chip_label_translate" formatted="false">Tərcümə et</string>
@@ -49,7 +46,6 @@
     <string name="artist_popular_tracks" formatted="false">Populyar</string>
     <string name="curation_button_follow_state_text" formatted="false">İzlə</string>
     <string name="curation_button_following_state_text" formatted="false">İzlənilən</string>
-    <string name="search_main_entity_subtitle_artist" formatted="false">İfaçı</string>
     <string name="connect_phone_is_self" formatted="false">Bu telefon</string>
     <string name="settings_item_canvas_title" formatted="false">Canvas</string>
     <string name="video_settings_canvas_subtitle" formatted="false">Mahnı oxudularkən qısa, təkrarlanan vizuallar.</string>
@@ -107,8 +103,6 @@
     <string name="library_search_text_hint" formatted="false">Kitabxananı axtar</string>
     <string name="account_title" formatted="false">Hesab</string>
     <string name="song_dna_search_chip_followed_artists" formatted="false">İzlənilən ifaçılar</string>
-    <string name="settings_item_crossfade_title" formatted="false">Çarpaz keçid</string>
-    <string name="playback_settings_crossfade_slider_seconds" formatted="false">%1$d san</string>
     <string name="local_files_title" formatted="false">Lokal Fayllar</string>
     <string name="local_files_empty_section_title" formatted="false">Öz audiofayllarınızı Kitabxana bölməsinə əlavə edin</string>
     <string name="local_files_empty_section_subtitle" formatted="false">Spotify-da olmayan mahnı və ya şəxsi podkastınız var?</string>
@@ -138,14 +132,10 @@
     <string name="assisted_curation_search_filter_artists" formatted="false">İfaçılar</string>
     <string name="assisted_curation_search_filter_albums" formatted="false">Albomlar</string>
     <string name="assisted_curation_search_filter_playlists" formatted="false">Pleylistlər</string>
-    <string name="assisted_curation_search_filter_clear_content_description" formatted="false">Filtri təmizlə</string>
-    <string name="ad_category_title_music" formatted="false">Musiqi</string>
-    <string name="made_for_you_hub_title" formatted="false">Sənin üçün Hazırlanıb</string>
     <string name="settings_item_app_language_title" formatted="false">Tətbiqin dili</string>
     <string name="create_menu_item_folder_title" formatted="false">Qovluq</string>
     <string name="create_folder_name_suggested_folder_name" formatted="false">Yeni qovluq</string>
     <string name="context_menu_rename_folder" formatted="false">Qovluğun adını dəyiş</string>
-    <string name="your_library_messaging_folder_rename_hint" formatted="false">Qovluq adı</string>
     <string name="create_playlist_content_description" formatted="false">Pleylist yarat</string>
     <string name="actions_picker_delete" formatted="false">Sil</string>
     <string name="filter_and_sort_sort_section_title" formatted="false">Çeşidlə:</string>

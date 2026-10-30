@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_liquid_glass_title">Liquid Glass</string>
+    <string name="settings_liquid_glass_detail">Bars bend and reflect the page behind them, like glass</string>
+    <string name="settings_liquid_glass_unsupported">Needs Android 12 or later</string>
+    <string name="settings_liquid_glass_reduced">Frosted instead while the phone reduces blur or animations</string>
+    <string name="immersive_expand_tab_bar">Show all tabs</string>
+</resources>

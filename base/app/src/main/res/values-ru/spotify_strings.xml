@@ -17,7 +17,6 @@
     <string name="snackbar_added_to_liked_songs" formatted="false">Добавлено в любимые треки</string>
     <string name="snackbar_removed_from_liked_songs" formatted="false">Удалено из любимых треков</string>
     <string name="content_description_context_menu" formatted="false">Другие варианты</string>
-    <string name="close_button_content_description" formatted="false">Закрыть</string>
     <string name="add_to_playlist_saved_in_section_header" formatted="false">Сохранено в плейлистах</string>
     <string name="add_to_playlist_new_playlist_button_text" formatted="false">Создать плейлист</string>
     <string name="add_to_playlist_button_cancel" formatted="false">Отмена</string>
@@ -25,8 +24,6 @@
     <string name="lyrics_card_title" formatted="false">Текст</string>
     <string name="lyrics_card_title_preview" formatted="false">Предпросмотр текста</string>
     <string name="lyrics_card_show_lyrics_button" formatted="false">Показать текст</string>
-    <string name="lyrics_card_expand_button_content_description" formatted="false">Развернуть текст на весь экран</string>
-    <string name="lyrics_card_share_button_content_description" formatted="false">Поделись текстом</string>
     <string name="lyrics_credential_note" formatted="false">С разрешения: %1$s</string>
     <string name="lyrics_fullscreen_chip_label_share" formatted="false">Поделиться</string>
     <string name="lyrics_fullscreen_chip_label_translate" formatted="false">Перевести</string>
@@ -49,7 +46,6 @@
     <string name="artist_popular_tracks" formatted="false">Популярное</string>
     <string name="curation_button_follow_state_text" formatted="false">Подписаться</string>
     <string name="curation_button_following_state_text" formatted="false">Подписки</string>
-    <string name="search_main_entity_subtitle_artist" formatted="false">Исполнитель</string>
     <string name="connect_phone_is_self" formatted="false">Этот телефон</string>
     <string name="settings_item_canvas_title" formatted="false">Canvas</string>
     <string name="video_settings_canvas_subtitle" formatted="false">Показывать короткие зацикленные заставки на экране «Сейчас играет».</string>
@@ -107,8 +103,6 @@
     <string name="library_search_text_hint" formatted="false">Поиск в медиатеке</string>
     <string name="account_title" formatted="false">Аккаунт</string>
     <string name="song_dna_search_chip_followed_artists" formatted="false">Подписки на исполнителей</string>
-    <string name="settings_item_crossfade_title" formatted="false">Плавный переход между треками</string>
-    <string name="playback_settings_crossfade_slider_seconds" formatted="false">%1$d сек.</string>
     <string name="local_files_title" formatted="false">Добавленные файлы</string>
     <string name="local_files_empty_section_title" formatted="false">Добавь файлы со своего устройства в медиатеку</string>
     <string name="local_files_empty_section_subtitle" formatted="false">Хочешь добавить трек или подкаст, которого нет в Spotify?</string>
@@ -138,14 +132,10 @@
     <string name="assisted_curation_search_filter_artists" formatted="false">Исполнители</string>
     <string name="assisted_curation_search_filter_albums" formatted="false">Альбомы</string>
     <string name="assisted_curation_search_filter_playlists" formatted="false">Плейлисты</string>
-    <string name="assisted_curation_search_filter_clear_content_description" formatted="false">Удалить фильтр</string>
-    <string name="ad_category_title_music" formatted="false">Музыка</string>
-    <string name="made_for_you_hub_title" formatted="false">Для тебя</string>
     <string name="settings_item_app_language_title" formatted="false">Язык приложения</string>
     <string name="create_menu_item_folder_title" formatted="false">Папка</string>
     <string name="create_folder_name_suggested_folder_name" formatted="false">Новая папка</string>
     <string name="context_menu_rename_folder" formatted="false">Переименовать папку</string>
-    <string name="your_library_messaging_folder_rename_hint" formatted="false">Название папки</string>
     <string name="create_playlist_content_description" formatted="false">Создать плейлист</string>
     <string name="actions_picker_delete" formatted="false">Удалить</string>
     <string name="filter_and_sort_sort_section_title" formatted="false">Сортировка</string>

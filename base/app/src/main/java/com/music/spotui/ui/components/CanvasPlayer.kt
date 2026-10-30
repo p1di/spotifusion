@@ -25,6 +25,21 @@ object CanvasPlayer {
      */
     fun preload(context: android.content.Context, url: String) { get(context, url) }
 
+    /**
+     * Downloads the clip [url] to the media cache on storage, without a player and without
+     * keeping anything in memory: the next song's Canvas, so it starts from storage when that
+     * song comes (the player still loads it then, but from the phone, not the network).
+     */
+    suspend fun warm(context: android.content.Context, url: String) = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+        runCatching {
+            val source = androidx.media3.datasource.cache.CacheDataSource.Factory()
+                .setCache(SongPlayer.mediaCache(context.applicationContext))
+                .setUpstreamDataSourceFactory(androidx.media3.datasource.DefaultHttpDataSource.Factory())
+                .createDataSource()
+            androidx.media3.datasource.cache.CacheWriter(source, androidx.media3.datasource.DataSpec(android.net.Uri.parse(url)), null, null).cache()
+        }
+    }
+
     fun get(context: android.content.Context, url: String): androidx.media3.exoplayer.ExoPlayer {
         val player = exo ?: run {
             val cached = androidx.media3.datasource.cache.CacheDataSource.Factory()

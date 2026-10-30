@@ -17,7 +17,6 @@
     <string name="snackbar_added_to_liked_songs" formatted="false">পছন্দ করা গানগুলিতে যোগ করা হয়েছে।</string>
     <string name="snackbar_removed_from_liked_songs" formatted="false">পছন্দসই গানগুলি থেকে সরানো হয়েছে।</string>
     <string name="content_description_context_menu" formatted="false">আরও বিকল্প</string>
-    <string name="close_button_content_description" formatted="false">বন্ধ করুন</string>
     <string name="add_to_playlist_saved_in_section_header" formatted="false">এখানে সেভ করা হয়েছে</string>
     <string name="add_to_playlist_new_playlist_button_text" formatted="false">নতুন প্লেলিস্ট</string>
     <string name="add_to_playlist_button_cancel" formatted="false">বাতিল করুন</string>
@@ -25,8 +24,6 @@
     <string name="lyrics_card_title" formatted="false">লিরিক্স</string>
     <string name="lyrics_card_title_preview" formatted="false">লিরিক্সের প্রিভিউ</string>
     <string name="lyrics_card_show_lyrics_button" formatted="false">লিরিক্স দেখান</string>
-    <string name="lyrics_card_expand_button_content_description" formatted="false">সম্পূর্ণ স্ক্রিন সহ লিরিক্স খোলে</string>
-    <string name="lyrics_card_share_button_content_description" formatted="false">লিরিক্স শেয়ার করুন</string>
     <string name="lyrics_credential_note" formatted="false">লিরিক্স %1$s দ্বারা সরবরাহ করা</string>
     <string name="lyrics_fullscreen_chip_label_share" formatted="false">শেয়ার করুন</string>
     <string name="lyrics_fullscreen_chip_label_translate" formatted="false">অনুবাদ করুন</string>
@@ -49,7 +46,6 @@
     <string name="artist_popular_tracks" formatted="false">জনপ্রিয়</string>
     <string name="curation_button_follow_state_text" formatted="false">ফলো করুন</string>
     <string name="curation_button_following_state_text" formatted="false">ফলো করছেন</string>
-    <string name="search_main_entity_subtitle_artist" formatted="false">শিল্পী</string>
     <string name="connect_phone_is_self" formatted="false">এই ফোনে</string>
     <string name="settings_item_canvas_title" formatted="false">Canvas</string>
     <string name="video_settings_canvas_subtitle" formatted="false">কোনও গান চলাকালীন ছোট, লুপিং ভিজ্যুয়াল।</string>
@@ -107,8 +103,6 @@
     <string name="library_search_text_hint" formatted="false">আপনার লাইব্রেরিতে অনুসন্ধান করুন</string>
     <string name="account_title" formatted="false">অ্যাকাউন্ট</string>
     <string name="song_dna_search_chip_followed_artists" formatted="false">শিল্পীকে ফলো করা হয়েছে</string>
-    <string name="settings_item_crossfade_title" formatted="false">পর পর চালান</string>
-    <string name="playback_settings_crossfade_slider_seconds" formatted="false">%1$d সেকেন্ড</string>
     <string name="local_files_title" formatted="false">লোকাল ফাইল</string>
     <string name="local_files_empty_section_title" formatted="false">আপনার নিজের অডিও ফাইল \'আপনার লাইব্রেরি\'-তে যোগ করুন</string>
     <string name="local_files_empty_section_subtitle" formatted="false">এমন কোনও গান বা ব্যক্তিগত পডকাস্ট আছে যা Spotify-তে নেই?</string>
@@ -138,14 +132,10 @@
     <string name="assisted_curation_search_filter_artists" formatted="false">শিল্পী</string>
     <string name="assisted_curation_search_filter_albums" formatted="false">অ্যালবাম</string>
     <string name="assisted_curation_search_filter_playlists" formatted="false">প্লেলিস্ট</string>
-    <string name="assisted_curation_search_filter_clear_content_description" formatted="false">ফিল্টার মুছে দিন</string>
-    <string name="ad_category_title_music" formatted="false">মিউজিক</string>
-    <string name="made_for_you_hub_title" formatted="false">আপনার জন্য তৈরি</string>
     <string name="settings_item_app_language_title" formatted="false">অ্যাপের ভাষা</string>
     <string name="create_menu_item_folder_title" formatted="false">ফোল্ডার</string>
     <string name="create_folder_name_suggested_folder_name" formatted="false">নতুন ফোল্ডার</string>
     <string name="context_menu_rename_folder" formatted="false">ফোল্ডারের নতুন নাম দিন</string>
-    <string name="your_library_messaging_folder_rename_hint" formatted="false">ফোল্ডারের নাম</string>
     <string name="create_playlist_content_description" formatted="false">প্লেলিস্ট তৈরি করুন</string>
     <string name="actions_picker_delete" formatted="false">মুছে ফেলুন</string>
     <string name="filter_and_sort_sort_section_title" formatted="false">ক্রমানুসারে</string>

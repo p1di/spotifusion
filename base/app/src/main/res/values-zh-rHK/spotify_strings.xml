@@ -17,7 +17,6 @@
     <string name="snackbar_added_to_liked_songs" formatted="false">已新增至「讚好過的歌曲」。</string>
     <string name="snackbar_removed_from_liked_songs" formatted="false">已從「讚好過的歌曲」移除。</string>
     <string name="content_description_context_menu" formatted="false">更多選項</string>
-    <string name="close_button_content_description" formatted="false">關閉</string>
     <string name="add_to_playlist_saved_in_section_header" formatted="false">已儲存在</string>
     <string name="add_to_playlist_new_playlist_button_text" formatted="false">新播放清單</string>
     <string name="add_to_playlist_button_cancel" formatted="false">取消</string>
@@ -25,8 +24,6 @@
     <string name="lyrics_card_title" formatted="false">歌詞</string>
     <string name="lyrics_card_title_preview" formatted="false">歌詞預覽</string>
     <string name="lyrics_card_show_lyrics_button" formatted="false">顯示歌詞</string>
-    <string name="lyrics_card_expand_button_content_description" formatted="false">開啟全螢幕歌詞</string>
-    <string name="lyrics_card_share_button_content_description" formatted="false">分享歌詞</string>
     <string name="lyrics_credential_note" formatted="false">歌詞由%1$s提供</string>
     <string name="lyrics_fullscreen_chip_label_share" formatted="false">分享</string>
     <string name="lyrics_fullscreen_chip_label_translate" formatted="false">翻譯</string>
@@ -49,7 +46,6 @@
     <string name="artist_popular_tracks" formatted="false">熱門</string>
     <string name="curation_button_follow_state_text" formatted="false">關注</string>
     <string name="curation_button_following_state_text" formatted="false">正在關注</string>
-    <string name="search_main_entity_subtitle_artist" formatted="false">藝人</string>
     <string name="connect_phone_is_self" formatted="false">此手機</string>
     <string name="settings_item_canvas_title" formatted="false">Canvas</string>
     <string name="video_settings_canvas_subtitle" formatted="false">歌曲播放時的簡短循環視覺效果。</string>
@@ -107,8 +103,6 @@
     <string name="library_search_text_hint" formatted="false">搜尋你的音樂庫</string>
     <string name="account_title" formatted="false">帳戶</string>
     <string name="song_dna_search_chip_followed_artists" formatted="false">已關注藝人</string>
-    <string name="settings_item_crossfade_title" formatted="false">淡入/淡出</string>
-    <string name="playback_settings_crossfade_slider_seconds" formatted="false">%1$d 秒</string>
     <string name="local_files_title" formatted="false">本機檔案</string>
     <string name="local_files_empty_section_title" formatted="false">將自己的音訊檔案新增至「你的音樂庫」</string>
     <string name="local_files_empty_section_subtitle" formatted="false">擁有 Spotify 沒有的歌曲或個人 Podcast？</string>
@@ -138,14 +132,10 @@
     <string name="assisted_curation_search_filter_artists" formatted="false">藝人</string>
     <string name="assisted_curation_search_filter_albums" formatted="false">專輯</string>
     <string name="assisted_curation_search_filter_playlists" formatted="false">播放清單</string>
-    <string name="assisted_curation_search_filter_clear_content_description" formatted="false">清除篩選條件</string>
-    <string name="ad_category_title_music" formatted="false">音樂</string>
-    <string name="made_for_you_hub_title" formatted="false">為你精心打造</string>
     <string name="settings_item_app_language_title" formatted="false">應用程式語言</string>
     <string name="create_menu_item_folder_title" formatted="false">資料夾</string>
     <string name="create_folder_name_suggested_folder_name" formatted="false">新資料夾</string>
     <string name="context_menu_rename_folder" formatted="false">重新命名資料夾</string>
-    <string name="your_library_messaging_folder_rename_hint" formatted="false">資料夾名稱</string>
     <string name="create_playlist_content_description" formatted="false">建立播放清單</string>
     <string name="actions_picker_delete" formatted="false">刪除</string>
     <string name="filter_and_sort_sort_section_title" formatted="false">排序方式</string>

@@ -4,37 +4,17 @@
     <string name="aa_playlists">Playlists</string>
     <string name="aa_albums">Albums</string>
     <string name="aa_artists">Artistes</string>
-    <string name="aa_podcasts">Podcasts</string>
     <string name="settings_amoled_theme">Thème AMOLED</string>
     <string name="settings_amoled_theme_subtitle">Arrière-plan noir pur pour économiser la batterie</string>
-    <string name="settings_lyrics_style_spotify_default">Spotify par défaut</string>
-    <string name="settings_lyrics_style_fullscreen">Plein écran (Couleurs de l\'album)</string>
-    <string name="settings_lyrics_style_compact">Compact</string>
-    <string name="settings_lyrics_style_karaoke">Karaoké</string>
-    <string name="settings_lyrics_style_bold">Grand texte en gras</string>
     <string name="main_update_available">Une nouvelle mise à jour est disponible</string>
 
-    <string name="notif_channel_media_name">Lecture média</string>
-    <string name="notif_channel_media_description">Commandes de lecture média Myspoti</string>
-    <string name="notif_action_previous">Précédent</string>
-    <string name="notif_action_next">Suivant</string>
     <string name="notif_action_play">Lecture</string>
     <string name="notif_action_pause">Pause</string>
     <string name="notif_shuffle_enable">Activer la lecture aléatoire</string>
     <string name="notif_shuffle_disable">Désactiver la lecture aléatoire</string>
     <string name="notif_shuffle_disable_smart">Désactiver la lecture aléatoire intelligente</string>
-    <string name="notif_action_like">J\'aime</string>
-    <string name="notif_action_unlike">Je n\'aime plus</string>
-    <string name="notif_unknown_name">Inconnu</string>
-    <string name="notif_by_artist">par %1$s</string>
-    <string name="notif_repeat_disable">Désactiver la répétition</string>
-    <string name="notif_repeat_disable_one">Désactiver la répétition du titre</string>
-    <string name="notif_repeat_enable">Activer la répétition</string>
 
-    <string name="bridge_player_unlocked">Lecteur déverrouillé</string>
-    <string name="bridge_reloading">Rechargement…</string>
 
-    <string name="service_disabled_message">Le service n\'est pas activé</string>
     <string name="energy_saver_title" tools:ignore="MissingTranslation">Économie d’énergie</string>
     <string name="energy_saver_summary" tools:ignore="MissingTranslation">Canvas désactivés, vidéos et animations allégées</string>
     <string name="video_fullscreen_enter" tools:ignore="MissingTranslation">Plein écran</string>
@@ -42,4 +22,6 @@
     <string name="playback_seek_description" tools:ignore="MissingTranslation">Position de lecture</string>
     <string name="account_page_title">Compte Spotify</string>
     <string name="account_page_detail">Abonnement, confidentialité et appareils, sur spotify.com</string>
+    <string name="player_source_downloaded">Téléchargé</string>
+    <string name="extension_change_write">Peut aussi envoyer à Spotify : %1$s</string>
 </resources>

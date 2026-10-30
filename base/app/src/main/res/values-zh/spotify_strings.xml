@@ -17,7 +17,6 @@
     <string name="snackbar_added_to_liked_songs" formatted="false">已加入“已点赞的歌曲”。</string>
     <string name="snackbar_removed_from_liked_songs" formatted="false">已从“已点赞的歌曲”中删除。</string>
     <string name="content_description_context_menu" formatted="false">更多选项</string>
-    <string name="close_button_content_description" formatted="false">关闭</string>
     <string name="add_to_playlist_saved_in_section_header" formatted="false">保存位置</string>
     <string name="add_to_playlist_new_playlist_button_text" formatted="false">新建歌单</string>
     <string name="add_to_playlist_button_cancel" formatted="false">取消</string>
@@ -25,8 +24,6 @@
     <string name="lyrics_card_title" formatted="false">歌词</string>
     <string name="lyrics_card_title_preview" formatted="false">歌词预览</string>
     <string name="lyrics_card_show_lyrics_button" formatted="false">显示歌词</string>
-    <string name="lyrics_card_expand_button_content_description" formatted="false">全屏打开歌词</string>
-    <string name="lyrics_card_share_button_content_description" formatted="false">分享歌词</string>
     <string name="lyrics_credential_note" formatted="false">歌词提供者：%1$s</string>
     <string name="lyrics_fullscreen_chip_label_share" formatted="false">分享</string>
     <string name="lyrics_fullscreen_chip_label_translate" formatted="false">翻译</string>
@@ -49,7 +46,6 @@
     <string name="artist_popular_tracks" formatted="false">热门</string>
     <string name="curation_button_follow_state_text" formatted="false">关注</string>
     <string name="curation_button_following_state_text" formatted="false">已关注</string>
-    <string name="search_main_entity_subtitle_artist" formatted="false">艺人</string>
     <string name="connect_phone_is_self" formatted="false">此手机</string>
     <string name="settings_item_canvas_title" formatted="false">Canvas</string>
     <string name="video_settings_canvas_subtitle" formatted="false">歌曲播放时的简短视觉循环效果。</string>
@@ -106,8 +102,6 @@
     <string name="library_search_text_hint" formatted="false">搜索“音乐库”</string>
     <string name="account_title" formatted="false">帐号</string>
     <string name="song_dna_search_chip_followed_artists" formatted="false">已关注艺人</string>
-    <string name="settings_item_crossfade_title" formatted="false">淡入/淡出</string>
-    <string name="playback_settings_crossfade_slider_seconds" formatted="false">%1$d 秒</string>
     <string name="local_files_title" formatted="false">本地文件</string>
     <string name="local_files_empty_section_title" formatted="false">将你的音频文件添加到“音乐库”</string>
     <string name="local_files_empty_section_subtitle" formatted="false">找到了 Spotify 没有的歌曲或个人播客？</string>
@@ -137,14 +131,10 @@
     <string name="assisted_curation_search_filter_artists" formatted="false">艺人</string>
     <string name="assisted_curation_search_filter_albums" formatted="false">专辑</string>
     <string name="assisted_curation_search_filter_playlists" formatted="false">歌单</string>
-    <string name="assisted_curation_search_filter_clear_content_description" formatted="false">清除筛选条件</string>
-    <string name="ad_category_title_music" formatted="false">音乐</string>
-    <string name="made_for_you_hub_title" formatted="false">为小雅打造</string>
     <string name="settings_item_app_language_title" formatted="false">应用语言</string>
     <string name="create_menu_item_folder_title" formatted="false">文件夹</string>
     <string name="create_folder_name_suggested_folder_name" formatted="false">新文件夹</string>
     <string name="context_menu_rename_folder" formatted="false">重命名文件夹</string>
-    <string name="your_library_messaging_folder_rename_hint" formatted="false">文件夹名</string>
     <string name="create_playlist_content_description" formatted="false">创建歌单</string>
     <string name="actions_picker_delete" formatted="false">删除</string>
     <string name="filter_and_sort_sort_section_title" formatted="false">排序方式</string>
@@ -156,4 +146,5 @@
     <string name="find_in_context_edit_text_liked_songs_hint" formatted="false">在已点赞的歌曲中查找</string>
     <string name="find_in_context_edit_text_playlist_hint" formatted="false">在歌单中查找</string>
     <string name="assisted_curation_search_empty_view_no_result_title" formatted="false">找不到“%1$s”</string>
+    <string name="mr_user_route_category_name" formatted="false">设备</string>
 </resources>

@@ -1,5 +1,7 @@
 package com.music.spotui.ui.screens
 
+import com.music.spotui.ui.theme.AppText
+
 import androidx.compose.ui.res.stringResource
 
 import androidx.compose.foundation.background
@@ -92,7 +94,7 @@ fun QueueScreen(navController: NavController) {
             Icon(
                 imageVector = Icons.Default.KeyboardArrowDown,
                 contentDescription = stringResource(R.string.bottom_actions_close),
-                tint = Color.White,
+                tint = AppText,
                 modifier = Modifier
                     .size(28.dp)
                     .clickable(
@@ -101,7 +103,7 @@ fun QueueScreen(navController: NavController) {
                     ) { navController.navigateUp() }
             )
             Spacer(modifier = Modifier.width(12.dp))
-            Text(stringResource(R.string.action_queue_label), color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.action_queue_label), color = AppText, fontSize = 18.sp, fontWeight = FontWeight.Bold)
         }
 
         LazyColumn(
@@ -136,7 +138,7 @@ fun QueueScreen(navController: NavController) {
 private fun QueueHeader(text: String) {
     Text(
         text,
-        color = Color.White,
+        color = AppText,
         fontSize = 16.sp,
         fontWeight = FontWeight.Bold,
         modifier = Modifier.padding(16.dp, 18.dp, 16.dp, 6.dp)
@@ -164,7 +166,7 @@ private fun SwipeRemove(item: SongPlayer.QueueItem, content: @Composable () -> U
                     .background(Color(0xFF7A1F1F))
                     .padding(horizontal = 24.dp),
             ) {
-                Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.aligned_curation_first_save_default_row_remove_action_description), tint = Color.White)
+                Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.aligned_curation_first_save_default_row_remove_action_description), tint = AppText)
             }
         },
         content = { content() }
@@ -189,7 +191,7 @@ private fun QueueRow(
         modifier = Modifier
             .fillMaxWidth()
             .graphicsLayer { translationY = dragOffsetY }
-            .background(if (isDragging) Color(0xFF1E1E24) else com.music.spotui.ui.theme.AppBackground)
+            .background(if (isDragging) com.music.spotui.ui.theme.headerTint(Color(0xFF1E1E24), 0f) else com.music.spotui.ui.theme.AppBackground)
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
@@ -211,7 +213,7 @@ private fun QueueRow(
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = song.title,
-                color = if (highlight) Color(AppPalette.toArgb()) else Color.White,
+                color = if (highlight) Color(AppPalette.toArgb()) else AppText,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Medium,
                 maxLines = 1,

@@ -9,49 +9,39 @@ import androidx.compose.ui.unit.sp
 import app.myspoti.engine.R
 
 /**
- * Official Spotify Mix font family (Spotify's bespoke brand typeface).
- * Fully mapped with Regular, Medium, Bold, ExtraBold, and Ultra weights
- * for pixel-identical typography matching the official Spotify Android app.
+ * UI typeface: Manrope (SIL Open Font License 1.1, licenses/Manrope-OFL.txt), a free
+ * geometric sans close to the official app's look. One variable font file, each weight
+ * picked through its "wght" axis (200 to 800: the heaviest cut asks for 900 and gets 800).
+ * It has Latin, Cyrillic and Greek glyphs. The Figtree it replaced had no Cyrillic, so Android
+ * drew those letters with the system font and a Russian or Ukrainian interface jumped between
+ * two typefaces (issue #62).
  */
-val AppSans = FontFamily(
-    Font(R.font.spotifymix_regular, weight = FontWeight.Thin),
-    Font(R.font.spotifymix_regular, weight = FontWeight.Light),
-    Font(R.font.spotifymix_regular, weight = FontWeight.Normal),
-    Font(R.font.spotifymix_medium, weight = FontWeight.Medium),
-    Font(R.font.spotifymix_bold, weight = FontWeight.SemiBold),
-    Font(R.font.spotifymix_bold, weight = FontWeight.Bold),
-    Font(R.font.spotifymix_extrabold, weight = FontWeight.ExtraBold),
-    Font(R.font.spotifymix_ultra, weight = FontWeight.Black),
+@OptIn(androidx.compose.ui.text.ExperimentalTextApi::class)
+private fun sans(weight: Int) = Font(
+    R.font.app_sans,
+    weight = FontWeight(weight),
+    variationSettings = androidx.compose.ui.text.font.FontVariation.Settings(
+        androidx.compose.ui.text.font.FontVariation.weight(weight),
+    ),
 )
 
+val AppSans = FontFamily(sans(400), sans(500), sans(600), sans(700), sans(800), sans(900))
 /** Headings: the same family, heavier cuts. */
 val AppSansTitle = AppSans
 
 // Kept as an alias so existing references (Theme.kt etc.) don't break.
 val Montserrat = AppSans
 
-private val base = TextStyle(
-    fontFamily = AppSans,
-)
-private val title = TextStyle(
-    fontFamily = AppSansTitle,
-    fontWeight = FontWeight.Bold,
-)
+private val base = TextStyle(fontFamily = AppSans)
+private val title = TextStyle(fontFamily = AppSansTitle, fontWeight = FontWeight.Bold)
 
 val Typography = Typography(
-    displayLarge = title.copy(fontSize = 57.sp, lineHeight = 64.sp),
-    displayMedium = title.copy(fontSize = 45.sp, lineHeight = 52.sp),
-    displaySmall = title.copy(fontSize = 36.sp, lineHeight = 44.sp),
-    headlineLarge = title.copy(fontSize = 32.sp, lineHeight = 40.sp),
-    headlineMedium = title.copy(fontSize = 28.sp, lineHeight = 36.sp),
-    headlineSmall = title.copy(fontSize = 24.sp, lineHeight = 32.sp),
-    titleLarge = base.copy(fontSize = 22.sp, lineHeight = 28.sp, fontWeight = FontWeight.Bold),
-    titleMedium = base.copy(fontSize = 16.sp, lineHeight = 24.sp, fontWeight = FontWeight.Bold),
-    titleSmall = base.copy(fontSize = 14.sp, lineHeight = 20.sp, fontWeight = FontWeight.Bold),
-    bodyLarge = base.copy(fontSize = 16.sp, lineHeight = 24.sp, fontWeight = FontWeight.Normal),
-    bodyMedium = base.copy(fontSize = 14.sp, lineHeight = 20.sp, fontWeight = FontWeight.Normal),
-    bodySmall = base.copy(fontSize = 12.sp, lineHeight = 16.sp, fontWeight = FontWeight.Normal),
-    labelLarge = base.copy(fontSize = 14.sp, lineHeight = 20.sp, fontWeight = FontWeight.Medium),
-    labelMedium = base.copy(fontSize = 12.sp, lineHeight = 16.sp, fontWeight = FontWeight.Medium),
-    labelSmall = base.copy(fontSize = 11.sp, lineHeight = 16.sp, fontWeight = FontWeight.Medium),
+    displayLarge = title, displayMedium = title, displaySmall = title,
+    headlineLarge = title, headlineMedium = title, headlineSmall = title,
+    titleLarge = base.copy(fontWeight = FontWeight.Bold),
+    titleMedium = base.copy(fontWeight = FontWeight.Bold),
+    titleSmall = base.copy(fontWeight = FontWeight.Bold),
+    bodyLarge = base.copy(fontSize = 16.sp, lineHeight = 24.sp),
+    bodyMedium = base, bodySmall = base,
+    labelLarge = base, labelMedium = base, labelSmall = base,
 )

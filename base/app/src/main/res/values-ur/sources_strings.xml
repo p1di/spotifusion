@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="sources_audio_title">آڈیو ذرائع</string>
+    <string name="sources_download_title">ڈاؤن لوڈ ذرائع</string>
+    <string name="sources_audio_footer">ہر گانے کے لیے اوپر سے نیچے پوچھا جاتا ہے: جس کے پاس وہ ہو وہ پہلا اسے چلاتا ہے۔ ترتیب بدلنے کے لیے تیروں کا استعمال کریں۔</string>
+    <string name="sources_download_footer">اوپر سے نیچے پوچھا جاتا ہے: گانا رکھنے والا پہلا ذریعہ فائل فراہم کرتا ہے۔ ترتیب بدلنے کے لیے تیروں کا استعمال کریں۔</string>
+    <string name="sources_spotify">Spotify</string>
+    <string name="sources_spotify_detail">اوپر کسی ذریعے کے پاس گانا نہ ہو تو چلتا ہے</string>
+    <string name="sources_ready">تیار</string>
+    <string name="sources_details_show">تفصیلات دکھائیں</string>
+    <string name="sources_details_hide">تفصیلات چھپائیں</string>
+    <string name="sources_detail_version">ورژن %1$s · از %2$s</string>
+    <string name="sources_last_used">آخری: %1$s، %2$s</string>
+    <string name="sources_open">ایکسٹینشن کھولیں</string>
+    <string name="sources_order_hint">ذرائع ترتیبات (پلے بیک، ڈاؤن لوڈز) میں مقرر کردہ ترتیب سے پوچھے جاتے ہیں۔</string>
+    <string name="sources_below_spotify">نہیں پوچھا جاتا: Spotify اوپر ہے</string>
+</resources>

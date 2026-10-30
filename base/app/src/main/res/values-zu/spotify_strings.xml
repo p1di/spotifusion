@@ -17,7 +17,6 @@
     <string name="snackbar_added_to_liked_songs" formatted="false">Kunezelwe kokuthi Izingoma Ezithandiwe.</string>
     <string name="snackbar_removed_from_liked_songs" formatted="false">Kususiwe kokuthi Izingoma Ezithandiwe.</string>
     <string name="content_description_context_menu" formatted="false">Izinketho ezengeziwe</string>
-    <string name="close_button_content_description" formatted="false">Vala</string>
     <string name="add_to_playlist_saved_in_section_header" formatted="false">Kulondolozwe kokuthi</string>
     <string name="add_to_playlist_new_playlist_button_text" formatted="false">Uhlu lokudlalayo olusha</string>
     <string name="add_to_playlist_button_cancel" formatted="false">Khansela</string>
@@ -25,8 +24,6 @@
     <string name="lyrics_card_title" formatted="false">Amagama engoma</string>
     <string name="lyrics_card_title_preview" formatted="false">Ukuhlola kuqala kwamagama engoma</string>
     <string name="lyrics_card_show_lyrics_button" formatted="false">Bonisa amagama engoma</string>
-    <string name="lyrics_card_expand_button_content_description" formatted="false">Vula amagama engoma esikrini esigcwele</string>
-    <string name="lyrics_card_share_button_content_description" formatted="false">Yabelana ngamagama wengoma</string>
     <string name="lyrics_credential_note" formatted="false">Amagama engoma ahlinzekwe ngu-%1$s</string>
     <string name="lyrics_fullscreen_chip_label_share" formatted="false">Yabelana</string>
     <string name="lyrics_fullscreen_chip_label_translate" formatted="false">Humusha</string>
@@ -49,7 +46,6 @@
     <string name="artist_popular_tracks" formatted="false">Okudumile</string>
     <string name="curation_button_follow_state_text" formatted="false">Landela</string>
     <string name="curation_button_following_state_text" formatted="false">Obalandelayo</string>
-    <string name="search_main_entity_subtitle_artist" formatted="false">Umculi</string>
     <string name="connect_phone_is_self" formatted="false">Le foni</string>
     <string name="settings_item_canvas_title" formatted="false">I-Canvas</string>
     <string name="video_settings_canvas_subtitle" formatted="false">Okubukwayo okufushane, okuphindayo lapho kudlala ingoma.</string>
@@ -107,8 +103,6 @@
     <string name="library_search_text_hint" formatted="false">Sesha Umtapo Wakho</string>
     <string name="account_title" formatted="false">I-akhawunti</string>
     <string name="song_dna_search_chip_followed_artists" formatted="false">Abaculi abalandelwayo</string>
-    <string name="settings_item_crossfade_title" formatted="false">Isixubanisi</string>
-    <string name="playback_settings_crossfade_slider_seconds" formatted="false">%1$d s</string>
     <string name="local_files_title" formatted="false">Amafayela Alapha</string>
     <string name="local_files_empty_section_title" formatted="false">Nezela amafayela akho omsindo kokuthi Umtapo Wakho</string>
     <string name="local_files_empty_section_subtitle" formatted="false">Ingabe unayo ingoma noma i-podcast yomuntu siqu engekho ku-Spotify?</string>
@@ -138,14 +132,10 @@
     <string name="assisted_curation_search_filter_artists" formatted="false">Abaculi</string>
     <string name="assisted_curation_search_filter_albums" formatted="false">Ama-albhamu</string>
     <string name="assisted_curation_search_filter_playlists" formatted="false">Izinhlu zokudlalayo</string>
-    <string name="assisted_curation_search_filter_clear_content_description" formatted="false">Sula isihlungi</string>
-    <string name="ad_category_title_music" formatted="false">Umculo</string>
-    <string name="made_for_you_hub_title" formatted="false">Ezenzelwe Wena</string>
     <string name="settings_item_app_language_title" formatted="false">Ulimi lohlelo</string>
     <string name="create_menu_item_folder_title" formatted="false">Ifolda</string>
     <string name="create_folder_name_suggested_folder_name" formatted="false">Ifolda entsha</string>
     <string name="context_menu_rename_folder" formatted="false">Qamba kabusha ifolda</string>
-    <string name="your_library_messaging_folder_rename_hint" formatted="false">Igama lefolda</string>
     <string name="create_playlist_content_description" formatted="false">Yenza uhlu lokudlalayo</string>
     <string name="actions_picker_delete" formatted="false">Susa</string>
     <string name="filter_and_sort_sort_section_title" formatted="false">Hlukanisa nge-</string>

@@ -8,7 +8,7 @@ import androidx.compose.runtime.setValue
 // Player engine streams Spotify's own audio). Crossfade is ours: a fade, not an overlap.
 
 private const val PREF = "settings_prefs"
-private const val KEY_LIBRARY_GRID = "library_grid_view_v2"
+private const val KEY_LIBRARY_GRID = "library_grid_view"
 private const val KEY_LYRIC_TRANSLATE_LANG = "lyric_translate_lang"
 private const val KEY_LYRICS_EXTRA = "lyrics_extra_sources"
 private const val KEY_CROSSFADE = "crossfade_seconds"
@@ -16,6 +16,10 @@ private const val KEY_CROSSFADE = "crossfade_seconds"
 /** Extra lyrics sources (NetEase, Genius) when Spotify and LRCLIB have none. Off by default. */
 fun isLyricsExtraSources(c: Context): Boolean = prefs(c).getBoolean(KEY_LYRICS_EXTRA, false)
 fun setLyricsExtraSources(c: Context, v: Boolean) = prefs(c).edit().putBoolean(KEY_LYRICS_EXTRA, v).apply()
+
+/** Lyrics timed word by word first (karaoke); off: line by line, Spotify's first. */
+fun isLyricsWordSync(c: Context): Boolean = prefs(c).getBoolean("lyrics_word_sync", true)
+fun setLyricsWordSync(c: Context, v: Boolean) = prefs(c).edit().putBoolean("lyrics_word_sync", v).apply()
 
 private fun prefs(c: Context) = c.getSharedPreferences(PREF, Context.MODE_PRIVATE)
 
@@ -40,6 +44,23 @@ object AutoplayPref {
     fun set(c: Context, value: Boolean) {
         on = value
         prefs(c).edit().putBoolean(KEY, value).apply()
+    }
+}
+
+/**
+ * "Count extension plays on Spotify" (on by default): a song an extension streams is played by the
+ * Web Player too, unheard, so Spotify counts it and Spotify Connect sees and controls it (see
+ * [com.music.spotui.di.ConnectMirror]). Off: the extension's stream alone, as before.
+ */
+object ConnectMirrorPref {
+    private const val KEY = "connect_mirror"
+    var on by androidx.compose.runtime.mutableStateOf(prefs(com.music.spotui.di.Graph.app).getBoolean(KEY, true))
+        private set
+
+    fun set(c: Context, value: Boolean) {
+        on = value
+        prefs(c).edit().putBoolean(KEY, value).apply()
+        com.music.spotui.di.ConnectMirror.settingChanged()
     }
 }
 
@@ -81,7 +102,7 @@ object OrientationPref {
     }
 }
 
-/** Library layout: false = Spotify list rows (default, Screenshot 3), true = 3-column grid. */
+/** Library layout: false = rows (default), true = Spotify-style 3-column grid. */
 fun isLibraryGridView(c: Context): Boolean = prefs(c).getBoolean(KEY_LIBRARY_GRID, false)
 fun setLibraryGridView(c: Context, v: Boolean) = prefs(c).edit().putBoolean(KEY_LIBRARY_GRID, v).apply()
 
@@ -108,6 +129,22 @@ object CrossfadePref {
     }
 }
 
+/**
+ * "Music videos": the video button in the player, the lookup behind it and a clip that starts
+ * by itself on the next song. On by default; off, the player is audio (and Canvas) only.
+ */
+object MusicVideoPref {
+    private const val KEY = "music_video_enabled"
+    var on by androidx.compose.runtime.mutableStateOf(prefs(com.music.spotui.di.Graph.app).getBoolean(KEY, true))
+        private set
+
+    fun set(c: Context, value: Boolean) {
+        on = value
+        prefs(c).edit().putBoolean(KEY, value).apply()
+        if (!value) com.music.spotui.video.MusicVideoController.setOn(false)
+    }
+}
+
 fun getCrossfadeSeconds(c: Context): Int =
     prefs(c).getInt(KEY_CROSSFADE, 0).coerceIn(0, CrossfadePref.MAX)
 
@@ -123,3 +160,20 @@ fun getLyricTranslateLang(c: Context): String =
 
 fun setLyricTranslateLang(c: Context, code: String) =
     prefs(c).edit().putString(KEY_LYRIC_TRANSLATE_LANG, code.trim()).apply()
+
+/**
+ * Liquid Glass in the Immersive look (Settings > Display, under Look): the floating bars refract
+ * the page through a lens instead of only frosting it. On by default; it only takes effect on
+ * Android 12+ and when the phone does not ask for less blur or motion (see
+ * [com.music.spotui.ui.immersive.shell.rememberLiquidGlassActive]).
+ */
+object LiquidGlassPref {
+    private const val KEY = "immersive_liquid_glass"
+    var on by androidx.compose.runtime.mutableStateOf(prefs(com.music.spotui.di.Graph.app).getBoolean(KEY, true))
+        private set
+
+    fun set(c: Context, value: Boolean) {
+        on = value
+        prefs(c).edit().putBoolean(KEY, value).apply()
+    }
+}

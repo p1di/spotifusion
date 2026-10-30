@@ -1,5 +1,7 @@
 package com.music.spotui.ui.components
 
+import com.music.spotui.ui.theme.AppText
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -24,10 +26,10 @@ import app.myspoti.engine.R
 @Composable
 fun ErrorRetry(message: String, modifier: Modifier = Modifier, onRetry: () -> Unit) {
     Column(modifier.fillMaxWidth().padding(24.dp, 40.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(message, color = Color.White, fontSize = 15.sp, textAlign = TextAlign.Center)
+        Text(message, color = AppText, fontSize = 15.sp, textAlign = TextAlign.Center)
         Spacer(Modifier.height(14.dp))
-        Text(stringResource(R.string.retry_button), color = Color.Black, fontSize = 14.sp, fontWeight = FontWeight.Bold,
-            modifier = Modifier.clip(RoundedCornerShape(50)).background(Color.White)
+        Text(stringResource(R.string.retry_button), color = com.music.spotui.ui.theme.AppBackground, fontSize = 14.sp, fontWeight = FontWeight.Bold,
+            modifier = Modifier.clip(RoundedCornerShape(50)).background(AppText)
                 .pressable(0.96f) { onRetry() }.padding(horizontal = 22.dp, vertical = 10.dp))
     }
 }

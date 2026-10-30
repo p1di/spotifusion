@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="immersive_shell_back">返回</string>
+    <string name="immersive_shell_more">更多选项</string>
+    <string name="immersive_shell_search_hint">搜索</string>
+    <string name="immersive_shell_search_clear">清除搜索</string>
+    <string name="immersive_shell_play">播放</string>
+    <string name="immersive_shell_shuffle">随机播放</string>
+    <string name="immersive_shell_see_all">查看全部</string>
+    <string name="immersive_shell_now_playing">正在播放</string>
+    <string name="immersive_shell_explicit">含不良内容</string>
+</resources>

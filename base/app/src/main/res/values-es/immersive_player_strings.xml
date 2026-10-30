@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="immersive_player_close">Cerrar el reproductor</string>
+    <string name="immersive_player_play">Reproducir</string>
+    <string name="immersive_player_pause">Pausa</string>
+    <string name="immersive_player_previous">Anterior</string>
+    <string name="immersive_player_next">Siguiente</string>
+    <string name="immersive_player_like">Añadir a Canciones que te gustan</string>
+    <string name="immersive_player_unlike">Quitar de Canciones que te gustan</string>
+    <string name="immersive_player_more">Más</string>
+    <string name="immersive_player_lyrics">Letra</string>
+    <string name="immersive_player_lyrics_close">Cerrar la letra</string>
+    <string name="immersive_player_queue">A continuación</string>
+    <string name="immersive_player_queue_close">Cerrar la cola</string>
+    <string name="immersive_player_devices">Dispositivos</string>
+    <string name="immersive_player_shuffle_on">Aleatorio: activado</string>
+    <string name="immersive_player_shuffle_off">Aleatorio: desactivado</string>
+    <string name="immersive_player_repeat_off">Repetir: desactivado</string>
+    <string name="immersive_player_repeat_all">Repetir: todo</string>
+    <string name="immersive_player_repeat_one">Repetir: una canción</string>
+    <string name="immersive_player_volume_down">Bajar volumen</string>
+    <string name="immersive_player_volume_up">Subir volumen</string>
+    <string name="immersive_player_ad">Anuncio</string>
+    <string name="immersive_player_explicit">Explícito</string>
+    <string name="immersive_player_added_to_liked">Añadida a Canciones que te gustan</string>
+    <string name="immersive_player_mini_player">Abrir el reproductor</string>
+</resources>

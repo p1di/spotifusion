@@ -17,7 +17,6 @@
     <string name="snackbar_added_to_liked_songs" formatted="false">விரும்பிய பாடல்களில் சேர்க்கப்பட்டது.</string>
     <string name="snackbar_removed_from_liked_songs" formatted="false">விரும்பிய பாடல்களிலிருந்து அகற்றப்பட்டது.</string>
     <string name="content_description_context_menu" formatted="false">மேலும் விருப்பங்கள்</string>
-    <string name="close_button_content_description" formatted="false">மூடு</string>
     <string name="add_to_playlist_saved_in_section_header" formatted="false">இவற்றில் சேமிக்கப்பட்டது</string>
     <string name="add_to_playlist_new_playlist_button_text" formatted="false">புதிய பிளேலிஸ்ட்</string>
     <string name="add_to_playlist_button_cancel" formatted="false">ரத்துசெய்</string>
@@ -25,8 +24,6 @@
     <string name="lyrics_card_title" formatted="false">பாடல் வரிகள்</string>
     <string name="lyrics_card_title_preview" formatted="false">பாடல் வரிகளின் முன்னோட்டம்</string>
     <string name="lyrics_card_show_lyrics_button" formatted="false">பாடல் வரிகளைக் காட்டு</string>
-    <string name="lyrics_card_expand_button_content_description" formatted="false">முழுத்திரையில் பாடல் வரிகளைத் திறக்கும்</string>
-    <string name="lyrics_card_share_button_content_description" formatted="false">பாடல் வரிகளைப் பகிரவும்</string>
     <string name="lyrics_credential_note" formatted="false">பாடல் வரிகளை வழங்குவது %1$s</string>
     <string name="lyrics_fullscreen_chip_label_share" formatted="false">பகிர்</string>
     <string name="lyrics_fullscreen_chip_label_translate" formatted="false">மொழிபெயர்</string>
@@ -49,7 +46,6 @@
     <string name="artist_popular_tracks" formatted="false">பிரபலமானவை</string>
     <string name="curation_button_follow_state_text" formatted="false">பின்தொடர்</string>
     <string name="curation_button_following_state_text" formatted="false">பின்தொடர்கிறீர்கள்</string>
-    <string name="search_main_entity_subtitle_artist" formatted="false">கலைஞர்</string>
     <string name="connect_phone_is_self" formatted="false">இந்தத் தொலைபேசி</string>
     <string name="settings_item_canvas_title" formatted="false">Canvas</string>
     <string name="video_settings_canvas_subtitle" formatted="false">பாடல் பிளேயாகும்போது காட்டப்படும் சிறிய லூப் விஷுவல்கள்.</string>
@@ -107,8 +103,6 @@
     <string name="library_search_text_hint" formatted="false">உங்கள் லைப்ரரியில் தேடவும்</string>
     <string name="account_title" formatted="false">கணக்கு</string>
     <string name="song_dna_search_chip_followed_artists" formatted="false">பின்தொடரும் கலைஞர்கள்</string>
-    <string name="settings_item_crossfade_title" formatted="false">கிராஸ்ஃபேட்</string>
-    <string name="playback_settings_crossfade_slider_seconds" formatted="false">%1$d வி</string>
     <string name="local_files_title" formatted="false">சாதனத்திலுள்ள கோப்புகள்</string>
     <string name="local_files_empty_section_title" formatted="false">உங்கள் லைப்ரரி பிரிவில் உங்களின் சொந்த ஆடியோ கோப்புகளைச் சேருங்கள்</string>
     <string name="local_files_empty_section_subtitle" formatted="false">Spotifyயில் இல்லாத பாடலோ தனிப்பட்ட பாட்காஸ்ட்டோ உங்களிடம் உள்ளதா?</string>
@@ -138,14 +132,10 @@
     <string name="assisted_curation_search_filter_artists" formatted="false">கலைஞர்கள்</string>
     <string name="assisted_curation_search_filter_albums" formatted="false">ஆல்பங்கள்</string>
     <string name="assisted_curation_search_filter_playlists" formatted="false">பிளேலிஸ்ட்கள்</string>
-    <string name="assisted_curation_search_filter_clear_content_description" formatted="false">வடிப்பானை அழிக்கும்</string>
-    <string name="ad_category_title_music" formatted="false">இசை</string>
-    <string name="made_for_you_hub_title" formatted="false">உங்களுக்காகவே உருவாக்கப்பட்டது</string>
     <string name="settings_item_app_language_title" formatted="false">செயலியின் மொழி</string>
     <string name="create_menu_item_folder_title" formatted="false">கோப்புறை</string>
     <string name="create_folder_name_suggested_folder_name" formatted="false">புதிய கோப்புறை</string>
     <string name="context_menu_rename_folder" formatted="false">கோப்புறையின் பெயரை மாற்று</string>
-    <string name="your_library_messaging_folder_rename_hint" formatted="false">கோப்புறையின் பெயர்</string>
     <string name="create_playlist_content_description" formatted="false">பிளேலிஸ்ட்டை உருவாக்கும்</string>
     <string name="actions_picker_delete" formatted="false">நீக்கு</string>
     <string name="filter_and_sort_sort_section_title" formatted="false">இதன்படி வரிசைப்படுத்து</string>

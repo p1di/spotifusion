@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="stats_tab_spotify">W Spotify</string>
+    <string name="stats_tab_phone">Na tym telefonie</string>
+    <string name="stats_range_short">Ostatnie 4 tygodnie</string>
+    <string name="stats_range_medium">Ostatnie 6 miesięcy</string>
+    <string name="stats_range_long">Ostatni rok</string>
+    <string name="stats_artists_ranked">Wykonawcy w Twoich odsłuchach: %1$d</string>
+    <string name="stats_empty">Spotify nie ma jeszcze najczęściej słuchanych wykonawców ani utworów za ten okres. Słuchaj dalej i zajrzyj później.</string>
+    <string name="stats_failed">Spotify nie wysłał Twoich statystyk.</string>
+    <string name="stats_spotify_note">Ranking Spotify na podstawie wszystkiego, co to konto odtworzyło na każdym urządzeniu. Spotify nie udostępnia liczby odtworzeń ani przesłuchanych minut: minuty w sekcji „Na tym telefonie” to własne zliczanie Myspoti.</string>
+    <string name="stats_weekly_minutes">Minuty tygodniowo</string>
+    <string name="stats_this_week">W tym tygodniu: %1$d min</string>
+    <string name="stats_listening_stats">Statystyki słuchania</string>
+    <string name="friends_title">Aktywność znajomych</string>
+    <string name="friends_detail">Czego słuchają osoby, które obserwujesz</string>
+    <string name="friends_now">Teraz</string>
+    <string name="friends_empty">Brak aktywności znajomych. Obserwowani znajomi, którzy udostępniają w Spotify swoją aktywność słuchania, pojawią się tutaj.</string>
+    <string name="friends_failed">Spotify nie wysłał aktywności znajomych.</string>
+    <string name="friends_refresh">Odśwież</string>
+    <string name="artist_top_short">Twój wykonawca nr %1$d z ostatnich 4 tygodni</string>
+    <string name="artist_top_medium">Twój wykonawca nr %1$d z ostatnich 6 miesięcy</string>
+    <string name="artist_top_long">Twój wykonawca nr %1$d z ostatniego roku</string>
+</resources>

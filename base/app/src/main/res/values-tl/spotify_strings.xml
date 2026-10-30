@@ -17,7 +17,6 @@
     <string name="snackbar_added_to_liked_songs" formatted="false">Idinagdag sa Mga Ni-like na Kanta.</string>
     <string name="snackbar_removed_from_liked_songs" formatted="false">Inalis sa mga Ni-like na Kanta.</string>
     <string name="content_description_context_menu" formatted="false">Iba pang option</string>
-    <string name="close_button_content_description" formatted="false">Isara</string>
     <string name="add_to_playlist_saved_in_section_header" formatted="false">Naka-save sa</string>
     <string name="add_to_playlist_new_playlist_button_text" formatted="false">Bagong playlist</string>
     <string name="add_to_playlist_button_cancel" formatted="false">I-cancel</string>
@@ -25,8 +24,6 @@
     <string name="lyrics_card_title" formatted="false">Lyrics</string>
     <string name="lyrics_card_title_preview" formatted="false">Preview ng lyrics</string>
     <string name="lyrics_card_show_lyrics_button" formatted="false">Ipakita ang lyrics</string>
-    <string name="lyrics_card_expand_button_content_description" formatted="false">Buksan ang full screen lyrics</string>
-    <string name="lyrics_card_share_button_content_description" formatted="false">I-share ang lyrics</string>
     <string name="lyrics_credential_note" formatted="false">Galing sa %1$s ang lyrics</string>
     <string name="lyrics_fullscreen_chip_label_share" formatted="false">I-share</string>
     <string name="lyrics_fullscreen_chip_label_translate" formatted="false">I-translate</string>
@@ -49,7 +46,6 @@
     <string name="artist_popular_tracks" formatted="false">Sikat</string>
     <string name="curation_button_follow_state_text" formatted="false">I-follow</string>
     <string name="curation_button_following_state_text" formatted="false">Fina-follow</string>
-    <string name="search_main_entity_subtitle_artist" formatted="false">Artist</string>
     <string name="connect_phone_is_self" formatted="false">Phone na \'to</string>
     <string name="settings_item_canvas_title" formatted="false">Canvas</string>
     <string name="video_settings_canvas_subtitle" formatted="false">Maiikli at naglo-loop na visual kapag may nagpe-play na kanta.</string>
@@ -107,8 +103,6 @@
     <string name="library_search_text_hint" formatted="false">Maghanap sa Library Mo</string>
     <string name="account_title" formatted="false">Account</string>
     <string name="song_dna_search_chip_followed_artists" formatted="false">Mga fina-follow na artist</string>
-    <string name="settings_item_crossfade_title" formatted="false">Crossfade</string>
-    <string name="playback_settings_crossfade_slider_seconds" formatted="false">%1$d s</string>
     <string name="local_files_title" formatted="false">Mga Local File</string>
     <string name="local_files_empty_section_title" formatted="false">Magdagdag ng sarili mong mga audio file sa Library Mo</string>
     <string name="local_files_empty_section_subtitle" formatted="false">May kanta o personal na podcast na wala sa Spotify?</string>
@@ -138,14 +132,10 @@
     <string name="assisted_curation_search_filter_artists" formatted="false">Mga Artist</string>
     <string name="assisted_curation_search_filter_albums" formatted="false">Mga Album</string>
     <string name="assisted_curation_search_filter_playlists" formatted="false">Mga Playlist</string>
-    <string name="assisted_curation_search_filter_clear_content_description" formatted="false">I-clear ang filter</string>
-    <string name="ad_category_title_music" formatted="false">Music</string>
-    <string name="made_for_you_hub_title" formatted="false">Para sa \'Yo</string>
     <string name="settings_item_app_language_title" formatted="false">Language ng app</string>
     <string name="create_menu_item_folder_title" formatted="false">Folder</string>
     <string name="create_folder_name_suggested_folder_name" formatted="false">Bagong folder</string>
     <string name="context_menu_rename_folder" formatted="false">I-rename ang folder</string>
-    <string name="your_library_messaging_folder_rename_hint" formatted="false">Pangalan ng folder</string>
     <string name="create_playlist_content_description" formatted="false">Gumawa ng playlist</string>
     <string name="actions_picker_delete" formatted="false">I-delete</string>
     <string name="filter_and_sort_sort_section_title" formatted="false">I-sort ayon sa</string>

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="immersive_detail_pause">Παύση</string>
+    <string name="immersive_detail_save">Αποθήκευση στη βιβλιοθήκη</string>
+    <string name="immersive_detail_unsave">Κατάργηση από τη βιβλιοθήκη</string>
+    <string name="immersive_detail_find">Εύρεση στη λίστα</string>
+    <string name="immersive_detail_smart_shuffle_on">Η έξυπνη τυχαία αναπαραγωγή είναι ενεργή: οι προτάσεις προστίθενται στη λίστα.</string>
+    <string name="immersive_detail_more">Περισσότερα</string>
+    <string name="immersive_detail_less">Λιγότερα</string>
+    <string name="immersive_detail_featured_on">Περιλαμβάνεται σε</string>
+    <string name="immersive_detail_remove_local">Κατάργηση από αυτήν τη λίστα αναπαραγωγής</string>
+    <string name="immersive_detail_follow">Παρακολούθηση</string>
+    <string name="immersive_detail_unfollow">Κατάργηση παρακολούθησης</string>
+</resources>

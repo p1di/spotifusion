@@ -17,7 +17,6 @@
     <string name="snackbar_added_to_liked_songs" formatted="false">ലൈക്ക് ചെയ്ത ഗാനങ്ങളിലേക്ക് ചേർത്തു.</string>
     <string name="snackbar_removed_from_liked_songs" formatted="false">ലൈക്ക് ചെയ്ത ഗാനങ്ങളിൽ നിന്ന് നീക്കംചെയ്തു.</string>
     <string name="content_description_context_menu" formatted="false">കൂടുതൽ ഓപ്ഷനുകൾ</string>
-    <string name="close_button_content_description" formatted="false">അടയ്ക്കുക</string>
     <string name="add_to_playlist_saved_in_section_header" formatted="false">ഇതിൽ സംരക്ഷിച്ചിരിക്കുന്നു</string>
     <string name="add_to_playlist_new_playlist_button_text" formatted="false">പുതിയ പ്ലേലിസ്റ്റ്</string>
     <string name="add_to_playlist_button_cancel" formatted="false">റദ്ദാക്കുക</string>
@@ -25,8 +24,6 @@
     <string name="lyrics_card_title" formatted="false">വരികൾ</string>
     <string name="lyrics_card_title_preview" formatted="false">വരികളുടെ പ്രിവ്യൂ</string>
     <string name="lyrics_card_show_lyrics_button" formatted="false">വരികൾ കാണിക്കുക</string>
-    <string name="lyrics_card_expand_button_content_description" formatted="false">വരികളുടെ പൂർണ്ണ സ്ക്രീൻ തുറക്കുക</string>
-    <string name="lyrics_card_share_button_content_description" formatted="false">വരികൾ പങ്കിടുക</string>
     <string name="lyrics_credential_note" formatted="false">വരികൾ നൽകിയിരിക്കുന്നത് %1$s</string>
     <string name="lyrics_fullscreen_chip_label_share" formatted="false">പങ്കിടുക</string>
     <string name="lyrics_fullscreen_chip_label_translate" formatted="false">വിവർത്തനം ചെയ്യുക</string>
@@ -49,7 +46,6 @@
     <string name="artist_popular_tracks" formatted="false">ജനപ്രിയം</string>
     <string name="curation_button_follow_state_text" formatted="false">പിന്തുടരുക</string>
     <string name="curation_button_following_state_text" formatted="false">പിന്തുടരുന്നു</string>
-    <string name="search_main_entity_subtitle_artist" formatted="false">ആർട്ടിസ്റ്റ്</string>
     <string name="connect_phone_is_self" formatted="false">ഈ ഫോൺ</string>
     <string name="settings_item_canvas_title" formatted="false">Canvas</string>
     <string name="video_settings_canvas_subtitle" formatted="false">ഒരു ഗാനം പ്ലേ ചെയ്യുമ്പോഴുള്ള ഹ്രസ്വവും ലൂപ്പ് ചെയ്യുന്നതുമായ ദൃശ്യങ്ങൾ.</string>
@@ -107,8 +103,6 @@
     <string name="library_search_text_hint" formatted="false">നിങ്ങളുടെ ലൈബ്രറി തിരയുക</string>
     <string name="account_title" formatted="false">അക്കൗണ്ട്</string>
     <string name="song_dna_search_chip_followed_artists" formatted="false">പിന്തുടരുന്ന ആർട്ടിസ്റ്റുകൾ</string>
-    <string name="settings_item_crossfade_title" formatted="false">ക്രോസ്ഫേഡ്</string>
-    <string name="playback_settings_crossfade_slider_seconds" formatted="false">%1$d സെ</string>
     <string name="local_files_title" formatted="false">ലോക്കൽ ഫയലുകൾ</string>
     <string name="local_files_empty_section_title" formatted="false">നിങ്ങളുടെ ലൈബ്രറിയിലേക്ക് സ്വന്തം ഓഡിയോ ഫയലുകൾ ചേർക്കുക</string>
     <string name="local_files_empty_section_subtitle" formatted="false">Spotify-യിൽ ഇല്ലാത്ത ഒരു ഗാനമോ വ്യക്തിഗത പോഡ്‌കാസ്റ്റോ ലഭിച്ചോ?</string>
@@ -138,14 +132,10 @@
     <string name="assisted_curation_search_filter_artists" formatted="false">ആർട്ടിസ്റ്റുകൾ</string>
     <string name="assisted_curation_search_filter_albums" formatted="false">ആൽബങ്ങൾ</string>
     <string name="assisted_curation_search_filter_playlists" formatted="false">പ്ലേലിസ്റ്റുകൾ</string>
-    <string name="assisted_curation_search_filter_clear_content_description" formatted="false">ഫിൽട്ടർ ക്ലിയർ ചെയ്യുക</string>
-    <string name="ad_category_title_music" formatted="false">സംഗീതം</string>
-    <string name="made_for_you_hub_title" formatted="false">നിങ്ങൾക്കായി സൃഷ്ടിച്ചിരിക്കുന്നത്</string>
     <string name="settings_item_app_language_title" formatted="false">ആപ്പ് ഭാഷ</string>
     <string name="create_menu_item_folder_title" formatted="false">ഫോൾഡർ</string>
     <string name="create_folder_name_suggested_folder_name" formatted="false">പുതിയ ഫോൾഡർ</string>
     <string name="context_menu_rename_folder" formatted="false">ഫോൾഡറിന്റെ പേര് മാറ്റുക</string>
-    <string name="your_library_messaging_folder_rename_hint" formatted="false">ഫോൾഡറിന്റെ പേര്</string>
     <string name="create_playlist_content_description" formatted="false">പ്ലേലിസ്റ്റ് സൃഷ്‌ടിക്കുക</string>
     <string name="actions_picker_delete" formatted="false">ഇല്ലാതാക്കുക</string>
     <string name="filter_and_sort_sort_section_title" formatted="false">ഇപ്രകാരം അടുക്കുക</string>

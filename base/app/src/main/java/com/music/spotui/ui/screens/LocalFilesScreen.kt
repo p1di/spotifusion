@@ -1,5 +1,11 @@
 package com.music.spotui.ui.screens
 
+import com.music.spotui.ui.theme.headerTint
+import com.music.spotui.ui.theme.tone
+import com.music.spotui.ui.theme.AppText
+import com.music.spotui.ui.theme.AppMuted
+import com.music.spotui.ui.theme.AppAccent
+
 import kotlinx.coroutines.launch
 import androidx.compose.foundation.layout.navigationBarsPadding
 import android.content.Intent
@@ -109,7 +115,7 @@ fun LocalFilesScreen(navController: NavController) {
             else -> LazyColumn(Modifier.fillMaxSize()) {
                 item {
                     Column(
-                        Modifier.fillMaxWidth().background(Brush.verticalGradient(listOf(Color(0xFF2E5C46), AppBackground)))
+                        Modifier.fillMaxWidth().background(Brush.verticalGradient(listOf(headerTint(Color(0xFF2E5C46), 0f), AppBackground)))
                             .statusBarsPadding().padding(horizontal = 16.dp),
                     ) {
                         Spacer(Modifier.height(56.dp))
@@ -117,18 +123,18 @@ fun LocalFilesScreen(navController: NavController) {
                             painterResource(R.drawable.local_files_cover), null,
                             modifier = Modifier.align(Alignment.CenterHorizontally).size(200.dp).clip(RoundedCornerShape(6.dp)),
                         )
-                        Text(stringResource(R.string.local_files_title), color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.Bold,
+                        Text(stringResource(R.string.local_files_title), color = AppText, fontSize = 26.sp, fontWeight = FontWeight.Bold,
                             modifier = Modifier.padding(top = 20.dp))
                         val n = tracks?.size ?: 0
-                        Text(pluralStringResource(R.plurals.local_files_count, n, n), color = Color(0xFFB3B3B3), fontSize = 14.sp,
+                        Text(pluralStringResource(R.plurals.local_files_count, n, n), color = AppMuted, fontSize = 14.sp,
                             modifier = Modifier.padding(top = 4.dp))
                         Row(Modifier.fillMaxWidth().padding(vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
                             androidx.compose.material3.OutlinedButton(
                                 onClick = { choosingFolders = true },
                                 border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF7F7F7F)),
-                            ) { Text(stringResource(R.string.local_folders_button), color = Color.White, fontSize = 13.sp) }
+                            ) { Text(stringResource(R.string.local_folders_button), color = AppText, fontSize = 13.sp) }
                             Spacer(Modifier.weight(1f))
-                            Icon(painterResource(R.drawable.ic_player_shuffle), stringResource(R.string.play_mode_item_shuffle_title), tint = Color.White,
+                            Icon(painterResource(R.drawable.ic_player_shuffle), stringResource(R.string.play_mode_item_shuffle_title), tint = AppText,
                                 modifier = Modifier.size(28.dp).pressable { tracks?.let { if (it.isNotEmpty()) LocalPlayer.play(it, it.indices.random(), shuffle = true) } })
                             Spacer(Modifier.width(20.dp))
                             Box(
@@ -172,10 +178,10 @@ fun LocalFilesScreen(navController: NavController) {
                             modifier = Modifier.size(48.dp).clip(RoundedCornerShape(4.dp)),
                         )
                         Column(Modifier.padding(start = 12.dp).weight(1f)) {
-                            Text(t.title, color = if (current) com.music.spotui.ui.theme.AppAccent else Color.White, fontSize = 15.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                            if (t.artist.isNotBlank()) Text(t.artist, color = Color(0xFFB3B3B3), fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Text(t.title, color = if (current) com.music.spotui.ui.theme.AppAccent else AppText, fontSize = 15.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            if (t.artist.isNotBlank()) Text(t.artist, color = AppMuted, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         }
-                        Icon(painterResource(R.drawable.ic_add), stringResource(R.string.context_menu_add_to_playlist), tint = Color.White,
+                        Icon(painterResource(R.drawable.ic_add), stringResource(R.string.context_menu_add_to_playlist), tint = AppText,
                             modifier = Modifier.size(24.dp).pressable(0.92f) { adding = t })
                     }
                 }
@@ -185,9 +191,9 @@ fun LocalFilesScreen(navController: NavController) {
         Box(
             contentAlignment = Alignment.Center,
             modifier = Modifier.statusBarsPadding().padding(12.dp).size(40.dp).clip(CircleShape)
-                .background(Color(0x66000000)).pressable { navController.navigateUp() },
+                .background(AppBackground.copy(alpha = 0.4f)).pressable { navController.navigateUp() },
         ) {
-            Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.accessibility_navigate_back), tint = Color.White)
+            Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.accessibility_navigate_back), tint = AppText)
         }
     }
 }
@@ -200,15 +206,15 @@ private fun EmptyState(title: String, subtitle: String, button: String?, onClick
         modifier = Modifier.fillMaxSize().padding(horizontal = 32.dp),
     ) {
         Image(painterResource(R.drawable.local_files_cover), null, modifier = Modifier.size(120.dp).clip(RoundedCornerShape(6.dp)))
-        Text(title, color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center,
+        Text(title, color = AppText, fontSize = 22.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center,
             modifier = Modifier.padding(top = 24.dp))
-        Text(subtitle, color = Color(0xFFB3B3B3), fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 8.dp))
+        Text(subtitle, color = AppMuted, fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 8.dp))
         if (button != null) Box(
             contentAlignment = Alignment.Center,
             modifier = Modifier.padding(top = 24.dp).height(48.dp).pressable(0.96f, onClick = onClick)
-                .clip(RoundedCornerShape(50)).background(Color.White).padding(horizontal = 28.dp),
+                .clip(RoundedCornerShape(50)).background(AppText).padding(horizontal = 28.dp),
         ) {
-            Text(button, color = Color.Black, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+            Text(button, color = com.music.spotui.ui.theme.AppBackground, fontSize = 15.sp, fontWeight = FontWeight.Bold)
         }
     }
 }
@@ -217,16 +223,16 @@ private fun EmptyState(title: String, subtitle: String, button: String?, onClick
 /** The phone's music folders, each shown in Local Files or left out (WhatsApp audio…). */
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
-private fun LocalFoldersSheet(onChanged: () -> Unit, onDismiss: () -> Unit) {
+internal fun LocalFoldersSheet(onChanged: () -> Unit, onDismiss: () -> Unit) {
     val context = LocalContext.current
     var folders by remember { mutableStateOf<List<Pair<String, Int>>>(emptyList()) }
     var version by remember { mutableStateOf(0) }
     LaunchedEffect(Unit) { folders = LocalMusic.folders(context) }
-    androidx.compose.material3.ModalBottomSheet(onDismissRequest = onDismiss, containerColor = Color(0xFF282828)) {
+    com.music.spotui.ui.components.LookSheet(onDismissRequest = onDismiss, containerColor = tone(0xFF282828)) {
         Column(Modifier.navigationBarsPadding().padding(bottom = 16.dp)) {
-            Text(stringResource(R.string.local_folders_title), color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold,
+            Text(stringResource(R.string.local_folders_title), color = AppText, fontSize = 18.sp, fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(horizontal = 20.dp))
-            Text(stringResource(R.string.local_folders_detail), color = Color(0xFFB3B3B3), fontSize = 13.sp,
+            Text(stringResource(R.string.local_folders_detail), color = AppMuted, fontSize = 13.sp,
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 6.dp))
             LazyColumn {
                 items(folders.size) { i ->
@@ -239,7 +245,7 @@ private fun LocalFoldersSheet(onChanged: () -> Unit, onDismiss: () -> Unit) {
                     ) {
                         Column(Modifier.weight(1f)) {
                             val name = folder.trimEnd('/').substringAfterLast('/').ifBlank { folder.ifBlank { "/" } }
-                            Text(name, color = Color.White, fontSize = 15.sp, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                            Text(name, color = AppText, fontSize = 15.sp, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
                             Text("$folder · ${pluralStringResource(R.plurals.local_files_count, count, count)}", color = Color(0xFF9A9A9A),
                                 fontSize = 12.sp, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
                         }
@@ -250,7 +256,7 @@ private fun LocalFoldersSheet(onChanged: () -> Unit, onDismiss: () -> Unit) {
                                 version++
                                 onChanged()
                             },
-                            colors = androidx.compose.material3.SwitchDefaults.colors(checkedTrackColor = Color(0xFF1DB954)),
+                            colors = androidx.compose.material3.SwitchDefaults.colors(checkedTrackColor = AppAccent),
                         )
                     }
                 }

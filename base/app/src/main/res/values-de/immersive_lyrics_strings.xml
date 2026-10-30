@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="immersive_lyrics_instrumental">Instrumental</string>
+    <string name="immersive_lyrics_none">Keine Lyrics für diesen Titel</string>
+    <string name="immersive_queue_title">Warteschlange</string>
+    <string name="immersive_queue_now_playing">Aktuelle Wiedergabe</string>
+    <string name="immersive_queue_empty">Nichts in der Warteschlange</string>
+    <string name="immersive_queue_remove">Aus der Warteschlange entfernen</string>
+    <string name="immersive_queue_reorder">In der Warteschlange verschieben</string>
+    <string name="immersive_queue_shuffle">Zufallswiedergabe</string>
+    <string name="immersive_queue_repeat">Wiederholen</string>
+</resources>

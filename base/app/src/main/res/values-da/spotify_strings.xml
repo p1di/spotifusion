@@ -17,7 +17,6 @@
     <string name="snackbar_added_to_liked_songs" formatted="false">Tilføjet til Sange, du synes godt om.</string>
     <string name="snackbar_removed_from_liked_songs" formatted="false">Fjernet fra Sange, du synes godt om.</string>
     <string name="content_description_context_menu" formatted="false">Flere indstillinger</string>
-    <string name="close_button_content_description" formatted="false">Luk</string>
     <string name="add_to_playlist_saved_in_section_header" formatted="false">Gemt i</string>
     <string name="add_to_playlist_new_playlist_button_text" formatted="false">Ny playliste</string>
     <string name="add_to_playlist_button_cancel" formatted="false">Annuller</string>
@@ -25,8 +24,6 @@
     <string name="lyrics_card_title" formatted="false">Sangtekster</string>
     <string name="lyrics_card_title_preview" formatted="false">Forsmag på sangtekst</string>
     <string name="lyrics_card_show_lyrics_button" formatted="false">Vis sangteksten</string>
-    <string name="lyrics_card_expand_button_content_description" formatted="false">Åbn sangteksten i fuld skærm</string>
-    <string name="lyrics_card_share_button_content_description" formatted="false">Del sangtekster</string>
     <string name="lyrics_credential_note" formatted="false">Sangtekster leveret af %1$s</string>
     <string name="lyrics_fullscreen_chip_label_share" formatted="false">Del</string>
     <string name="lyrics_fullscreen_chip_label_translate" formatted="false">Oversæt</string>
@@ -49,7 +46,6 @@
     <string name="artist_popular_tracks" formatted="false">Populær</string>
     <string name="curation_button_follow_state_text" formatted="false">Følg</string>
     <string name="curation_button_following_state_text" formatted="false">Følger</string>
-    <string name="search_main_entity_subtitle_artist" formatted="false">Kunstner</string>
     <string name="connect_phone_is_self" formatted="false">Denne telefon</string>
     <string name="settings_item_canvas_title" formatted="false">Canvas</string>
     <string name="video_settings_canvas_subtitle" formatted="false">Korte, visuelle effekter, der vises, når en sang afspilles.</string>
@@ -107,8 +103,6 @@
     <string name="library_search_text_hint" formatted="false">Søg i Dit bibliotek</string>
     <string name="account_title" formatted="false">Konto</string>
     <string name="song_dna_search_chip_followed_artists" formatted="false">Kunstnere, du følger</string>
-    <string name="settings_item_crossfade_title" formatted="false">Crossfade</string>
-    <string name="playback_settings_crossfade_slider_seconds" formatted="false">%1$d sek.</string>
     <string name="local_files_title" formatted="false">Lokale filer</string>
     <string name="local_files_empty_section_title" formatted="false">Føj dine egne lydfiler til Dit bibliotek</string>
     <string name="local_files_empty_section_subtitle" formatted="false">Har du en sang eller personlig podcast, som ikke er tilgængelig på Spotify?</string>
@@ -138,14 +132,10 @@
     <string name="assisted_curation_search_filter_artists" formatted="false">Kunstnere</string>
     <string name="assisted_curation_search_filter_albums" formatted="false">Album</string>
     <string name="assisted_curation_search_filter_playlists" formatted="false">Playlister</string>
-    <string name="assisted_curation_search_filter_clear_content_description" formatted="false">Ryd filteret</string>
-    <string name="ad_category_title_music" formatted="false">Musik</string>
-    <string name="made_for_you_hub_title" formatted="false">Specielt til dig</string>
     <string name="settings_item_app_language_title" formatted="false">Appens sprog</string>
     <string name="create_menu_item_folder_title" formatted="false">Mappe</string>
     <string name="create_folder_name_suggested_folder_name" formatted="false">Ny mappe</string>
     <string name="context_menu_rename_folder" formatted="false">Omdøb mappe</string>
-    <string name="your_library_messaging_folder_rename_hint" formatted="false">Mappenavn</string>
     <string name="create_playlist_content_description" formatted="false">Opret playliste</string>
     <string name="actions_picker_delete" formatted="false">Slet</string>
     <string name="filter_and_sort_sort_section_title" formatted="false">Sortér efter</string>

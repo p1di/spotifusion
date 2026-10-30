@@ -17,7 +17,6 @@
     <string name="snackbar_added_to_liked_songs" formatted="false">Додано до пісень, що сподобалися</string>
     <string name="snackbar_removed_from_liked_songs" formatted="false">Видалено з пісень, що сподобалися</string>
     <string name="content_description_context_menu" formatted="false">Більше варіантів</string>
-    <string name="close_button_content_description" formatted="false">Закрити</string>
     <string name="add_to_playlist_saved_in_section_header" formatted="false">Збережено тут:</string>
     <string name="add_to_playlist_new_playlist_button_text" formatted="false">Новий плейліст</string>
     <string name="add_to_playlist_button_cancel" formatted="false">Скасувати</string>
@@ -25,8 +24,6 @@
     <string name="lyrics_card_title" formatted="false">Текст</string>
     <string name="lyrics_card_title_preview" formatted="false">Попередній перегляд тексту</string>
     <string name="lyrics_card_show_lyrics_button" formatted="false">Показати текст</string>
-    <string name="lyrics_card_expand_button_content_description" formatted="false">Відкрити текст на весь екран</string>
-    <string name="lyrics_card_share_button_content_description" formatted="false">Поділіться текстом</string>
     <string name="lyrics_credential_note" formatted="false">Джерело тексту пісні: %1$s</string>
     <string name="lyrics_fullscreen_chip_label_share" formatted="false">Поділитися</string>
     <string name="lyrics_fullscreen_chip_label_translate" formatted="false">Перекласти</string>
@@ -49,7 +46,6 @@
     <string name="artist_popular_tracks" formatted="false">Популярні</string>
     <string name="curation_button_follow_state_text" formatted="false">Підписатися</string>
     <string name="curation_button_following_state_text" formatted="false">Ви підписалися</string>
-    <string name="search_main_entity_subtitle_artist" formatted="false">Виконавець</string>
     <string name="connect_phone_is_self" formatted="false">Цей телефон</string>
     <string name="settings_item_canvas_title" formatted="false">Canvas</string>
     <string name="video_settings_canvas_subtitle" formatted="false">Короткий повторюваний відеоряд під час відтворення пісні.</string>
@@ -107,8 +103,6 @@
     <string name="library_search_text_hint" formatted="false">Шукати в розділі \"Моя бібліотека\"</string>
     <string name="account_title" formatted="false">Акаунт</string>
     <string name="song_dna_search_chip_followed_artists" formatted="false">Виконавці, на яких ви підписалися</string>
-    <string name="settings_item_crossfade_title" formatted="false">Плавний перехід</string>
-    <string name="playback_settings_crossfade_slider_seconds" formatted="false">%1$d с</string>
     <string name="local_files_title" formatted="false">Локальні файли</string>
     <string name="local_files_empty_section_title" formatted="false">Додавайте власні аудіофайли до своєї бібліотеки</string>
     <string name="local_files_empty_section_subtitle" formatted="false">Маєте пісню чи особистий подкаст, яких немає в Spotify?</string>
@@ -138,14 +132,10 @@
     <string name="assisted_curation_search_filter_artists" formatted="false">Виконавці</string>
     <string name="assisted_curation_search_filter_albums" formatted="false">Альбоми</string>
     <string name="assisted_curation_search_filter_playlists" formatted="false">Плейлісти</string>
-    <string name="assisted_curation_search_filter_clear_content_description" formatted="false">Зняти фільтр</string>
-    <string name="ad_category_title_music" formatted="false">Музика</string>
-    <string name="made_for_you_hub_title" formatted="false">Для вас</string>
     <string name="settings_item_app_language_title" formatted="false">Мова додатка</string>
     <string name="create_menu_item_folder_title" formatted="false">Папка</string>
     <string name="create_folder_name_suggested_folder_name" formatted="false">Нова папка</string>
     <string name="context_menu_rename_folder" formatted="false">Перейменувати папку</string>
-    <string name="your_library_messaging_folder_rename_hint" formatted="false">Назва папки</string>
     <string name="create_playlist_content_description" formatted="false">Створити плейліст</string>
     <string name="actions_picker_delete" formatted="false">Видалити</string>
     <string name="filter_and_sort_sort_section_title" formatted="false">Сортувати</string>

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="update_code_title">The code of %1$s changed (%2$d lines, +%3$d/−%4$d)</string>
+    <string name="update_code_body">This extension holds powerful rights (critical actions or broad network access), so new code is never run without your OK.</string>
+    <string name="update_code_files">Files changed: %1$s</string>
+    <string name="update_code_update">Update</string>
+    <string name="update_code_later">Not now</string>
+    <string name="update_check_waiting">Update found: it will apply by itself in 24 hours</string>
+    <string name="update_check_repo_changed">Update refused: the repository changed owner</string>
+    <string name="update_repo_changed_title">Repository changed owner</string>
+    <string name="update_repo_changed_body">This repository was re-registered or transferred under the same name, so its updates are blocked. Uninstall it, or install it again only if you trust the new owner.</string>
+    <string name="update_author_owner">by %1$s · repository by %2$s</string>
+    <string name="update_author_unverified">by %1$s · not verified</string>
+</resources>

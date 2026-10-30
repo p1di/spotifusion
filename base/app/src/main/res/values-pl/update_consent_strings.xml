@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="update_code_title">Kod %1$s się zmienił (%2$d linii, +%3$d/−%4$d)</string>
+    <string name="update_code_body">To rozszerzenie ma potężne uprawnienia (krytyczne akcje lub szeroki dostęp do sieci), więc nowy kod nigdy nie jest uruchamiany bez Twojej zgody.</string>
+    <string name="update_code_files">Zmienione pliki: %1$s</string>
+    <string name="update_code_update">Aktualizuj</string>
+    <string name="update_code_later">Nie teraz</string>
+    <string name="update_check_waiting">Znaleziono aktualizację: zastosuje się sama za 24 godziny</string>
+    <string name="update_check_repo_changed">Aktualizacja odrzucona: repozytorium zmieniło właściciela</string>
+    <string name="update_repo_changed_title">Repozytorium zmieniło właściciela</string>
+    <string name="update_repo_changed_body">To repozytorium zarejestrowano ponownie lub przeniesiono pod tą samą nazwą, więc jego aktualizacje są zablokowane. Odinstaluj je lub zainstaluj ponownie tylko wtedy, gdy ufasz nowemu właścicielowi.</string>
+    <string name="update_author_owner">od %1$s · repozytorium: %2$s</string>
+    <string name="update_author_unverified">od %1$s · niezweryfikowane</string>
+</resources>

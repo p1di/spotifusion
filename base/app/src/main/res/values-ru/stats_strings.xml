@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="stats_tab_spotify">В Spotify</string>
+    <string name="stats_tab_phone">На этом телефоне</string>
+    <string name="stats_range_short">Последние 4 недели</string>
+    <string name="stats_range_medium">Последние 6 месяцев</string>
+    <string name="stats_range_long">Последний год</string>
+    <string name="stats_artists_ranked">Исполнителей в вашей истории: %1$d</string>
+    <string name="stats_empty">У Spotify пока нет топа исполнителей и треков за этот период. Продолжайте слушать и загляните позже.</string>
+    <string name="stats_failed">Spotify не прислал вашу статистику.</string>
+    <string name="stats_spotify_note">Рейтинг составлен Spotify по всему, что воспроизводил этот аккаунт на всех устройствах. Spotify не делится числом прослушиваний и минутами: минуты в разделе «На этом телефоне» посчитаны самим Myspoti.</string>
+    <string name="stats_weekly_minutes">Минут в неделю</string>
+    <string name="stats_this_week">На этой неделе: %1$d мин</string>
+    <string name="stats_listening_stats">Статистика прослушивания</string>
+    <string name="friends_title">Активность друзей</string>
+    <string name="friends_detail">Что слушают люди, на которых вы подписаны</string>
+    <string name="friends_now">Сейчас</string>
+    <string name="friends_empty">Пока нет активности друзей. Друзья, на которых вы подписаны и которые делятся активностью в Spotify, появятся здесь.</string>
+    <string name="friends_failed">Spotify не прислал активность друзей.</string>
+    <string name="friends_refresh">Обновить</string>
+    <string name="artist_top_short">Ваш исполнитель № %1$d за последние 4 недели</string>
+    <string name="artist_top_medium">Ваш исполнитель № %1$d за последние 6 месяцев</string>
+    <string name="artist_top_long">Ваш исполнитель № %1$d за последний год</string>
+</resources>

@@ -18,6 +18,8 @@ import androidx.media3.exoplayer.dash.DashMediaSource
 import androidx.media3.exoplayer.dash.manifest.DashManifestParser
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import com.music.spotui.di.Graph
+import app.myspoti.host.android.Logbook
+import app.myspoti.host.android.MyspotiRuntime
 import com.music.spotui.di.SongPlayer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -70,6 +72,8 @@ object MusicVideoController {
     /** The user switched to the video for this track. */
     val on = mutableStateOf(false)
     val fullscreen = mutableStateOf(false)
+    /** The activity is in its picture-in-picture window: the clip's surface is the window's own. */
+    val inPip = mutableStateOf(false)
     /** width / height of the playing video. */
     val aspect = mutableFloatStateOf(16f / 9f)
 
@@ -108,14 +112,48 @@ object MusicVideoController {
     }
     private fun cacheFile(trackId: String) = File(cacheDir, "$trackId.json").also { it.parentFile?.mkdirs() }
 
+    // The answers of the last songs only (a time map or "none", a few KB each): coming back to a
+    // song shows its answer at once, with no disk and no job. No audio, no features, no decoder.
+    private const val RECENT_MAX = 20
+    private const val NONE_TTL_MS = 7 * 86_400_000L
+    /** Bumped when the search finds clips it missed before (Spotify-confirmed label uploads, "$" names). */
+    private const val NONE_RULES = 2
+    private class Recent(val state: State, val at: Long)
+    private val recent = object : LinkedHashMap<String, Recent>(32, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Recent>) = size > RECENT_MAX
+    }
+    // A failed look-up (network, decoding) waits 30 s before the next try, also after a skip and a return.
+    private val failedUntil = HashMap<String, Long>()
+
+    private fun recentAnswer(trackId: String): State? = synchronized(cacheLock) {
+        val r = recent[trackId] ?: return@synchronized null
+        if (r.state is State.Unavailable && System.currentTimeMillis() - r.at >= NONE_TTL_MS) { recent.remove(trackId); null } else r.state
+    }
+
+    private fun remember(trackId: String, s: State, at: Long = System.currentTimeMillis()) {
+        if (s !is State.Ready && s !is State.Unavailable) return
+        // The retained clip files belong to one running refinement, never to a remembered answer.
+        synchronized(cacheLock) { recent[trackId] = Recent(if (s is State.Ready) s.copy(refinementToken = null) else s, at) }
+    }
+
+    private fun markFailed(trackId: String) {
+        val now = SystemClock.elapsedRealtime()
+        failedUntil.values.removeAll { it <= now }
+        failedUntil[trackId] = now + 30_000
+    }
+
     private fun readCache(trackId: String): State? = synchronized(cacheLock) {
+        recentAnswer(trackId)?.let { return@synchronized it }
         runCatching {
             val f = cacheFile(trackId)
             if (!f.exists()) return@runCatching null
             val o = JSONObject(f.readText())
+            // A file that is read stays among the recent ones when old entries are pruned.
+            if (System.currentTimeMillis() - f.lastModified() > 86_400_000L) f.setLastModified(System.currentTimeMillis())
             if (o.optBoolean("none")) {
-                return@runCatching if (System.currentTimeMillis() - o.optLong("at") < 7 * 86_400_000L)
-                    State.Unavailable else null
+                // "No clip" found under older search rules is looked up again.
+                return@runCatching if (o.optInt("rules") >= NONE_RULES && System.currentTimeMillis() - o.optLong("at") < NONE_TTL_MS)
+                    State.Unavailable.also { remember(trackId, it, o.optLong("at")) } else null
             }
             val score = o.getDouble("score")
             require(score.isFinite() && score >= MIN_SCORE)
@@ -128,6 +166,7 @@ object MusicVideoController {
             require(segments.all { it.songStartMs >= 0 && it.songEndMs > it.songStartMs })
             require(segments.zipWithNext().all { (a, b) -> a.songEndMs <= b.songStartMs })
             State.Ready(trackId, o.getString("video"), AudioAlign.TimeMap(segments, score), mapComplete = o.optBoolean("complete"))
+                .also { remember(trackId, it) }
         }.getOrElse {
             Log.w(TAG, "Ignoring invalid music video cache: ${it.javaClass.simpleName}")
             null
@@ -144,7 +183,7 @@ object MusicVideoController {
                         s.map.segments.forEach { put(JSONObject().put("from", it.songStartMs).put("to", it.songEndMs).put("offset", it.offsetMs)) }
                     })
                 }
-                else -> o.put("none", true).put("at", System.currentTimeMillis())
+                else -> o.put("none", true).put("at", System.currentTimeMillis()).put("rules", NONE_RULES)
             }
             runCatching {
                 val file = AtomicFile(cacheFile(trackId))
@@ -157,17 +196,52 @@ object MusicVideoController {
                     throw t
                 }
             }
+            remember(trackId, s)
         }
+    }
+
+    // Disk and cache folder stay small: old answers go, and clip files a killed run left behind.
+    private const val KEEP_FILES = 300
+    private const val KEEP_MS = 60 * 86_400_000L
+    private const val TMP_MAX_AGE_MS = 3 * 3_600_000L
+
+    private fun housekeeping() {
+        val now = System.currentTimeMillis()
+        app.cacheDir.listFiles { f ->
+            f.isFile && (f.name.startsWith("mv_ref_") || f.name.startsWith("mv_cand_") || f.name.startsWith("mv_full_")) && now - f.lastModified() > TMP_MAX_AGE_MS
+        }?.forEach { it.delete() }
+        synchronized(cacheLock) {
+            val kept = (cacheDir.listFiles() ?: return).filter { f ->
+                val expired = !f.isFile || now - f.lastModified() > KEEP_MS || (f.name.endsWith(".json") && runCatching {
+                    JSONObject(f.readText()).let { it.optBoolean("none") && now - it.optLong("at") >= NONE_TTL_MS }
+                }.getOrDefault(false))
+                if (expired && f.isFile) f.delete()
+                !expired
+            }
+            kept.sortedByDescending { it.lastModified() }.drop(KEEP_FILES).forEach { it.delete() }
+        }
+    }
+
+    init {
+        // Once per start, a little after it, so it never competes with the first screen.
+        scope.launch(Dispatchers.IO) { delay(15_000); runCatching { housekeeping() } }
     }
 
     // Background look-ups for tracks not on screen yet (the next one), one at a time.
     private val prefetching = java.util.Collections.synchronizedSet(HashSet<String>())
     private val prefetchJobs = java.util.concurrent.ConcurrentHashMap<String, Job>()
-
+    // The last prefetched track and when to look again: the caller repeats on every player
+    // update, and without this each repeat would read and parse the disk cache again.
+    @Volatile private var settledId = ""
+    @Volatile private var settledUntil = 0L
 
     /** Resolve and cache a track's video in the background, without touching the UI state. */
     fun prefetch(trackId: String, title: String, artist: String, durationMs: Long) {
-        if (com.music.spotui.data.DataSaver.active || !appVisible || !EnergySettings.state.value.policy.allowBackgroundLookups || trackId.isBlank() || trackId == currentTrackId || !prefetching.add(trackId)) return
+        if (com.music.spotui.data.DataSaver.active || !com.music.spotui.data.preferences.MusicVideoPref.on || !appVisible || !EnergySettings.state.value.policy.allowBackgroundLookups || trackId.isBlank() || trackId == currentTrackId) return
+        if (trackId == settledId && SystemClock.elapsedRealtime() < settledUntil) return
+        // Already answered (or failed a moment ago): nothing to look up, nothing to read.
+        if (recentAnswer(trackId) != null || SystemClock.elapsedRealtime() < (failedUntil[trackId] ?: 0L)) return
+        if (!prefetching.add(trackId)) return
         val request = -prefetchSequence.incrementAndGet()
         val published = java.util.concurrent.atomic.AtomicBoolean(false)
         val job = scope.launch(start = kotlinx.coroutines.CoroutineStart.LAZY) {
@@ -176,6 +250,10 @@ object MusicVideoController {
                 val result = withContext(Dispatchers.IO) {
                     readCache(trackId) ?: resolve(trackId, title, artist, durationMs, request).also { if (it != null) writeCache(trackId, it) }
                 }
+                // Only the answer on disk is kept: no audio, no features, no clip stream is held for a song not playing yet.
+                settledId = trackId
+                settledUntil = if (result != null) Long.MAX_VALUE else SystemClock.elapsedRealtime() + 30_000
+                if (result == null) markFailed(trackId)
                 if (trackId == currentTrackId && state.value is State.Searching) {
                     if (result == null) nextPrepareAt = SystemClock.elapsedRealtime() + 30_000
                     state.value = result ?: State.Idle
@@ -185,6 +263,9 @@ object MusicVideoController {
             } catch (t: kotlinx.coroutines.CancellationException) {
                 throw t
             } catch (t: Throwable) {
+                settledId = trackId
+                settledUntil = SystemClock.elapsedRealtime() + 30_000
+                markFailed(trackId)
                 if (trackId == currentTrackId && state.value is State.Searching) {
                     nextPrepareAt = SystemClock.elapsedRealtime() + 30_000
                     state.value = State.Idle
@@ -211,7 +292,7 @@ object MusicVideoController {
     /** Find (or load) the video of the track now playing. Disk access stays on IO. */
     fun prepare(trackId: String, title: String, artist: String, durationMs: Long) {
         // Data saver on mobile data: no look-up (it downloads audio) and no video stream.
-        if (trackId.isBlank() || !appVisible || com.music.spotui.data.DataSaver.active) return
+        if (trackId.isBlank() || !appVisible || com.music.spotui.data.DataSaver.active || !com.music.spotui.data.preferences.MusicVideoPref.on) return
         currentTitle = title; currentArtist = artist; currentDuration = durationMs
         if (trackId == currentTrackId && (state.value !is State.Idle || SystemClock.elapsedRealtime() < nextPrepareAt)) return
         if (currentTrackId != trackId) { errorRetryUsedFor = null; nextPrepareAt = 0L }
@@ -224,6 +305,15 @@ object MusicVideoController {
         if (on.value) { on.value = false; fullscreen.value = false; syncJob?.cancel() }
         warmedFor = null
         player?.let { it.stop(); it.clearMediaItems() }
+        // Back on a song already answered: its stored answer is used at once, nothing is looked up again.
+        recentAnswer(trackId)?.let { hit ->
+            state.value = hit
+            if (hit is State.Ready) { preloadStream(hit.videoUrl); resumeWanted() }
+            return
+        }
+        // A look-up that failed less than 30 s ago waits, even when the song was left and came back.
+        val retryAt = failedUntil[trackId] ?: 0L
+        if (SystemClock.elapsedRealtime() < retryAt) { nextPrepareAt = retryAt; state.value = State.Idle; return }
         state.value = State.Searching
         if (trackId in prefetching) return
         prepareJob = scope.launch {
@@ -233,14 +323,16 @@ object MusicVideoController {
                     val cached = readCache(trackId)
                     if (cached != null) cached else {
                         val resolved = resolve(trackId, title, artist, durationMs, request)
-                        currentCoroutineContext().ensureActive()
+                        // A finished look-up is stored even when the song was left meanwhile.
                         if (resolved != null) writeCache(trackId, resolved)
+                        currentCoroutineContext().ensureActive()
                         resolved
                     }
                 }
                 if (generation.get() != request || currentTrackId != trackId) return@launch
                 if (result == null) {
                     nextPrepareAt = SystemClock.elapsedRealtime() + 30_000
+                    markFailed(trackId)
                     state.value = State.Idle
                     return@launch
                 }
@@ -252,6 +344,7 @@ object MusicVideoController {
             } catch (t: Throwable) {
                 if (generation.get() == request) {
                     nextPrepareAt = SystemClock.elapsedRealtime() + 30_000
+                    markFailed(trackId)
                     state.value = State.Idle
                 }
                 Log.w(TAG, "Video preparation failed: ${t.javaClass.simpleName}")
@@ -283,6 +376,13 @@ object MusicVideoController {
                 val song = async(Dispatchers.IO) {
                     runInterruptible { YouTubeSource.findSong(title, artist, durationMs) ?: YouTubeSource.findAudio(title, artist, durationMs) }
                 }
+                // Spotify has a clip of this song (its "switch to video"): a label's upload that
+                // YouTube files as an ordinary video can be it (Bu$hi's "6 O'clock").
+                val spotifyHasVideo = async(Dispatchers.IO) {
+                    kotlinx.coroutines.withTimeoutOrNull(4_000) {
+                        runCatching { MyspotiRuntime.api.catalog.track("spotify:track:$trackId").hasVideo }.getOrNull()
+                    } ?: false
+                }
                 val candidates = withContext(Dispatchers.IO) {
                     YouTubeSource.videoCandidates(title, artist, durationMs)
                 }.take(6)
@@ -292,14 +392,17 @@ object MusicVideoController {
                     downloadAudioFile(reference.url, refFile)
                     runInterruptible { AudioAlign.features(AudioAlign.decode(refFile, 45)) }
                 }
+                val relaxed = spotifyHasVideo.await()
+                if (relaxed) Log.i(TAG, "$title: Spotify has a clip of it, ordinary uploads checked too")
                 val result = firstVerifiedClip(candidates,
+                    accepts = { it == "MUSIC_VIDEO_TYPE_OMV" || (relaxed && it == "MUSIC_VIDEO_TYPE_UGC") },
                     classify = { c -> withContext(Dispatchers.IO) { runInterruptible { YouTubeSource.musicVideoType(c.url) } } },
                     verify = { c ->
                         val candFile = File(app.cacheDir, "mv_cand_${trackId}_${candidateFiles.size}_$token")
                         candidateFiles.add(candFile)
                         try {
                             val info = withContext(Dispatchers.IO) { runInterruptible { YouTubeSource.info(c.url) } }
-                            val trusted = YouTubeSource.isTrustedClip(info, artist)
+                            val trusted = YouTubeSource.isTrustedClip(info, artist, relaxed)
                             if (!trusted) Log.i(TAG, "candidate ${info.name} (${info.uploaderName}, verified=${info.isUploaderVerified}): not the artist's clip")
                             val still = if (trusted) withContext(Dispatchers.IO) { runInterruptible { YouTubeSource.isStatic(info) } } else false
                             when {
@@ -418,7 +521,7 @@ object MusicVideoController {
      * sides cancels its delay), lowest bitrate first; a stream YouTube no longer
      * serves (empty / truncated) falls back to the next; a refusal (403) gets fresh URLs once.
      */
-    internal suspend fun downloadAudioFile(url: String, out: File): File =
+    private suspend fun downloadAudioFile(url: String, out: File): File =
         try { downloadAudioFileOnce(url, out, runInterruptible(Dispatchers.IO) { YouTubeSource.info(url) }) } catch (t: Throwable) {
             currentCoroutineContext().ensureActive()
             if (t.message?.contains("403") != true) throw t
@@ -454,7 +557,7 @@ object MusicVideoController {
     // and buffered as soon as the Now Playing screen shows (paused, at the mapped time),
     // so "Passer à la vidéo" only attaches the surface and plays.
 
-    private data class VideoSource(val url: String, val source: androidx.media3.exoplayer.source.MediaSource, val durationMs: Long, val at: Long, val maxHeight: Int)
+    private data class VideoSource(val url: String, val source: androidx.media3.exoplayer.source.MediaSource, val durationMs: Long, val at: Long, val maxHeight: Int, val audio: androidx.media3.exoplayer.source.MediaSource? = null)
     private val sources = java.util.concurrent.ConcurrentHashMap<String, VideoSource>()
     private val resolving = java.util.Collections.synchronizedSet(HashSet<String>())
     @Volatile private var warmedFor: String? = null
@@ -503,7 +606,7 @@ object MusicVideoController {
             val p = ensurePlayer()
             p.setMediaSource(vs.source)
             p.prepare()
-            p.seekTo(s.map.toVideo(SongPlayer.getCurrentPosition() + 400))
+            p.seekTo(s.map.toVideo(SongPlayer.getCurrentPosition() + 400 - outputLagMs()))
             p.playWhenReady = false
             warmedFor = s.videoUrl
             videoDurationMs = vs.durationMs
@@ -601,13 +704,15 @@ object MusicVideoController {
         val vs = freshSource(s.videoUrl)
         if (vs == null) { preloadStream(s.videoUrl) { if (on.value && s.trackId == currentTrackId) start(s) }; return }
         val p = ensurePlayer()
-        if (warmedFor != s.videoUrl || p.playbackState == Player.STATE_IDLE) {
-            p.setMediaSource(vs.source)
+        val withSound = clipSound.value && vs.audio != null
+        val key = s.videoUrl + if (withSound) SOUND_KEY else ""
+        if (warmedFor != key || p.playbackState == Player.STATE_IDLE) {
+            p.setMediaSource(if (withSound) androidx.media3.exoplayer.source.MergingMediaSource(true, vs.source, vs.audio!!) else vs.source)
             p.prepare()
-            warmedFor = s.videoUrl
+            warmedFor = key
         }
         videoDurationMs = vs.durationMs
-        p.seekTo(s.map.toVideo(SongPlayer.getCurrentPosition()))
+        p.seekTo(s.map.toVideo((SongPlayer.getCurrentPosition() - outputLagMs()).coerceAtLeast(0)))
         p.playWhenReady = SongPlayer.isPlaying() && !SongPlayer.isBuffering
         p.addListener(object : Player.Listener {
             override fun onRenderedFirstFrame() {
@@ -631,6 +736,20 @@ object MusicVideoController {
         }
     }
 
+    private val hwDecoders = HashMap<String, Boolean>()
+
+    /** Whether the phone has a hardware decoder for [mime] (software VP9 at 1080p drops frames). */
+    private fun hardwareDecodes(mime: String): Boolean = synchronized(hwDecoders) {
+        hwDecoders.getOrPut(mime) {
+            if (android.os.Build.VERSION.SDK_INT < 29) return@getOrPut false
+            runCatching {
+                android.media.MediaCodecList(android.media.MediaCodecList.REGULAR_CODECS).codecInfos.any { info ->
+                    !info.isEncoder && info.isHardwareAccelerated && info.supportedTypes.any { it.equals(mime, ignoreCase = true) }
+                }
+            }.getOrDefault(false)
+        }
+    }
+
     private fun buildSource(url: String, fresh: Boolean = false): VideoSource {
         val t0 = SystemClock.elapsedRealtime()
         val info = YouTubeSource.info(url, fresh = fresh)
@@ -641,13 +760,22 @@ object MusicVideoController {
             val lowestHeight = allStreams.minOfOrNull { it.height }
             allStreams.filter { it.height == lowestHeight }
         }
-        // H.264 remains preferred; the saver cap selects a smaller available stream.
-        val preferredHeight = minOf(720, maxHeight)
-        val avc = streams.filter { it.format == MediaFormat.MPEG_4 && it.codec?.startsWith("avc") == true }
-        val v = avc.filter { it.height <= preferredHeight }.maxByOrNull { it.height }
-            ?: avc.minByOrNull { it.height }
-            ?: streams.filter { it.height <= preferredHeight }.maxByOrNull { it.height }
-            ?: streams.minByOrNull { it.height }
+        // The sharpest picture the network allows (reported: "rather mediocre" at 720p H.264):
+        // 1080p on Wi-Fi, 720p on mobile data, the saver cap below both. At a height, VP9 when the
+        // phone decodes it in hardware (sharper than H.264 at the same size), else H.264.
+        val preferredHeight = minOf(if (com.music.spotui.data.DataSaver.metered) 720 else 1080, maxHeight)
+        val fits = streams.filter { it.height <= preferredHeight }.ifEmpty { streams.filter { it.height == streams.minOf { s -> s.height } } }
+        val vp9 = hardwareDecodes("video/x-vnd.on2.vp9")
+        fun rank(st: org.schabi.newpipe.extractor.stream.VideoStream): Int {
+            val c = st.codec.orEmpty()
+            return when {
+                c.startsWith("avc") && st.format == MediaFormat.MPEG_4 -> 1
+                vp9 && (c == "vp9" || c.startsWith("vp09.00")) && st.format == MediaFormat.WEBM -> 2
+                else -> 0
+            }
+        }
+        val v = fits.filter { rank(it) > 0 }.maxWithOrNull(compareBy({ it.height }, { rank(it) }))
+            ?: fits.maxByOrNull { it.height }
             ?: error("no video stream")
         Log.i(TAG, "video ${v.height}p ${v.codec}")
         val headers = streamHeaders(v.content)
@@ -664,7 +792,67 @@ object MusicVideoController {
         } else {
             ProgressiveMediaSource.Factory(http).createMediaSource(MediaItem.fromUri(v.content))
         }
-        return VideoSource(url, source, info.duration * 1000, SystemClock.elapsedRealtime(), maxHeight)
+        // The clip's soundtrack, for "clip sound" only (nothing is fetched until it is played).
+        val a = info.audioStreams.filter { it.format == MediaFormat.M4A }.ifEmpty { info.audioStreams }
+            .let { list -> list.filter { it.averageBitrate in 1..160 }.maxByOrNull { it.averageBitrate } ?: list.minByOrNull { it.averageBitrate } }
+        val audio = a?.let { st ->
+            val h = streamHeaders(st.content)
+            val ahttp = DefaultHttpDataSource.Factory()
+                .apply { h["User-Agent"]?.let { setUserAgent(it) } }
+                .setDefaultRequestProperties(h - "User-Agent")
+                .setAllowCrossProtocolRedirects(true)
+            runCatching {
+                val ai = st.itagItem
+                if (ai != null) {
+                    val mpd = YoutubeProgressiveDashManifestCreator.fromProgressiveStreamingUrl(st.content, ai, info.duration)
+                    DashMediaSource.Factory(ahttp).createMediaSource(DashManifestParser().parse(Uri.parse(st.content), mpd.byteInputStream()), MediaItem.fromUri(st.content))
+                } else ProgressiveMediaSource.Factory(ahttp).createMediaSource(MediaItem.fromUri(st.content))
+            }.getOrNull()
+        }
+        return VideoSource(url, source, info.duration * 1000, SystemClock.elapsedRealtime(), maxHeight, audio)
+    }
+
+    private const val SOUND_KEY = "#sound"
+    private val prefs by lazy { app.getSharedPreferences("music_video", Context.MODE_PRIVATE) }
+
+    /** The clip's own sound is heard instead of the song's (kept across songs and restarts). */
+    val clipSound = mutableStateOf(false).also { st -> scope.launch { st.value = prefs.getBoolean("clip_sound", false) } }
+
+    fun setClipSound(value: Boolean) {
+        com.music.spotui.di.Haptics.click()
+        clipSound.value = value
+        prefs.edit().putBoolean("clip_sound", value).apply()
+        if (!value) hush(false)
+        // The clip is played again with (or without) its soundtrack, at the same place.
+        (state.value as? State.Ready)?.let { if (on.value) start(it) }
+    }
+
+    /** The song is unheard on the phone: the clip's sound is what plays. */
+    @Volatile private var hushed = false
+    private var hushedFor = ""
+    @Volatile private var hushWanted = false
+    private val hushLock = kotlinx.coroutines.sync.Mutex()
+
+    private fun hush(on: Boolean) {
+        val track = SongPlayer.currentTrackId
+        if (on == hushed && (!on || hushedFor == track)) return
+        hushed = on
+        hushedFor = if (on) track else ""
+        player?.volume = if (on) 1f else 0f
+        Logbook.log(if (on) "clip sound: the clip is heard, the song plays on unheard" else "clip sound: the song is heard")
+        // Applied in order, the last wish wins (a quick on/off never leaves the song unheard).
+        hushWanted = on
+        scope.launch(Dispatchers.IO) { hushLock.withLock { MyspotiRuntime.spotify.player.setHushed(hushWanted) } }
+    }
+
+    /**
+     * How late the sound is heard after the page plays it: Bluetooth delays it (reported: the clip
+     * "out of sync from time to time" — with earbuds on). The picture follows what is heard.
+     */
+    private fun outputLagMs(): Long {
+        // The clip's own sound: picture and sound leave the same player, already together.
+        if (hushed) return 0L
+        return com.music.spotui.di.OutputLag.ms()
     }
 
     /** Keeps the video on the song: small drifts by speed, big ones by seeking. */
@@ -677,6 +865,14 @@ object MusicVideoController {
                 val playing = SongPlayer.isPlaying()
                 val shown = playing && !SongPlayer.isBuffering && appVisible && surfaces > 0 && SongPlayer.activeDevice.value == null
                 if (p.playWhenReady != shown) p.playWhenReady = shown
+                // Clip sound: the song goes unheard only while the clip is really playing with its
+                // sound; buffering, paused, an ad or anything else, the song is heard again at once.
+                val sounding = shown && clipSound.value && warmedFor?.endsWith(SOUND_KEY) == true &&
+                    p.isPlaying && SongPlayer.currentTrackId == currentTrackId && !SongPlayer.adPlaying &&
+                    // The extension's own sound plays, not the engine's: nothing to hush.
+                    !com.music.spotui.di.LocalPlayer.active.value
+                hush(sounding)
+                p.volume = if (hushed) 1f else 0f
                 if (!shown) {
                     if (p.playbackParameters.speed != 1f) p.playbackParameters = PlaybackParameters(1f)
                     delay(500)
@@ -684,10 +880,19 @@ object MusicVideoController {
                 }
                 if (p.playbackState == Player.STATE_READY) {
                     if (p.duration > 0) videoDurationMs = p.duration
-                    val target = map.toVideo(SongPlayer.getCurrentPosition())
+                    val target = map.toVideo((SongPlayer.getCurrentPosition() - outputLagMs()).coerceAtLeast(0))
                     val drift = p.currentPosition - target
                     when {
-                        abs(drift) > 600 -> { p.seekTo(target); p.playbackParameters = PlaybackParameters(1f) }
+                        // A seek holds the picture until the frame is decoded (a visible freeze,
+                        // reported): seen only, a drift under 2.5 s is caught up by speed instead.
+                        (if (hushed) abs(drift) > 600 else abs(drift) > 2_500) -> {
+                            Logbook.log("clip: ${drift} ms off at ${SongPlayer.getCurrentPosition()} ms of the song, put back")
+                            p.seekTo(target); p.playbackParameters = PlaybackParameters(1f)
+                        }
+                        // Heard, the clip is corrected gently (a 10 % change is heard); seen only, firmly.
+                        hushed && abs(drift) > 120 -> p.playbackParameters = PlaybackParameters((1f - drift / 4000f).coerceIn(0.97f, 1.03f))
+                        hushed -> if (p.playbackParameters.speed != 1f && abs(drift) < 40) p.playbackParameters = PlaybackParameters(1f)
+                        playing && abs(drift) > 600 -> p.playbackParameters = PlaybackParameters((1f - drift / 2000f).coerceIn(0.6f, 1.5f))
                         playing && abs(drift) > 40 -> p.playbackParameters = PlaybackParameters((1f - drift / 2000f).coerceIn(0.9f, 1.1f))
                         p.playbackParameters.speed != 1f -> p.playbackParameters = PlaybackParameters(1f)
                     }
@@ -699,6 +904,7 @@ object MusicVideoController {
 
     private fun stop() {
         syncJob?.cancel()
+        hush(false)
         player?.let { it.playWhenReady = false }
         refineJob?.cancel()
         // Keep the buffered source: switching back on is instant.
@@ -743,7 +949,8 @@ object MusicVideoController {
             return
         }
         prepareJob?.cancel()
-        prefetchJobs.values.forEach { it.cancel() }
+        // The look-up of the song about to start is not thrown away: prepare() adopts it when it finishes.
+        prefetchJobs.forEach { (id, job) -> if (id != trackId || currentTrackId == trackId) job.cancel() }
         refineJob?.cancel()
         if (state.value is State.Searching) { state.value = State.Idle; nextPrepareAt = 0L }
         if (trackId.isNotBlank() && currentTrackId != trackId) {
@@ -777,6 +984,9 @@ object MusicVideoController {
         on.value = false
         prepareJob?.cancel()
         prefetchJobs.values.forEach { it.cancel() }
+        settledId = ""
+        synchronized(cacheLock) { recent.clear() }
+        failedUntil.clear()
         stop()
         player?.stop()
         currentTrackId = ""
@@ -787,6 +997,7 @@ object MusicVideoController {
     /** App in the background: the video pauses (nothing to show), video mode stays. */
     fun onBackground() {
         appVisible = false
+        hush(false)
         prepareJob?.cancel()
         prefetchJobs.values.forEach { it.cancel() }
         refineJob?.cancel()

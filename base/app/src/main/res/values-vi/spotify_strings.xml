@@ -17,7 +17,6 @@
     <string name="snackbar_added_to_liked_songs" formatted="false">Đã thêm vào trang Bài hát đã thích.</string>
     <string name="snackbar_removed_from_liked_songs" formatted="false">Đã xóa khỏi trang Bài hát đã thích.</string>
     <string name="content_description_context_menu" formatted="false">Tùy chọn khác</string>
-    <string name="close_button_content_description" formatted="false">Đóng</string>
     <string name="add_to_playlist_saved_in_section_header" formatted="false">Đã lưu vào</string>
     <string name="add_to_playlist_new_playlist_button_text" formatted="false">Danh sách phát mới</string>
     <string name="add_to_playlist_button_cancel" formatted="false">Hủy</string>
@@ -25,8 +24,6 @@
     <string name="lyrics_card_title" formatted="false">Lời bài hát</string>
     <string name="lyrics_card_title_preview" formatted="false">Bản xem trước lời bài hát</string>
     <string name="lyrics_card_show_lyrics_button" formatted="false">Hiện lời bài hát</string>
-    <string name="lyrics_card_expand_button_content_description" formatted="false">Mở lời bài hát trên toàn màn hình</string>
-    <string name="lyrics_card_share_button_content_description" formatted="false">Chia sẻ lời bài hát</string>
     <string name="lyrics_credential_note" formatted="false">Lời bài hát do %1$s cung cấp</string>
     <string name="lyrics_fullscreen_chip_label_share" formatted="false">Chia sẻ</string>
     <string name="lyrics_fullscreen_chip_label_translate" formatted="false">Dịch</string>
@@ -49,7 +46,6 @@
     <string name="artist_popular_tracks" formatted="false">Phổ biến</string>
     <string name="curation_button_follow_state_text" formatted="false">Theo dõi</string>
     <string name="curation_button_following_state_text" formatted="false">Đang theo dõi</string>
-    <string name="search_main_entity_subtitle_artist" formatted="false">Nghệ sĩ</string>
     <string name="connect_phone_is_self" formatted="false">Điện thoại này</string>
     <string name="settings_item_canvas_title" formatted="false">Canvas</string>
     <string name="video_settings_canvas_subtitle" formatted="false">Hình ảnh ngắn, lặp lại khi bài hát đang phát.</string>
@@ -107,8 +103,6 @@
     <string name="library_search_text_hint" formatted="false">Tìm kiếm trong thư viện</string>
     <string name="account_title" formatted="false">Tài khoản</string>
     <string name="song_dna_search_chip_followed_artists" formatted="false">Nghệ sĩ đang theo dõi</string>
-    <string name="settings_item_crossfade_title" formatted="false">Chuyển bài</string>
-    <string name="playback_settings_crossfade_slider_seconds" formatted="false">%1$d giây</string>
     <string name="local_files_title" formatted="false">Tệp trên thiết bị</string>
     <string name="local_files_empty_section_title" formatted="false">Thêm tệp âm thanh của riêng bạn vào Thư viện</string>
     <string name="local_files_empty_section_subtitle" formatted="false">Bạn có bài hát hoặc podcast cá nhân không có trên Spotify?</string>
@@ -138,14 +132,10 @@
     <string name="assisted_curation_search_filter_artists" formatted="false">Nghệ sĩ</string>
     <string name="assisted_curation_search_filter_albums" formatted="false">Album</string>
     <string name="assisted_curation_search_filter_playlists" formatted="false">Danh sách phát</string>
-    <string name="assisted_curation_search_filter_clear_content_description" formatted="false">Xóa bộ lọc</string>
-    <string name="ad_category_title_music" formatted="false">Nhạc</string>
-    <string name="made_for_you_hub_title" formatted="false">Dành cho bạn</string>
     <string name="settings_item_app_language_title" formatted="false">Ngôn ngữ của ứng dụng</string>
     <string name="create_menu_item_folder_title" formatted="false">Thư mục</string>
     <string name="create_folder_name_suggested_folder_name" formatted="false">Thư mục mới</string>
     <string name="context_menu_rename_folder" formatted="false">Đổi tên thư mục</string>
-    <string name="your_library_messaging_folder_rename_hint" formatted="false">Tên thư mục</string>
     <string name="create_playlist_content_description" formatted="false">Tạo danh sách phát</string>
     <string name="actions_picker_delete" formatted="false">Xóa</string>
     <string name="filter_and_sort_sort_section_title" formatted="false">Sắp xếp theo</string>

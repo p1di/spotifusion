@@ -6,6 +6,10 @@ import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.snapshots.SnapshotStateMap
 import org.json.JSONArray
 import org.json.JSONObject
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import java.io.File
 import java.util.UUID
 
@@ -50,10 +54,23 @@ object LocalPlaylists {
     /** Spotify playlist id → phone files added to it on this phone. */
     val additions: SnapshotStateMap<String, List<LocalItem>> = mutableStateMapOf()
 
+    @Volatile private var loaded = false
+
     fun init(context: Context) {
         if (::file.isInitialized) return
         file = File(context.filesDir, "local_playlists.json")
-        runCatching { read(file.readText()) }
+        // Read off the main thread; the screens show the lists as they land, and a change made
+        // before then reads the file first ([ensureLoaded]) so it cannot overwrite it.
+        CoroutineScope(SupervisorJob() + Dispatchers.IO).launch { ensureLoaded() }
+    }
+
+    private fun ensureLoaded() {
+        if (loaded) return
+        synchronized(lock) {
+            if (loaded || !::file.isInitialized) return
+            loaded = true
+            runCatching { read(file.readText()) }
+        }
     }
 
     /** Newest first. */
@@ -84,11 +101,11 @@ object LocalPlaylists {
 
     private fun update(change: () -> Unit) {
         synchronized(lock) {
+            ensureLoaded()
             change()
             if (::file.isInitialized) {
-                val tmp = File(file.parentFile, file.name + ".tmp")
-                tmp.writeText(write())
-                tmp.renameTo(file)
+                runCatching { com.music.spotui.data.writeTextSafely(file, write()) }
+                    .onFailure { app.myspoti.host.android.Logbook.log("local playlists not saved: ${it.message}") }
             }
         }
     }

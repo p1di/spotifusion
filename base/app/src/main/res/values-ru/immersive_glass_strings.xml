@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_liquid_glass_title">Жидкое стекло</string>
+    <string name="settings_liquid_glass_detail">Панели изгибаются и отражают страницу за ними, как стекло</string>
+    <string name="settings_liquid_glass_unsupported">Требуется Android 12 или новее</string>
+    <string name="settings_liquid_glass_reduced">Матовый эффект, пока телефон снижает размытие или анимации</string>
+    <string name="immersive_expand_tab_bar">Показать все вкладки</string>
+</resources>

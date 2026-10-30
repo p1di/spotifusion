@@ -17,7 +17,6 @@
     <string name="snackbar_added_to_liked_songs" formatted="false">లైక్ చేసిన పాటలకు జోడించబడింది.</string>
     <string name="snackbar_removed_from_liked_songs" formatted="false">లైక్ చేసిన పాటల నుండి తీసివేయబడింది.</string>
     <string name="content_description_context_menu" formatted="false">మరిన్ని ఎంపికలు</string>
-    <string name="close_button_content_description" formatted="false">మూసివేయండి</string>
     <string name="add_to_playlist_saved_in_section_header" formatted="false">ఇందులో సేవ్ చేయబడింది</string>
     <string name="add_to_playlist_new_playlist_button_text" formatted="false">కొత్త ప్లేలిస్ట్</string>
     <string name="add_to_playlist_button_cancel" formatted="false">రద్దు చేయి</string>
@@ -25,8 +24,6 @@
     <string name="lyrics_card_title" formatted="false">లిరిక్స్</string>
     <string name="lyrics_card_title_preview" formatted="false">లిరిక్స్ ప్రివ్యూ</string>
     <string name="lyrics_card_show_lyrics_button" formatted="false">లిరిక్స్‌ని చూపించండి</string>
-    <string name="lyrics_card_expand_button_content_description" formatted="false">పూర్తి స్క్రీన్ లిరిక్స్ తెరవండి</string>
-    <string name="lyrics_card_share_button_content_description" formatted="false">లిరిక్స్ షేర్ చేయండి</string>
     <string name="lyrics_credential_note" formatted="false">%1$s ద్వారా లిరిక్స్ అందించబడ్డాయి</string>
     <string name="lyrics_fullscreen_chip_label_share" formatted="false">షేర్ చేయి</string>
     <string name="lyrics_fullscreen_chip_label_translate" formatted="false">అనువదించు</string>
@@ -49,7 +46,6 @@
     <string name="artist_popular_tracks" formatted="false">జనాదరణ పొందిన</string>
     <string name="curation_button_follow_state_text" formatted="false">అనుసరించండి</string>
     <string name="curation_button_following_state_text" formatted="false">అనుసరిస్తున్నారు</string>
-    <string name="search_main_entity_subtitle_artist" formatted="false">ఆర్టిస్ట్</string>
     <string name="connect_phone_is_self" formatted="false">ఈ ఫోన్</string>
     <string name="settings_item_canvas_title" formatted="false">Canvas</string>
     <string name="video_settings_canvas_subtitle" formatted="false">పాట ప్లే అవుతున్నప్పుడు చిన్న, లూపింగ్ విజువల్స్.</string>
@@ -107,8 +103,6 @@
     <string name="library_search_text_hint" formatted="false">మీ లైబ్రెరీలో వెతకండి</string>
     <string name="account_title" formatted="false">అకౌంట్</string>
     <string name="song_dna_search_chip_followed_artists" formatted="false">అనుసరించిన ఆర్టిస్ట్‌లు</string>
-    <string name="settings_item_crossfade_title" formatted="false">క్రాస్‌ఫేడ్</string>
-    <string name="playback_settings_crossfade_slider_seconds" formatted="false">%1$d సె</string>
     <string name="local_files_title" formatted="false">స్థానిక ఫైల్స్</string>
     <string name="local_files_empty_section_title" formatted="false">మీ స్వంత ఆడియో ఫైల్స్‌ను మీ లైబ్రరీకి చేర్చండి</string>
     <string name="local_files_empty_section_subtitle" formatted="false">Spotifyలో లేని పాట లేదా వ్యక్తిగత పాడ్కాస్ట్ ఉందా?</string>
@@ -138,14 +132,10 @@
     <string name="assisted_curation_search_filter_artists" formatted="false">ఆర్టిస్ట్‌లు</string>
     <string name="assisted_curation_search_filter_albums" formatted="false">ఆల్బమ్‌లు</string>
     <string name="assisted_curation_search_filter_playlists" formatted="false">ప్లేలిస్ట్‌లు</string>
-    <string name="assisted_curation_search_filter_clear_content_description" formatted="false">ఫిల్టర్‌ను క్లియర్ చేయండి</string>
-    <string name="ad_category_title_music" formatted="false">మ్యూజిక్</string>
-    <string name="made_for_you_hub_title" formatted="false">మీ కోసం రూపొందించబడింది</string>
     <string name="settings_item_app_language_title" formatted="false">యాప్ భాష</string>
     <string name="create_menu_item_folder_title" formatted="false">ఫోల్డర్</string>
     <string name="create_folder_name_suggested_folder_name" formatted="false">కొత్త ఫోల్డర్</string>
     <string name="context_menu_rename_folder" formatted="false">ఫోల్డర్ పేరు మార్చండి</string>
-    <string name="your_library_messaging_folder_rename_hint" formatted="false">ఫోల్డర్ పేరు</string>
     <string name="create_playlist_content_description" formatted="false">ఒక ప్లేలిస్ట్ రూపొందించండి</string>
     <string name="actions_picker_delete" formatted="false">తొలగించండి</string>
     <string name="filter_and_sort_sort_section_title" formatted="false">వీటి ఆధారంగా క్రమబద్ధీకరించండి</string>

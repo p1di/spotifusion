@@ -3,37 +3,17 @@
     <string name="aa_playlists">Playlists</string>
     <string name="aa_albums">Albums</string>
     <string name="aa_artists">Artists</string>
-    <string name="aa_podcasts">Podcasts</string>
     <string name="settings_amoled_theme">AMOLED Theme</string>
     <string name="settings_amoled_theme_subtitle">Pure black background to save battery</string>
-    <string name="settings_lyrics_style_spotify_default">Spotify Default</string>
-    <string name="settings_lyrics_style_fullscreen">Fullscreen (Album Colors)</string>
-    <string name="settings_lyrics_style_compact">Compact</string>
-    <string name="settings_lyrics_style_karaoke">Karaoke</string>
-    <string name="settings_lyrics_style_bold">Bold Large</string>
     <string name="main_update_available">A new update is available</string>
 
-    <string name="notif_channel_media_name">Media Playback</string>
-    <string name="notif_channel_media_description">Myspoti media playback controls</string>
-    <string name="notif_action_previous">Previous</string>
-    <string name="notif_action_next">Next</string>
     <string name="notif_action_play">Play</string>
     <string name="notif_action_pause">Pause</string>
     <string name="notif_shuffle_enable">Enable shuffle</string>
     <string name="notif_shuffle_disable">Disable shuffle</string>
     <string name="notif_shuffle_disable_smart">Disable smart shuffle</string>
-    <string name="notif_action_like">Like</string>
-    <string name="notif_action_unlike">Unlike</string>
-    <string name="notif_unknown_name">Unknown</string>
-    <string name="notif_by_artist">by %1$s</string>
-    <string name="notif_repeat_disable">Disable repeat</string>
-    <string name="notif_repeat_disable_one">Disable repeat one</string>
-    <string name="notif_repeat_enable">Enable repeat</string>
 
-    <string name="bridge_player_unlocked">Player unlocked</string>
-    <string name="bridge_reloading">Reloading…</string>
 
-    <string name="service_disabled_message">Service is not enabled</string>
     <string name="energy_saver_title" tools:ignore="MissingTranslation">Battery saver</string>
     <string name="energy_saver_summary" tools:ignore="MissingTranslation">Canvas off, lighter videos and animations</string>
     <string name="video_fullscreen_enter" tools:ignore="MissingTranslation">Enter fullscreen</string>
@@ -41,4 +21,6 @@
     <string name="playback_seek_description" tools:ignore="MissingTranslation">Playback position</string>
     <string name="account_page_title">Spotify account</string>
     <string name="account_page_detail">Plan, privacy and devices, on spotify.com</string>
+    <string name="player_source_downloaded">Downloaded</string>
+    <string name="extension_change_write">Now also allowed to send to Spotify: %1$s</string>
 </resources>

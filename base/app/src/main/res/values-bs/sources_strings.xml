@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="sources_audio_title">Izvori zvuka</string>
+    <string name="sources_download_title">Izvori preuzimanja</string>
+    <string name="sources_audio_footer">Pitaju se od vrha prema dnu za svaku pjesmu: prvi koji je ima je pušta. Strelicama promijenite redoslijed.</string>
+    <string name="sources_download_footer">Pitaju se od vrha prema dnu: prvi izvor koji ima pjesmu daje datoteku. Strelicama promijenite redoslijed.</string>
+    <string name="sources_spotify">Spotify</string>
+    <string name="sources_spotify_detail">Pušta se kada nijedan izvor iznad nema pjesmu</string>
+    <string name="sources_ready">Spremno</string>
+    <string name="sources_details_show">Prikaži detalje</string>
+    <string name="sources_details_hide">Sakrij detalje</string>
+    <string name="sources_detail_version">Verzija %1$s · autor %2$s</string>
+    <string name="sources_last_used">Zadnje: %1$s, %2$s</string>
+    <string name="sources_open">Otvori proširenje</string>
+    <string name="sources_order_hint">Izvori se pitaju redoslijedom postavljenim u Postavkama (Reprodukcija, Preuzimanja).</string>
+    <string name="sources_below_spotify">Ne traži se: Spotify je iznad</string>
+</resources>

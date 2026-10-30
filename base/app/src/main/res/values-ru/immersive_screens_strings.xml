@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="immersive_screens_account">Аккаунт</string>
+    <string name="immersive_screens_account_page">Страница аккаунта</string>
+    <string name="immersive_screens_account_page_detail">Тариф, конфиденциальность и устройства</string>
+    <string name="immersive_screens_top_result">Лучший результат</string>
+    <string name="immersive_screens_reset_order">Вернуть порядок по умолчанию</string>
+</resources>

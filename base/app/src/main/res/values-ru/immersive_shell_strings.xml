@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="immersive_shell_back">Назад</string>
+    <string name="immersive_shell_more">Другие параметры</string>
+    <string name="immersive_shell_search_hint">Поиск</string>
+    <string name="immersive_shell_search_clear">Очистить поиск</string>
+    <string name="immersive_shell_play">Воспроизвести</string>
+    <string name="immersive_shell_shuffle">Перемешать</string>
+    <string name="immersive_shell_see_all">Показать все</string>
+    <string name="immersive_shell_now_playing">Сейчас играет</string>
+    <string name="immersive_shell_explicit">Нецензурная лексика</string>
+</resources>

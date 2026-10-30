@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Listening stats, friend activity and the "your top artist" line (EN; FR in values-fr). -->
+<resources>
+    <string name="stats_tab_spotify">On Spotify</string>
+    <string name="stats_tab_phone">On this phone</string>
+    <string name="stats_range_short">Past 4 weeks</string>
+    <string name="stats_range_medium">Past 6 months</string>
+    <string name="stats_range_long">Past year</string>
+    <string name="stats_artists_ranked">%1$d artists in your listening</string>
+    <string name="stats_empty">Spotify has no top artists or tracks for this period yet. Keep listening and check back.</string>
+    <string name="stats_failed">Spotify didn\'t send your stats.</string>
+    <string name="stats_spotify_note">Ranked by Spotify from everything this account played, on every device. Spotify doesn\'t share play counts or minutes listened: the minutes under \"On this phone\" are Myspoti\'s own count.</string>
+    <string name="stats_weekly_minutes">Minutes per week</string>
+    <string name="stats_this_week">This week: %1$d min</string>
+    <string name="stats_listening_stats">Listening stats</string>
+    <string name="friends_title">Friend activity</string>
+    <string name="friends_detail">What the people you follow are listening to</string>
+    <string name="friends_now">Now</string>
+    <string name="friends_empty">No friend activity yet. Friends you follow who share their listening activity on Spotify show up here.</string>
+    <string name="friends_failed">Spotify didn\'t send the friend activity.</string>
+    <string name="friends_refresh">Refresh</string>
+    <string name="artist_top_short">Your #%1$d artist of the past 4 weeks</string>
+    <string name="artist_top_medium">Your #%1$d artist of the past 6 months</string>
+    <string name="artist_top_long">Your #%1$d artist of the past year</string>
+</resources>

@@ -17,7 +17,6 @@
     <string name="snackbar_added_to_liked_songs" formatted="false">Beğenilen Şarkılar\'a eklendi.</string>
     <string name="snackbar_removed_from_liked_songs" formatted="false">Beğenilen Şarkılar\'dan kaldırıldı.</string>
     <string name="content_description_context_menu" formatted="false">Diğer seçenekler</string>
-    <string name="close_button_content_description" formatted="false">Kapat</string>
     <string name="add_to_playlist_saved_in_section_header" formatted="false">Kaydedildiği çalma listesi</string>
     <string name="add_to_playlist_new_playlist_button_text" formatted="false">Yeni çalma listesi</string>
     <string name="add_to_playlist_button_cancel" formatted="false">İptal</string>
@@ -25,8 +24,6 @@
     <string name="lyrics_card_title" formatted="false">Şarkı sözleri</string>
     <string name="lyrics_card_title_preview" formatted="false">Şarkı Sözleri önizlemesi</string>
     <string name="lyrics_card_show_lyrics_button" formatted="false">Şarkı sözlerini göster</string>
-    <string name="lyrics_card_expand_button_content_description" formatted="false">Şarkı sözlerini tam ekranda açar</string>
-    <string name="lyrics_card_share_button_content_description" formatted="false">Şarkı sözlerini paylaş</string>
     <string name="lyrics_credential_note" formatted="false">Şarkı sözlerini sağlayan: %1$s</string>
     <string name="lyrics_fullscreen_chip_label_share" formatted="false">Paylaş</string>
     <string name="lyrics_fullscreen_chip_label_translate" formatted="false">Çevir</string>
@@ -49,7 +46,6 @@
     <string name="artist_popular_tracks" formatted="false">Popüler</string>
     <string name="curation_button_follow_state_text" formatted="false">Takip Et</string>
     <string name="curation_button_following_state_text" formatted="false">Takip Ediliyor</string>
-    <string name="search_main_entity_subtitle_artist" formatted="false">Sanatçı</string>
     <string name="connect_phone_is_self" formatted="false">Bu telefon</string>
     <string name="settings_item_canvas_title" formatted="false">Canvas</string>
     <string name="video_settings_canvas_subtitle" formatted="false">Şarkı çalarken görüntülenen kısa, dönen görseller.</string>
@@ -107,8 +103,6 @@
     <string name="library_search_text_hint" formatted="false">Kitaplığın\'da Ara</string>
     <string name="account_title" formatted="false">Hesap</string>
     <string name="song_dna_search_chip_followed_artists" formatted="false">Takip edilen sanatçılar</string>
-    <string name="settings_item_crossfade_title" formatted="false">Sesi azaltarak geç</string>
-    <string name="playback_settings_crossfade_slider_seconds" formatted="false">%1$d sn.</string>
     <string name="local_files_title" formatted="false">Yerel Dosyalar</string>
     <string name="local_files_empty_section_title" formatted="false">Kendi ses dosyalarını Kitaplığın\'a ekle</string>
     <string name="local_files_empty_section_subtitle" formatted="false">Spotify\'da yer almayan bir şarkın veya kişisel podcast\'in mi var?</string>
@@ -138,14 +132,10 @@
     <string name="assisted_curation_search_filter_artists" formatted="false">Sanatçılar</string>
     <string name="assisted_curation_search_filter_albums" formatted="false">Albümler</string>
     <string name="assisted_curation_search_filter_playlists" formatted="false">Çalma listeleri</string>
-    <string name="assisted_curation_search_filter_clear_content_description" formatted="false">Filtreyi temizle</string>
-    <string name="ad_category_title_music" formatted="false">Müzik</string>
-    <string name="made_for_you_hub_title" formatted="false">Senin için hazırlandı</string>
     <string name="settings_item_app_language_title" formatted="false">Uygulama dili</string>
     <string name="create_menu_item_folder_title" formatted="false">Klasör</string>
     <string name="create_folder_name_suggested_folder_name" formatted="false">Yeni klasör</string>
     <string name="context_menu_rename_folder" formatted="false">Klasörü yeniden adlandır</string>
-    <string name="your_library_messaging_folder_rename_hint" formatted="false">Klasör adı</string>
     <string name="create_playlist_content_description" formatted="false">Çalma listesi oluşturur</string>
     <string name="actions_picker_delete" formatted="false">Sil</string>
     <string name="filter_and_sort_sort_section_title" formatted="false">Şuna göre sırala:</string>

@@ -1,5 +1,8 @@
 package com.music.spotui.ui.screens
 
+import com.music.spotui.ui.components.wideClickable
+import com.music.spotui.ui.theme.AppText
+
 import androidx.compose.ui.res.stringResource
 
 import com.music.spotui.ui.components.pressable
@@ -74,17 +77,16 @@ fun CategoryScreen(navController: NavController, genre: String, title: String) {
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                 contentDescription = stringResource(R.string.accessibility_navigate_back),
-                tint = Color.White,
+                tint = AppText,
                 modifier = Modifier
+                    .wideClickable(horizontal = 8.dp, vertical = 10.dp) { navController.popBackStack() }
                     .size(40.dp)
-                    .clip(RoundedCornerShape(20.dp))
-                    .clickable { navController.popBackStack() }
                     .padding(8.dp)
             )
             Text(
                 text = title,
                 fontWeight = FontWeight.Bold,
-                color = Color.White,
+                color = AppText,
                 fontSize = 22.sp,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -108,7 +110,7 @@ private fun CategoryGrid(entries: List<LibraryEntry>, navController: NavControll
         return
     }
     LazyVerticalGrid(
-        columns = GridCells.Fixed(2),
+        columns = GridCells.Fixed(com.music.spotui.ui.components.windowSize().columns(2, 200.dp)),
         contentPadding = PaddingValues(12.dp, 8.dp, 12.dp, com.music.spotui.ui.components.bottomBarsSpace()),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -135,7 +137,7 @@ private fun CategoryGrid(entries: List<LibraryEntry>, navController: NavControll
                 )
                 Text(
                     text = entry.name,
-                    color = Color.White,
+                    color = AppText,
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
                     lineHeight = 16.sp,

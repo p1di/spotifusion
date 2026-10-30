@@ -1,5 +1,24 @@
 package com.music.spotui.ui.screens
 
+import com.music.spotui.ui.theme.tone
+import com.music.spotui.ui.theme.AppText
+
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -11,98 +30,156 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.myspoti.engine.R
 import com.music.spotui.ui.components.pressable
+import com.music.spotui.ui.theme.AppAccent
+import com.music.spotui.ui.theme.AppBackground
 import com.music.spotui.ui.theme.AppSans
-import com.music.spotui.ui.theme.ScGrey
-import com.music.spotui.ui.theme.ScPrimary
-import com.music.spotui.ui.theme.ScSecondary
-import com.music.spotui.ui.theme.ScTint
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlin.math.PI
+import kotlin.math.cos
+import kotlin.math.sin
 
 /**
- * 1:1 Jetpack Compose port of redretep/spotify-clone components/Login/Login.tsx & styles.ts.
+ * First screen of a signed-out app: what Myspoti is, then Spotify's own login page
+ * (shown by the engine once [onLogin] is tapped). The logo, the name, what the app adds and
+ * the button rise into place one after the other, over a soft green light that drifts.
  */
 @Composable
 fun WelcomeScreen(onLogin: () -> Unit) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(ScPrimary),
-    ) {
-        Image(
-            painter = painterResource(R.drawable.sc_login_bg),
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier.fillMaxSize(),
-        )
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Bottom,
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 35.dp),
-        ) {
-            Image(
-                painter = painterResource(R.drawable.sc_logo),
-                contentDescription = null,
-                contentScale = ContentScale.Fit,
-                modifier = Modifier
-                    .size(53.dp)
-                    .padding(bottom = 0.dp),
-            )
-            Spacer(Modifier.height(20.dp))
-            Text(
-                text = "Millions of Songs.\nFree on Spotify.",
-                color = Color.White,
-                fontFamily = AppSans,
-                fontWeight = FontWeight.Bold,
-                fontSize = 35.sp,
-                lineHeight = 40.sp,
-                textAlign = TextAlign.Center,
-            )
-            Spacer(Modifier.height(25.dp))
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .pressable(0.96f, onClick = onLogin)
-                    .clip(CircleShape)
-                    .background(ScTint)
-                    .padding(vertical = 18.dp),
+    // One entrance per part, a beat apart: logo, name, features, button.
+    val parts = remember { List(4) { Animatable(0f) } }
+    LaunchedEffect(Unit) {
+        parts.forEachIndexed { i, a -> launch { delay(150L + i * 180L); a.animateTo(1f, tween(650, easing = FastOutSlowInEasing)) } }
+    }
+    fun Modifier.rise(i: Int) = graphicsLayer {
+        val v = parts[i].value
+        alpha = v
+        translationY = (1f - v) * 24.dp.toPx()
+    }
+    Box(Modifier.fillMaxSize().background(AppBackground)) {
+        Glow(Modifier.fillMaxSize())
+        Box(Modifier.fillMaxSize().systemBarsPadding().padding(horizontal = 28.dp, vertical = 24.dp)) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
+                modifier = Modifier.fillMaxWidth().align(Alignment.Center).padding(bottom = 120.dp),
             ) {
+                Image(
+                    painter = painterResource(R.drawable.ic_launcher_foreground),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(120.dp)
+                        .graphicsLayer {
+                            val v = parts[0].value
+                            alpha = v
+                            val s = 0.85f + 0.15f * v
+                            scaleX = s; scaleY = s
+                        }
+                        .clip(RoundedCornerShape(32.dp))
+                        .background(tone(0xFF181818)),
+                )
+                Spacer(Modifier.height(28.dp))
+                Text("Spotifusion", color = AppText, fontFamily = AppSans, fontWeight = FontWeight.ExtraBold, fontSize = 40.sp,
+                    modifier = Modifier.rise(1))
+                Spacer(Modifier.height(12.dp))
+                Box(Modifier.rise(2)) { Features() }
+            }
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.fillMaxWidth().align(Alignment.BottomCenter).rise(3),
+            ) {
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(54.dp)
+                        .pressable(0.96f, onClick = onLogin)
+                        .clip(RoundedCornerShape(50))
+                        .background(AppAccent),
+                ) {
+                    Text(stringResource(R.string.welcome_login), color = Color.Black, fontFamily = AppSans,
+                        fontWeight = FontWeight.Bold, fontSize = 17.sp)
+                }
                 Text(
-                    text = "Sign in",
-                    color = ScSecondary,
-                    fontFamily = AppSans,
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 16.sp,
-                    textAlign = TextAlign.Center,
+                    stringResource(R.string.welcome_privacy),
+                    color = AppText.copy(alpha = 0.5f), fontFamily = AppSans, fontSize = 13.sp, lineHeight = 18.sp,
+                    textAlign = TextAlign.Center, modifier = Modifier.padding(top = 14.dp),
                 )
             }
-            Spacer(Modifier.height(10.dp))
-            Text(
-                text = "NOTE: You won't be sharing your credentials",
-                color = ScGrey,
-                fontFamily = AppSans,
-                fontStyle = FontStyle.Italic,
-                fontSize = 12.sp,
-                textAlign = TextAlign.Center,
-            )
-            Spacer(Modifier.height(150.dp))
+        }
+    }
+}
+
+/** A soft green light behind the logo, drifting slowly. */
+@Composable
+internal fun Glow(modifier: Modifier = Modifier, alpha: Float = 0.30f) {
+    // "Remove animations": the light stays where it starts.
+    val reduce = com.music.spotui.ui.look.rememberReduceMotion()
+    val phase = if (reduce) 0f else {
+        val t = rememberInfiniteTransition(label = "glow")
+        val p by t.animateFloat(0f, (2 * PI).toFloat(), infiniteRepeatable(tween(16_000, easing = LinearEasing)), label = "phase")
+        p
+    }
+    Canvas(modifier) {
+        val c = Offset(size.width * (0.5f + 0.12f * sin(phase)), size.height * (0.30f + 0.05f * cos(phase)))
+        val r = size.width * 1.05f
+        drawCircle(Brush.radialGradient(listOf(AppAccent.copy(alpha = alpha), Color.Transparent), c, r), r, c)
+    }
+}
+
+/** "Your music," then what Myspoti adds to it, one feature after the other. */
+@Composable
+private fun Features() {
+    val features = listOf(
+        stringResource(R.string.welcome_rotate_ads),
+        stringResource(R.string.welcome_rotate_lyrics),
+        stringResource(R.string.welcome_rotate_clips),
+        stringResource(R.string.welcome_rotate_offline),
+    )
+    var index by remember { mutableIntStateOf(0) }
+    val reduce = com.music.spotui.ui.look.rememberReduceMotion()
+    LaunchedEffect(Unit) {
+        delay(1_200)
+        while (true) { delay(2_400); index = (index + 1) % features.size }
+    }
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(stringResource(R.string.welcome_lead), color = AppText.copy(alpha = 0.7f), fontFamily = AppSans,
+            fontSize = 17.sp, textAlign = TextAlign.Center)
+        AnimatedContent(
+            targetState = index,
+            transitionSpec = {
+                if (reduce) EnterTransition.None togetherWith ExitTransition.None
+                else (slideInVertically(tween(400, easing = FastOutSlowInEasing)) { it / 2 } + fadeIn(tween(400))) togetherWith
+                    (slideOutVertically(tween(400, easing = FastOutSlowInEasing)) { -it / 2 } + fadeOut(tween(250)))
+            },
+            label = "feature",
+        ) { i ->
+            Text(features[i], color = AppText, fontFamily = AppSans, fontWeight = FontWeight.Bold, fontSize = 19.sp,
+                textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().padding(top = 2.dp))
         }
     }
 }

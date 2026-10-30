@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="sources_audio_title">Источники аудио</string>
+    <string name="sources_download_title">Источники загрузки</string>
+    <string name="sources_audio_footer">Опрашиваются сверху вниз для каждой песни: первый, у которого она есть, воспроизводит её. Стрелками меняется порядок.</string>
+    <string name="sources_download_footer">Опрашиваются сверху вниз: первый источник, у которого есть песня, отдаёт файл. Стрелками меняется порядок.</string>
+    <string name="sources_spotify">Spotify</string>
+    <string name="sources_spotify_detail">Воспроизводится, когда ни один источник выше не содержит песню</string>
+    <string name="sources_ready">Готово</string>
+    <string name="sources_details_show">Показать подробности</string>
+    <string name="sources_details_hide">Скрыть подробности</string>
+    <string name="sources_detail_version">Версия %1$s · автор: %2$s</string>
+    <string name="sources_last_used">Последнее: %1$s, %2$s</string>
+    <string name="sources_open">Открыть расширение</string>
+    <string name="sources_order_hint">Источники опрашиваются в порядке, заданном в Настройках (Воспроизведение, Загрузки).</string>
+    <string name="sources_below_spotify">Не запрашивается: Spotify выше</string>
+</resources>

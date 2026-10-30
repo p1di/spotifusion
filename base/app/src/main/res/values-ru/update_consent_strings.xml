@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="update_code_title">Код %1$s изменился (%2$d строк, +%3$d/−%4$d)</string>
+    <string name="update_code_body">У этого расширения мощные права (критические действия или широкий доступ к сети), поэтому новый код никогда не запускается без вашего согласия.</string>
+    <string name="update_code_files">Изменённые файлы: %1$s</string>
+    <string name="update_code_update">Обновить</string>
+    <string name="update_code_later">Не сейчас</string>
+    <string name="update_check_waiting">Найдено обновление: оно применится само через 24 часа</string>
+    <string name="update_check_repo_changed">Обновление отклонено: репозиторий сменил владельца</string>
+    <string name="update_repo_changed_title">Репозиторий сменил владельца</string>
+    <string name="update_repo_changed_body">Этот репозиторий был зарегистрирован заново или передан под тем же именем, поэтому его обновления заблокированы. Удалите расширение или установите снова, только если доверяете новому владельцу.</string>
+    <string name="update_author_owner">автор %1$s · репозиторий: %2$s</string>
+    <string name="update_author_unverified">автор %1$s · не проверено</string>
+</resources>

@@ -1,8 +1,10 @@
 package com.music.spotui.ui.screens
 
-import com.music.spotui.ui.components.edgeSwipeBack
+import com.music.spotui.ui.components.wideClickable
+import com.music.spotui.ui.theme.headerTint
+import com.music.spotui.ui.theme.AppText
+
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -34,6 +36,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -72,6 +75,9 @@ import com.music.spotui.ui.components.episodeMinutes
 import com.music.spotui.ui.components.pressable
 import com.music.spotui.ui.components.spotifyUri
 import com.music.spotui.ui.navigation.episodeRoute
+import com.music.spotui.data.preferences.EpisodeFilter
+import com.music.spotui.ui.components.EpisodeProgressBar
+import com.music.spotui.ui.components.episodeFilterLabel
 import com.music.spotui.ui.theme.AppAccent
 import com.music.spotui.ui.theme.AppBackground
 import com.music.spotui.ui.viewmodel.ShowViewModel
@@ -105,7 +111,10 @@ fun ShowScreen(navController: NavController, showId: String, showName: String = 
         vm.updateSongState(song.coverUri, song.title, song.singer, true, song.id, index, song.album)
     }
 
-    val rows = remember(items, oldestFirst) { if (oldestFirst) items.reversed() else items }
+    val filter = vm.filter.value
+    val rows by remember(items, oldestFirst, filter) {
+        derivedStateOf { filter.apply(if (oldestFirst) items.reversed() else items) { vm.isFinished(it) } }
+    }
 
     menuSong?.let { sel ->
         EpisodeOptionsSheet(
@@ -121,12 +130,7 @@ fun ShowScreen(navController: NavController, showId: String, showName: String = 
         )
     }
 
-    Box(
-        Modifier
-            .fillMaxSize()
-            .background(AppBackground)
-            .edgeSwipeBack { navController.navigateUp() }
-    ) {
+    Box(Modifier.fillMaxSize().background(AppBackground)) {
         LazyColumn(
             contentPadding = PaddingValues(bottom = com.music.spotui.ui.components.bottomBarsSpace()),
             modifier = Modifier.fillMaxSize(),
@@ -155,46 +159,64 @@ fun ShowScreen(navController: NavController, showId: String, showName: String = 
                     TabLabel(stringResource(R.string.show_tab_about), selected = tab == 1, modifier = Modifier.weight(1f)) { tab = 1 }
                 }
             }
-            if (tab == 0 && rows.isNotEmpty()) {
+            if (tab == 0 && items.isNotEmpty()) {
                 item {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { oldestFirst = !oldestFirst }
-                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
                     ) {
-                        Icon(Icons.Default.Tune, contentDescription = null, tint = Color.White.copy(alpha = 0.8f), modifier = Modifier.size(18.dp))
-                        Spacer(Modifier.width(10.dp))
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .weight(1f)
+                                .clickable { oldestFirst = !oldestFirst }
+                                .padding(vertical = 12.dp),
+                        ) {
+                            Icon(Icons.Default.Tune, contentDescription = null, tint = AppText.copy(alpha = 0.8f), modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(10.dp))
+                            Text(
+                                text = stringResource(
+                                    when {
+                                        audiobook && oldestFirst -> R.string.show_sort_chapters_oldest
+                                        audiobook -> R.string.show_sort_chapters_newest
+                                        oldestFirst -> R.string.show_sort_oldest
+                                        else -> R.string.show_sort_newest
+                                    },
+                                ),
+                                color = AppText.copy(alpha = 0.8f),
+                                fontSize = 13.sp,
+                            )
+                        }
                         Text(
-                            text = stringResource(
-                                when {
-                                    audiobook && oldestFirst -> R.string.show_sort_chapters_oldest
-                                    audiobook -> R.string.show_sort_chapters_newest
-                                    oldestFirst -> R.string.show_sort_oldest
-                                    else -> R.string.show_sort_newest
-                                },
-                            ),
-                            color = Color.White.copy(alpha = 0.8f),
+                            text = stringResource(episodeFilterLabel(filter)),
+                            color = if (filter == EpisodeFilter.ALL) AppText.copy(alpha = 0.8f) else AppAccent,
                             fontSize = 13.sp,
+                            fontWeight = FontWeight.Medium,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(50))
+                                .clickable { vm.setFilter(showId, filter.next()) }
+                                .padding(horizontal = 10.dp, vertical = 12.dp),
                         )
                     }
                 }
             }
             if (pageState is Response.Loading && page == null) item { Loader() }
             if (pageState is Response.Error && items.isEmpty()) item {
+                com.music.spotui.ui.components.ErrorRetry(stringResource(R.string.page_load_failed)) { vm.loadShow(showId) }
+            }
+            if (tab == 1) item { About(show) }
+            if (tab == 0 && items.isNotEmpty() && rows.isEmpty()) item {
                 Text(
-                    (pageState as Response.Error).error,
-                    color = Color.White.copy(alpha = 0.7f),
+                    stringResource(R.string.show_filter_all_played),
+                    color = AppText.copy(alpha = 0.6f),
                     fontSize = 14.sp,
                     modifier = Modifier.padding(16.dp),
                 )
             }
-            if (tab == 1) item { About(show) }
             if (tab == 0 && page != null && items.isEmpty() && pageState !is Response.Loading) item {
                 Text(
                     stringResource(R.string.show_empty),
-                    color = Color.White.copy(alpha = 0.6f),
+                    color = AppText.copy(alpha = 0.6f),
                     fontSize = 14.sp,
                     modifier = Modifier.padding(16.dp),
                 )
@@ -204,6 +226,7 @@ fun ShowScreen(navController: NavController, showId: String, showName: String = 
                     episode = ep,
                     playing = np.uri == "spotify:episode:${ep.url.removePrefix("episode:")}" && SongPlayer.isPlaying(),
                     finished = vm.isFinished(ep),
+                    isNew = vm.isNew(ep),
                     onPlay = {
                         val index = items.indexOfFirst { it.url == ep.url }
                         if (index >= 0) playAt(index)
@@ -230,17 +253,17 @@ private fun Header(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Brush.verticalGradient(listOf(Color(0xFF33322F), AppBackground)))
+            .background(Brush.verticalGradient(listOf(headerTint(Color(0xFF33322F), 0f), AppBackground)))
             .statusBarsPadding(),
     ) {
         Box(
             contentAlignment = Alignment.Center,
             modifier = Modifier
                 .padding(12.dp)
+                .wideClickable { navController.navigateUp() }
                 .size(40.dp)
                 .clip(CircleShape)
-                .background(Color.Black.copy(alpha = 0.35f))
-                .clickable { navController.navigateUp() },
+                .background(Color.Black.copy(alpha = 0.35f)),
         ) {
             Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.accessibility_navigate_back), tint = Color.White)
         }
@@ -258,7 +281,7 @@ private fun Header(
             Column(Modifier.weight(1f).padding(start = 16.dp)) {
                 Text(
                     text = show?.name?.takeIf { it.isNotBlank() } ?: fallbackName,
-                    color = Color.White,
+                    color = AppText,
                     fontSize = 24.sp,
                     fontWeight = FontWeight.Bold,
                     maxLines = 3,
@@ -268,15 +291,15 @@ private fun Header(
                 val narrators = show?.narrators.orEmpty().joinToString(", ")
                 if (authors.isNotBlank()) {
                     Spacer(Modifier.height(6.dp))
-                    Text(stringResource(R.string.show_authors, authors), color = Color.White.copy(alpha = 0.8f), fontSize = 13.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    Text(stringResource(R.string.show_authors, authors), color = AppText.copy(alpha = 0.8f), fontSize = 13.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 }
                 if (narrators.isNotBlank()) {
                     Spacer(Modifier.height(2.dp))
-                    Text(stringResource(R.string.show_narrators, narrators), color = Color.White.copy(alpha = 0.65f), fontSize = 12.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    Text(stringResource(R.string.show_narrators, narrators), color = AppText.copy(alpha = 0.65f), fontSize = 12.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 }
                 if (authors.isBlank() && show != null && show.publisher.isNotBlank()) {
                     Spacer(Modifier.height(6.dp))
-                    Text(show.publisher, color = Color.White.copy(alpha = 0.8f), fontSize = 13.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    Text(show.publisher, color = AppText.copy(alpha = 0.8f), fontSize = 13.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 }
             }
         }
@@ -287,11 +310,11 @@ private fun Header(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.padding(start = 16.dp, top = 12.dp),
             ) {
-                Icon(Icons.Default.Star, contentDescription = null, tint = Color.White.copy(alpha = 0.8f), modifier = Modifier.size(16.dp))
+                Icon(Icons.Default.Star, contentDescription = null, tint = AppText.copy(alpha = 0.8f), modifier = Modifier.size(16.dp))
                 Spacer(Modifier.width(6.dp))
                 Text(
                     text = String.format(java.util.Locale.getDefault(), "%.1f", rating),
-                    color = Color.White.copy(alpha = 0.8f),
+                    color = AppText.copy(alpha = 0.8f),
                     fontSize = 13.sp,
                 )
             }
@@ -310,21 +333,20 @@ private fun FollowPill(following: Boolean, onClick: () -> Unit) {
     Box(
         contentAlignment = Alignment.Center,
         modifier = Modifier
-            .height(34.dp)
-            .clip(RoundedCornerShape(50))
-            .border(1.dp, if (following) Color.White else Color(0xFF727272), RoundedCornerShape(50))
-            .background(if (following) Color.White.copy(alpha = 0.12f) else Color.Transparent)
+            .height(32.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .background(if (following) AppText.copy(alpha = 0.12f) else Color.Transparent)
             .pressable(0.96f, onClick = onClick)
-            .padding(horizontal = 20.dp),
+            .padding(horizontal = 16.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             if (following) {
-                Icon(Icons.Default.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+                Icon(Icons.Default.Check, contentDescription = null, tint = AppText, modifier = Modifier.size(16.dp))
                 Spacer(Modifier.width(6.dp))
             }
             Text(
                 text = stringResource(if (following) R.string.show_following else R.string.show_follow),
-                color = Color.White,
+                color = AppText,
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Bold,
             )
@@ -340,7 +362,7 @@ private fun TabLabel(text: String, selected: Boolean, modifier: Modifier = Modif
     ) {
         Text(
             text = text,
-            color = if (selected) Color.White else Color.White.copy(alpha = 0.6f),
+            color = if (selected) AppText else AppText.copy(alpha = 0.6f),
             fontSize = 14.sp,
             fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
         )
@@ -359,18 +381,18 @@ private fun About(show: PodcastModel?) {
     val authors = show?.authors.orEmpty().joinToString(", ")
     val narrators = show?.narrators.orEmpty().joinToString(", ")
     Column(Modifier.fillMaxWidth().padding(16.dp)) {
-        com.music.spotui.ui.components.ClickableDescriptionText(
-            text = show?.description.orEmpty(),
-            color = Color.White.copy(alpha = 0.75f),
+        Text(
+            text = com.music.spotui.ui.components.rememberLinkedText(show?.description.orEmpty(), AppAccent),
+            color = AppText.copy(alpha = 0.75f),
             fontSize = 14.sp,
         )
         if (authors.isNotBlank()) {
             Spacer(Modifier.height(12.dp))
-            Text(stringResource(R.string.show_authors, authors), color = Color.White.copy(alpha = 0.6f), fontSize = 13.sp)
+            Text(stringResource(R.string.show_authors, authors), color = AppText.copy(alpha = 0.6f), fontSize = 13.sp)
         }
         if (narrators.isNotBlank()) {
             Spacer(Modifier.height(4.dp))
-            Text(stringResource(R.string.show_narrators, narrators), color = Color.White.copy(alpha = 0.6f), fontSize = 13.sp)
+            Text(stringResource(R.string.show_narrators, narrators), color = AppText.copy(alpha = 0.6f), fontSize = 13.sp)
         }
     }
 }
@@ -382,6 +404,7 @@ private fun EpisodeRow(
     episode: SongsModel,
     playing: Boolean,
     finished: Boolean,
+    isNew: Boolean,
     onPlay: () -> Unit,
     onOpen: () -> Unit,
     onMenu: () -> Unit,
@@ -401,7 +424,7 @@ private fun EpisodeRow(
             Column(Modifier.weight(1f).padding(start = 12.dp)) {
                 Text(
                     text = episode.title,
-                    color = if (playing) AppAccent else Color.White,
+                    color = if (playing) AppAccent else AppText,
                     fontSize = 15.sp,
                     fontWeight = FontWeight.SemiBold,
                     maxLines = 2,
@@ -411,7 +434,7 @@ private fun EpisodeRow(
                     Spacer(Modifier.height(4.dp))
                     Text(
                         text = episode.description,
-                        color = Color.White.copy(alpha = 0.65f),
+                        color = AppText.copy(alpha = 0.65f),
                         fontSize = 12.sp,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
@@ -419,10 +442,23 @@ private fun EpisodeRow(
                 }
                 Spacer(Modifier.height(4.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    if (finished) {
-                        Text(stringResource(R.string.episode_marked_played), color = Color.White, fontSize = 12.sp)
+                    if (isNew) {
+                        Text(
+                            stringResource(R.string.episode_new),
+                            color = AppAccent,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                        )
                         Spacer(Modifier.width(6.dp))
-                        Text("•", color = Color.White.copy(alpha = 0.7f), fontSize = 12.sp)
+                        Text("•", color = AppText.copy(alpha = 0.4f), fontSize = 12.sp)
+                        Spacer(Modifier.width(6.dp))
+                    }
+                    if (finished) {
+                        Icon(Icons.Default.Check, contentDescription = null, tint = AppAccent, modifier = Modifier.size(14.dp))
+                        Spacer(Modifier.width(4.dp))
+                        Text(stringResource(R.string.episode_marked_played), color = AppText.copy(alpha = 0.6f), fontSize = 12.sp)
+                        Spacer(Modifier.width(6.dp))
+                        Text("•", color = AppText.copy(alpha = 0.4f), fontSize = 12.sp)
                         Spacer(Modifier.width(6.dp))
                     }
                     val started = episode.playedPositionMs > 0 && !finished
@@ -431,9 +467,8 @@ private fun EpisodeRow(
                             date.isBlank() -> minutes
                             else -> "$date • $minutes"
                         },
-                        color = Color.White,
+                        color = AppText.copy(alpha = 0.6f),
                         fontSize = 12.sp,
-                        fontWeight = FontWeight.Medium,
                     )
                     if (started) {
                         Spacer(Modifier.width(8.dp))
@@ -443,6 +478,10 @@ private fun EpisodeRow(
                             fontSize = 12.sp,
                         )
                     }
+                }
+                if (!finished) {
+                    Spacer(Modifier.height(6.dp))
+                    EpisodeProgressBar(episode.playedPositionMs, episode.durationMs, AppAccent, AppText.copy(alpha = 0.15f))
                 }
             }
         }
@@ -454,7 +493,7 @@ private fun EpisodeRow(
             Icon(
                 Icons.Default.MoreVert,
                 contentDescription = stringResource(R.string.episode_options),
-                tint = Color.White.copy(alpha = 0.8f),
+                tint = AppText.copy(alpha = 0.8f),
                 modifier = Modifier.size(22.dp).pressable(0.9f, onClick = onMenu),
             )
             Spacer(Modifier.weight(1f))
@@ -462,12 +501,12 @@ private fun EpisodeRow(
             Spacer(Modifier.width(6.dp))
             Box(
                 contentAlignment = Alignment.Center,
-                modifier = Modifier.size(40.dp).clip(CircleShape).background(Color.White).pressable(0.92f, onClick = onPlay),
+                modifier = Modifier.size(40.dp).clip(CircleShape).background(AppText).pressable(0.92f, onClick = onPlay),
             ) {
                 com.music.spotui.ui.components.PlayPauseIcon(
                     playing = playing,
                     contentDescription = stringResource(R.string.episode_play),
-                    tint = Color.Black,
+                    tint = com.music.spotui.ui.theme.AppBackground,
                     modifier = Modifier.size(20.dp),
                 )
             }

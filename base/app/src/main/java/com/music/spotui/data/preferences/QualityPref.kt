@@ -10,6 +10,8 @@ import kotlinx.coroutines.launch
 private const val PREF = "settings_prefs"
 private const val KEY_STREAMING = "streaming_quality"
 private const val KEY_CHOSEN = "quality_chosen"
+private const val KEY_STREAMING_CELL = "streaming_quality_cellular"
+private const val KEY_CANVAS_WIFI = "canvas_wifi_only"
 
 /**
  * The Web Player's own streaming levels (its "Streaming quality" setting): 24, 96 and
@@ -38,24 +40,35 @@ enum class DownloadQuality {
     }
 }
 
-fun getStreamingQuality(c: Context): StreamingQuality =
-    StreamingQuality.of(prefs(c).getString(KEY_STREAMING, null))
-
-/** Saves the level and hands it to the player (now, and on every later page load). */
-fun setStreamingQuality(c: Context, q: StreamingQuality) {
-    prefs(c).edit().putString(KEY_STREAMING, q.level).apply()
-    applyStreamingQuality(q)
+/**
+ * The level for Wi-Fi, or for mobile data ([cellular]), as the official app's two settings.
+ * Mobile data follows the Wi-Fi level until it is set on its own.
+ */
+fun getStreamingQuality(c: Context, cellular: Boolean = false): StreamingQuality {
+    val wifi = prefs(c).getString(KEY_STREAMING, null)
+    return StreamingQuality.of(if (cellular) prefs(c).getString(KEY_STREAMING_CELL, null) ?: wifi else wifi)
 }
 
-/** Gives the saved level to the Web Player; harmless before it is up (it keeps the level). */
-fun applyStreamingQuality(q: StreamingQuality) {
+/** Saves the level for that network and hands the one for the current network to the player. */
+fun setStreamingQuality(c: Context, q: StreamingQuality, cellular: Boolean = false) {
+    prefs(c).edit().putString(if (cellular) KEY_STREAMING_CELL else KEY_STREAMING, q.level).apply()
+    applyStreamingQuality(c)
+}
+
+/** Gives the current network's level to the Web Player (at start and when the network changes); harmless before it is up. */
+fun applyStreamingQuality(c: Context) {
     val runtime = app.myspoti.host.android.MyspotiRuntime
     if (!runtime.isStarted) return
+    val q = getStreamingQuality(c, cellular = com.music.spotui.data.DataSaver.metered)
     runtime.scope.launch { runtime.spotify.player.setAudioQuality(q.level) }
 }
 
+/** Canvas (the looping videos) only on Wi-Fi: they cost data on every song. */
+fun isCanvasWifiOnly(c: Context): Boolean = prefs(c).getBoolean(KEY_CANVAS_WIFI, false)
+fun setCanvasWifiOnly(c: Context, on: Boolean) = prefs(c).edit().putBoolean(KEY_CANVAS_WIFI, on).apply()
+
 fun getDownloadQuality(c: Context): DownloadQuality = when {
-    !isLosslessEnabled(c) -> DownloadQuality.OFF
+    !isDownloadsEnabled(c) -> DownloadQuality.OFF
     isAskDownloadQuality(c) -> DownloadQuality.ASK
     isSmallDownloads(c) -> DownloadQuality.SMALL
     isHiRes(c) -> DownloadQuality.HI_RES
@@ -63,7 +76,7 @@ fun getDownloadQuality(c: Context): DownloadQuality = when {
 }
 
 fun setDownloadQuality(c: Context, q: DownloadQuality) {
-    setLosslessEnabled(c, q != DownloadQuality.OFF)
+    setDownloadsEnabled(c, q != DownloadQuality.OFF)
     setHiRes(c, q == DownloadQuality.HI_RES)
     setSmallDownloads(c, q == DownloadQuality.SMALL)
     setAskDownloadQuality(c, q == DownloadQuality.ASK)

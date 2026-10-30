@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="sources_audio_title">Audiobronnen</string>
+    <string name="sources_download_title">Downloadbronnen</string>
+    <string name="sources_audio_footer">Wordt van boven naar beneden gevraagd voor elk nummer: de eerste die het heeft, speelt het af. Gebruik de pijltjes om de volgorde te wijzigen.</string>
+    <string name="sources_download_footer">Wordt van boven naar beneden gevraagd: de eerste bron die het nummer heeft, levert het bestand. Gebruik de pijltjes om de volgorde te wijzigen.</string>
+    <string name="sources_spotify">Spotify</string>
+    <string name="sources_spotify_detail">Speelt af wanneer geen bron erboven het nummer heeft</string>
+    <string name="sources_ready">Klaar</string>
+    <string name="sources_details_show">Details tonen</string>
+    <string name="sources_details_hide">Details verbergen</string>
+    <string name="sources_detail_version">Versie %1$s · door %2$s</string>
+    <string name="sources_last_used">Laatst: %1$s, %2$s</string>
+    <string name="sources_open">Extensie openen</string>
+    <string name="sources_order_hint">Bronnen worden gevraagd in de volgorde die is ingesteld in Instellingen (Afspelen, Downloads).</string>
+    <string name="sources_below_spotify">Niet gevraagd: Spotify staat erboven</string>
+</resources>

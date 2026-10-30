@@ -3,35 +3,24 @@
     <string name="aa_playlists">Çalma listeleri</string>
     <string name="aa_albums">Albümler</string>
     <string name="aa_artists">Sanatçılar</string>
-    <string name="aa_podcasts">Podcast\'ler</string>
     <string name="settings_amoled_theme">AMOLED Teması</string>
     <string name="settings_amoled_theme_subtitle">Pil tasarrufu için tamamen siyah arka plan</string>
-    <string name="settings_lyrics_style_spotify_default">Spotify Varsayılanı</string>
-    <string name="settings_lyrics_style_fullscreen">Tam Ekran (Albüm Renkleri)</string>
-    <string name="settings_lyrics_style_compact">Kompakt</string>
-    <string name="settings_lyrics_style_karaoke">Karaoke</string>
-    <string name="settings_lyrics_style_bold">Kalın Büyük</string>
     <string name="main_update_available">Yeni bir güncelleme mevcut</string>
 
-    <string name="notif_channel_media_name">Medya Oynatma</string>
-    <string name="notif_channel_media_description">Myspoti medya oynatma kontrolleri</string>
-    <string name="notif_action_previous">Önceki</string>
-    <string name="notif_action_next">Sonraki</string>
     <string name="notif_action_play">Oynat</string>
     <string name="notif_action_pause">Duraklat</string>
     <string name="notif_shuffle_enable">Karıştırmayı etkinleştir</string>
     <string name="notif_shuffle_disable">Karıştırmayı devre dışı bırak</string>
     <string name="notif_shuffle_disable_smart">Akıllı karıştırmayı devre dışı bırak</string>
-    <string name="notif_action_like">Beğen</string>
-    <string name="notif_action_unlike">Beğenmekten vazgeç</string>
-    <string name="notif_unknown_name">Bilinmeyen</string>
-    <string name="notif_by_artist">%1$s tarafından</string>
-    <string name="notif_repeat_disable">Tekrarı devre dışı bırak</string>
-    <string name="notif_repeat_disable_one">Birini tekrarlamayı devre dışı bırak</string>
-    <string name="notif_repeat_enable">Tekrarı etkinleştir</string>
 
-    <string name="bridge_player_unlocked">Oynatıcının kilidi açıldı</string>
-    <string name="bridge_reloading">Yeniden yükleniyor…</string>
 
-    <string name="service_disabled_message">Hizmet etkin değil</string>
+    <string name="player_source_downloaded">İndirildi</string>
+    <string name="energy_saver_title">Pil tasarrufu</string>
+    <string name="energy_saver_summary">Canvas kapalı, daha hafif videolar ve animasyonlar</string>
+    <string name="video_fullscreen_enter">Tam ekran</string>
+    <string name="video_fullscreen_exit">Tam ekrandan çık</string>
+    <string name="playback_seek_description">Oynatma konumu</string>
+    <string name="account_page_title">Spotify hesabı</string>
+    <string name="account_page_detail">Plan, gizlilik ve cihazlar, spotify.com üzerinden</string>
+    <string name="extension_change_write">Artık Spotify\'a da gönderebilir: %1$s</string>
 </resources>

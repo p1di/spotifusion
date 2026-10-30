@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="sources_audio_title">অডিও উৎস</string>
+    <string name="sources_download_title">ডাউনলোড উৎস</string>
+    <string name="sources_audio_footer">প্রতিটি গানের জন্য ওপর থেকে নিচে জিজ্ঞাসা করা হয়: যার কাছে আছে প্রথমটি সেটি চালায়। ক্রম বদলাতে তীর ব্যবহার করুন।</string>
+    <string name="sources_download_footer">ওপর থেকে নিচে জিজ্ঞাসা করা হয়: গানটি আছে এমন প্রথম উৎস ফাইল দেয়। ক্রম বদলাতে তীর ব্যবহার করুন।</string>
+    <string name="sources_spotify">Spotify</string>
+    <string name="sources_spotify_detail">উপরের কোনো উৎসে গানটি না থাকলে চলে</string>
+    <string name="sources_ready">প্রস্তুত</string>
+    <string name="sources_details_show">বিস্তারিত দেখান</string>
+    <string name="sources_details_hide">বিস্তারিত লুকান</string>
+    <string name="sources_detail_version">সংস্করণ %1$s · লেখক %2$s</string>
+    <string name="sources_last_used">শেষ: %1$s, %2$s</string>
+    <string name="sources_open">এক্সটেনশন খুলুন</string>
+    <string name="sources_order_hint">সেটিংস-এ (প্লেব্যাক, ডাউনলোড) নির্ধারিত ক্রমে উৎসগুলো জিজ্ঞাসা করা হয়।</string>
+    <string name="sources_below_spotify">জিজ্ঞাসা করা হয় না: Spotify উপরে আছে</string>
+</resources>

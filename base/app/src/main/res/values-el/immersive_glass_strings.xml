@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_liquid_glass_title">Liquid Glass</string>
+    <string name="settings_liquid_glass_detail">Οι γραμμές κυρτώνουν και αντανακλούν τη σελίδα πίσω τους, σαν γυαλί</string>
+    <string name="settings_liquid_glass_unsupported">Απαιτείται Android 12 ή νεότερο</string>
+    <string name="settings_liquid_glass_reduced">Αντί γι\' αυτό, αμμοβολή όταν το τηλέφωνο μειώνει τη θόλωση ή τις κινήσεις</string>
+    <string name="immersive_expand_tab_bar">Εμφάνιση όλων των καρτελών</string>
+</resources>

@@ -134,6 +134,27 @@ class RecentsGroupingTest {
     }
 
     @Test
+    fun aPlayWhoseContextWasNotAnnouncedStaysItsOwnRow() {
+        // A page that starts mid-group (the context row sits on the page before), or a play filed
+        // under another group than the open one: the play is listed, not dropped.
+        val sections = groupRecents(
+            listOf(
+                play("spotify:track:orphan", "9"),
+                context("spotify:album:ep", MediaKind.ALBUM, "1", count = 2),
+                play("spotify:track:a", "1"),
+                play("spotify:track:stray", "8"),
+                play("spotify:track:b", "1"),
+            ),
+        )
+        val groups = sections.single().groups
+        assertEquals(
+            listOf("spotify:track:orphan", "spotify:track:stray", "spotify:album:ep"),
+            groups.map { it.context.uri },
+        )
+        assertEquals(listOf("spotify:track:a", "spotify:track:b"), groups.last().plays.map { it.uri })
+    }
+
+    @Test
     fun daysAreSectionsNewestFirst() {
         val sections = groupRecents(
             listOf(

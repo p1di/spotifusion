@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="update_code_title">Il codice di %1$s è cambiato (%2$d righe, +%3$d/−%4$d)</string>
+    <string name="update_code_body">Questa estensione ha permessi potenti (azioni critiche o accesso di rete esteso): il nuovo codice non viene mai eseguito senza il tuo consenso.</string>
+    <string name="update_code_files">File modificati: %1$s</string>
+    <string name="update_code_update">Aggiorna</string>
+    <string name="update_code_later">Non ora</string>
+    <string name="update_check_waiting">Aggiornamento trovato: verrà applicato da solo tra 24 ore</string>
+    <string name="update_check_repo_changed">Aggiornamento rifiutato: il repository ha cambiato proprietario</string>
+    <string name="update_repo_changed_title">Il repository ha cambiato proprietario</string>
+    <string name="update_repo_changed_body">Questo repository è stato registrato di nuovo o trasferito con lo stesso nome, quindi i suoi aggiornamenti sono bloccati. Disinstallalo, o reinstallalo solo se ti fidi del nuovo proprietario.</string>
+    <string name="update_author_owner">di %1$s · repository di %2$s</string>
+    <string name="update_author_unverified">di %1$s · non verificato</string>
+</resources>

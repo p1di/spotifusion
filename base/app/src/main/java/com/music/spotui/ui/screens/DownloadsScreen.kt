@@ -1,5 +1,12 @@
 package com.music.spotui.ui.screens
 
+import com.music.spotui.ui.components.widePressable
+import com.music.spotui.ui.theme.AppDestructive
+import com.music.spotui.ui.theme.headerTint
+import com.music.spotui.ui.theme.tone
+import com.music.spotui.ui.theme.AppText
+import com.music.spotui.ui.theme.AppMuted
+
 import android.text.format.Formatter
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -27,6 +34,7 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -59,6 +67,7 @@ import com.music.spotui.data.offline.OfflineStore
 import com.music.spotui.di.LocalPlayer
 import com.music.spotui.di.SongPlayer
 import com.music.spotui.ui.components.DownloadBadge
+import com.music.spotui.ui.components.animatedRow
 import com.music.spotui.ui.components.pressable
 import com.music.spotui.ui.theme.AppBackground
 
@@ -68,13 +77,34 @@ import com.music.spotui.ui.theme.AppBackground
 fun DownloadsScreen(navController: NavController) {
     val context = LocalContext.current
     val title = stringResource(R.string.collection_downloaded)
-    // Snapshot reads: the list follows downloads as they finish.
-    val tracks = OfflineStore.tracks.values.sortedByDescending { it.addedAt }
-    val waiting = OfflineDownloader.requests.values.filter { !OfflineStore.isDownloaded(it.trackId) }
+    // Snapshot reads: the list follows downloads as they finish. Derived, so a progress tick (which
+    // changes no list) leaves the sorted lists and the counts alone instead of rebuilding them.
+    val tracks by remember { derivedStateOf { OfflineStore.tracks.values.sortedByDescending { it.addedAt } } }
+    // Shown by where they were downloaded from: each album or playlist downloaded as a whole is one
+    // row (its songs are on its own page), newest first; the songs downloaded on their own follow.
+    val lists by remember {
+        derivedStateOf {
+            com.music.spotui.data.offline.OfflineCollections.collections.values.mapNotNull { c ->
+                val mine = tracks.filter { it.trackId in c.trackIds }
+                if (mine.isEmpty()) null else c to mine
+            }.sortedByDescending { (_, mine) -> mine.maxOf { it.addedAt } }
+        }
+    }
+    val singles by remember {
+        derivedStateOf {
+            val inLists = lists.flatMapTo(HashSet()) { (_, mine) -> mine.map { it.trackId } }
+            tracks.filter { it.trackId !in inLists }
+        }
+    }
+    val waiting by remember { derivedStateOf { OfflineDownloader.requests.values.filter { !OfflineStore.isDownloaded(it.trackId) } } }
     // A25: only queued or running songs can be stopped; a failed one has nothing left to cancel.
-    val stoppable = waiting.count {
-        val s = OfflineStore.status[it.trackId]
-        s == OfflineStatus.Queued || s is OfflineStatus.Downloading
+    val stoppable by remember {
+        derivedStateOf {
+            waiting.count {
+                val s = OfflineStore.status[it.trackId]
+                s == OfflineStatus.Queued || s is OfflineStatus.Downloading
+            }
+        }
     }
     val np by SongPlayer.nowPlaying
     val playingHere = LocalPlayer.active.value && LocalPlayer.contextName == title
@@ -94,14 +124,14 @@ fun DownloadsScreen(navController: NavController) {
             modifier = Modifier.fillMaxSize().padding(horizontal = 32.dp),
         ) {
             Image(painterResource(R.drawable.downloads_cover), null, modifier = Modifier.size(120.dp).clip(RoundedCornerShape(6.dp)))
-            Text(stringResource(R.string.downloads_empty_title), color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold,
+            Text(stringResource(R.string.downloads_empty_title), color = AppText, fontSize = 22.sp, fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center, modifier = Modifier.padding(top = 24.dp))
-            Text(stringResource(R.string.downloads_empty_subtitle), color = Color(0xFFB3B3B3), fontSize = 14.sp,
+            Text(stringResource(R.string.downloads_empty_subtitle), color = AppMuted, fontSize = 14.sp,
                 textAlign = TextAlign.Center, modifier = Modifier.padding(top = 8.dp))
         } else LazyColumn(Modifier.fillMaxSize()) {
             item {
                 Column(
-                    Modifier.fillMaxWidth().background(Brush.verticalGradient(listOf(Color(0xFF1D6B45), AppBackground)))
+                    Modifier.fillMaxWidth().background(Brush.verticalGradient(listOf(headerTint(Color(0xFF1D6B45), 0f), AppBackground)))
                         .statusBarsPadding().padding(horizontal = 16.dp),
                 ) {
                     Spacer(Modifier.height(56.dp))
@@ -109,15 +139,15 @@ fun DownloadsScreen(navController: NavController) {
                         painterResource(R.drawable.downloads_cover), null,
                         modifier = Modifier.align(Alignment.CenterHorizontally).size(200.dp).clip(RoundedCornerShape(6.dp)),
                     )
-                    Text(title, color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 20.dp))
+                    Text(title, color = AppText, fontSize = 26.sp, fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 20.dp))
                     val n = tracks.size
                     val size = Formatter.formatShortFileSize(context, OfflineStore.totalBytes())
                     Text(pluralStringResource(R.plurals.local_files_count, n, n) + " · " + stringResource(R.string.downloads_size, size),
-                        color = Color(0xFFB3B3B3), fontSize = 14.sp, modifier = Modifier.padding(top = 4.dp))
-                    Text(stringResource(R.string.downloads_source), color = Color(0xFFB3B3B3), fontSize = 12.sp, modifier = Modifier.padding(top = 4.dp))
+                        color = AppMuted, fontSize = 14.sp, modifier = Modifier.padding(top = 4.dp))
+                    Text(stringResource(R.string.downloads_source), color = AppMuted, fontSize = 12.sp, modifier = Modifier.padding(top = 4.dp))
                     Row(Modifier.fillMaxWidth().padding(vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
                         Spacer(Modifier.weight(1f))
-                        Icon(painterResource(R.drawable.ic_player_shuffle), stringResource(R.string.play_mode_item_shuffle_title), tint = Color.White,
+                        Icon(painterResource(R.drawable.ic_player_shuffle), stringResource(R.string.play_mode_item_shuffle_title), tint = AppText,
                             modifier = Modifier.size(28.dp).pressable { if (tracks.isNotEmpty()) play(tracks.indices.random(), shuffle = true) })
                         Spacer(Modifier.width(20.dp))
                         Box(
@@ -138,22 +168,33 @@ fun DownloadsScreen(navController: NavController) {
                     }
                 }
             }
+            // No extension gives download files: say it where downloads would fail.
+            if (!com.music.spotui.extensions.Extensions.hasDownloadSource()) item(key = "source") {
+                Text(
+                    stringResource(R.string.downloads_need_source),
+                    color = AppText, fontSize = 14.sp, lineHeight = 19.sp,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp).fillMaxWidth()
+                        .clip(RoundedCornerShape(8.dp)).background(tone(0xFF2A2A2A))
+                        .pressable(0.98f) { navController.navigate(com.music.spotui.ui.navigation.Routes.Extensions.route) }
+                        .padding(14.dp),
+                )
+            }
             // A25: one tap empties the queue; the songs already downloaded stay untouched.
             if (stoppable > 0) item(key = "stop_all") {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)
-                        .clip(RoundedCornerShape(8.dp)).background(Color(0xFF2A2A2A))
+                        .clip(RoundedCornerShape(8.dp)).background(tone(0xFF2A2A2A))
                         .pressable(0.98f) { OfflineDownloader.stopAll() }
                         .padding(horizontal = 14.dp, vertical = 10.dp),
                 ) {
                     Column(Modifier.weight(1f)) {
-                        Text(stringResource(R.string.downloads_stop_all_title), color = Color.White, fontSize = 14.sp)
-                        Text(stringResource(R.string.downloads_stop_all_detail), color = Color(0xFFB3B3B3), fontSize = 12.sp)
+                        Text(stringResource(R.string.downloads_stop_all_title), color = AppText, fontSize = 14.sp)
+                        Text(stringResource(R.string.downloads_stop_all_detail), color = AppMuted, fontSize = 12.sp)
                     }
                     Spacer(Modifier.width(12.dp))
                     Icon(Icons.Default.Close, stringResource(R.string.downloads_stop_all_title),
-                        tint = Color.White.copy(alpha = 0.7f), modifier = Modifier.size(20.dp))
+                        tint = AppText.copy(alpha = 0.7f), modifier = Modifier.size(20.dp))
                 }
             }
             // Songs still on their way (or that could not be downloaded).
@@ -162,7 +203,7 @@ fun DownloadsScreen(navController: NavController) {
                 val problem = status == OfflineStatus.Failed || status == OfflineStatus.Unavailable
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = animatedRow().fillMaxWidth()
                         .pressable(0.97f) { if (status == OfflineStatus.Failed) OfflineDownloader.retry(r.trackId) }
                         .padding(horizontal = 16.dp, vertical = 8.dp),
                 ) {
@@ -173,22 +214,61 @@ fun DownloadsScreen(navController: NavController) {
                         modifier = Modifier.size(48.dp).clip(RoundedCornerShape(4.dp)),
                     )
                     Column(Modifier.padding(start = 12.dp).weight(1f)) {
-                        Text(r.title, color = Color.White.copy(alpha = 0.6f), fontSize = 15.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text(r.title, color = AppText.copy(alpha = 0.6f), fontSize = 15.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         val line = when (status) {
                             OfflineStatus.Unavailable -> stringResource(R.string.download_unavailable)
                             OfflineStatus.Failed -> stringResource(R.string.download_badge_error_content_description) + " · " + stringResource(R.string.download_retry)
                             else -> stringResource(R.string.download_notification_downloading)
                         }
-                        Text(line, color = if (problem) Color(0xFFE22134) else Color(0xFFB3B3B3), fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text(line, color = if (problem) AppDestructive else AppMuted, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
                     DownloadBadge(status, size = 20.dp)
                     Spacer(Modifier.width(16.dp))
-                    Icon(Icons.Default.Close, stringResource(R.string.download_cancel), tint = Color.White.copy(alpha = 0.7f),
+                    Icon(Icons.Default.Close, stringResource(R.string.download_cancel), tint = AppText.copy(alpha = 0.7f),
                         modifier = Modifier.size(24.dp).pressable(0.96f) { OfflineDownloader.cancel(r.trackId) })
                 }
             }
-            itemsIndexed(tracks, key = { _, t -> t.trackId }) { i, t ->
-                val current = LocalPlayer.active.value && np.uri == "local:${OfflineStore.localIdOf(t.trackId)}"
+            if (lists.isNotEmpty()) item(key = "lists_title") { SectionTitle(stringResource(R.string.downloads_lists)) }
+            items(lists, key = { "l:" + it.first.uri }) { (c, mine) ->
+                val kind = when (c.type) {
+                    "album" -> stringResource(R.string.downloads_kind_album)
+                    "liked" -> stringResource(R.string.downloads_kind_liked)
+                    else -> stringResource(R.string.downloads_kind_playlist)
+                }
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = animatedRow().fillMaxWidth().pressable(0.97f) {
+                        val id = c.uri.substringAfterLast(":")
+                        navController.navigate(when (c.type) {
+                            "album" -> com.music.spotui.ui.navigation.albumRoute(c.name, mine.first().artist, id)
+                            "liked" -> com.music.spotui.ui.navigation.Routes.Liked.route
+                            else -> com.music.spotui.ui.navigation.playlistRoute(id, c.name)
+                        })
+                    }.padding(horizontal = 16.dp, vertical = 8.dp),
+                ) {
+                    val first = mine.first()
+                    GlideImage(
+                        transition = CrossFade,
+                        model = if (c.type == "album") OfflineStore.coverFile(first) ?: first.coverUrl else first.coverUrl,
+                        contentDescription = null, contentScale = ContentScale.Crop,
+                        loading = placeholder(R.drawable.placeholder), failure = placeholder(R.drawable.downloads_cover),
+                        modifier = Modifier.size(56.dp).clip(RoundedCornerShape(4.dp)),
+                    )
+                    Column(Modifier.padding(start = 12.dp).weight(1f)) {
+                        Text(c.name, color = AppText, fontSize = 15.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            DownloadBadge(OfflineStatus.Done, size = 14.dp)
+                            Spacer(Modifier.width(6.dp))
+                            Text(kind + " · " + pluralStringResource(R.plurals.local_files_count, mine.size, mine.size),
+                                color = AppMuted, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        }
+                    }
+                }
+            }
+            if (lists.isNotEmpty() && singles.isNotEmpty()) item(key = "singles_title") { SectionTitle(stringResource(R.string.downloads_singles)) }
+            itemsIndexed(singles, key = { _, t -> t.trackId }) { _, t ->
+                val i = tracks.indexOf(t)
+                val current = LocalPlayer.active.value && np.uri == "spotify:track:${t.trackId}"
                 com.music.spotui.ui.components.SwipeToRemove(t.trackId, onRemove = {
                     val gone = com.music.spotui.data.offline.OfflineCollections.removeSong(t.trackId)
                     android.widget.Toast.makeText(context, context.getString(if (gone) R.string.toast_undownload else R.string.download_kept_by_list), android.widget.Toast.LENGTH_SHORT).show()
@@ -203,14 +283,14 @@ fun DownloadsScreen(navController: NavController) {
                         modifier = Modifier.size(48.dp).clip(RoundedCornerShape(4.dp)),
                     )
                     Column(Modifier.padding(start = 12.dp).weight(1f)) {
-                        Text(t.title, color = if (current) com.music.spotui.ui.theme.AppAccent else Color.White, fontSize = 15.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text(t.title, color = if (current) com.music.spotui.ui.theme.AppAccent else AppText, fontSize = 15.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             DownloadBadge(OfflineStatus.Done, size = 14.dp)
                             Spacer(Modifier.width(6.dp))
-                            Text(t.artist, color = Color(0xFFB3B3B3), fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Text(t.artist, color = AppMuted, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         }
                     }
-                    Icon(Icons.Default.MoreVert, stringResource(R.string.content_description_context_menu), tint = Color.White.copy(alpha = 0.7f),
+                    Icon(Icons.Default.MoreVert, stringResource(R.string.content_description_context_menu), tint = AppText.copy(alpha = 0.7f),
                         modifier = Modifier.size(24.dp).pressable(0.96f) { menuSong = OfflineStore.toSong(t) })
                 } }
             }
@@ -218,10 +298,16 @@ fun DownloadsScreen(navController: NavController) {
         }
         Box(
             contentAlignment = Alignment.Center,
-            modifier = Modifier.statusBarsPadding().padding(12.dp).size(40.dp).clip(CircleShape)
-                .background(Color(0x66000000)).pressable { navController.navigateUp() },
+            modifier = Modifier.statusBarsPadding().padding(12.dp).widePressable { navController.navigateUp() }
+                .size(40.dp).clip(CircleShape).background(AppBackground.copy(alpha = 0.4f)),
         ) {
-            Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.accessibility_navigate_back), tint = Color.White)
+            Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.accessibility_navigate_back), tint = AppText)
         }
     }
+}
+
+@Composable
+private fun SectionTitle(text: String) {
+    Text(text, color = AppText, fontSize = 18.sp, fontWeight = FontWeight.Bold,
+        modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 4.dp))
 }

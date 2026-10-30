@@ -7,7 +7,7 @@ data class EnergyPolicy(
     val allowCanvas: Boolean = true,
     val videoMaxHeight: Int = 1080,
     val allowBackgroundLookups: Boolean = true,
-    val progressFps: Int = 60,
+    val progressFps: Int = 30,
     /** 0 = no preference: the LTPO screen already drops its rate when nothing moves. */
     val displayRefreshCap: Float = 0f,
 ) {
@@ -24,7 +24,7 @@ data class EnergyPolicy(
                 allowCanvas = !saver && canvasEnabled,
                 videoMaxHeight = if (saver) 480 else 1080,
                 allowBackgroundLookups = !saver,
-                progressFps = if (saver) 30 else 60,
+                progressFps = if (saver) 20 else 30,
                 displayRefreshCap = if (saver) 60f else 0f,
             )
         }

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_liquid_glass_title">Liquid Glass</string>
+    <string name="settings_liquid_glass_detail">Les barres courbent et reflètent la page derrière elles, comme du verre</string>
+    <string name="settings_liquid_glass_unsupported">Nécessite Android 12 ou plus récent</string>
+    <string name="settings_liquid_glass_reduced">Givré à la place tant que le téléphone réduit le flou ou les animations</string>
+    <string name="immersive_expand_tab_bar">Afficher tous les onglets</string>
+</resources>

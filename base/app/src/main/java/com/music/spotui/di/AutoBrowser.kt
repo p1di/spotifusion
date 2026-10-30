@@ -121,7 +121,7 @@ object AutoBrowser {
                 listOf(radioItem(context, "spotify:artist:$id", "", name)) +
                     overview.topTracks.map { playable("spotify:artist:$id", it.song, songs) } +
                     overview.popularReleases.filter { it.spotifyId.isNotBlank() }.take(12).map {
-                        browsable("al:${it.spotifyId}", it.name, art(it.coverUri), subtitle = "", group = context.getString(R.string.aa_albums))
+                        browsable("al:${it.spotifyId}", it.name, art(it.coverUri), subtitle = it.year, group = context.getString(R.string.aa_albums))
                     }
             }
             else -> emptyList()
@@ -216,7 +216,8 @@ object AutoBrowser {
     private fun downloadedIds(listUri: String): List<String> {
         if (listUri.isBlank()) return OfflineStore.list().map { it.trackId }
         val c = OfflineCollections.collections[listUri] ?: return emptyList()
-        return c.trackIds.distinct().filter(OfflineStore::isDownloaded)
+        val ordered = OfflineCollections.offlinePage(listUri)?.tracks?.map { it.spotifyTrackId.ifBlank { it.url } }.orEmpty()
+        return (ordered + c.trackIds).distinct().filter(OfflineStore::isDownloaded)
     }
 
     private fun downloadedCover(context: Context, t: OfflineTrack): Uri? = ArtworkProvider.uriForDownloaded(t)

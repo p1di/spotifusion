@@ -17,7 +17,6 @@
     <string name="snackbar_added_to_liked_songs" formatted="false">પસંદ કરેલા ગીતોમાં ઉમેર્યું.</string>
     <string name="snackbar_removed_from_liked_songs" formatted="false">પસંદ કરેલા ગીતોમાંથી દૂર કર્યું.</string>
     <string name="content_description_context_menu" formatted="false">વધુ વિકલ્પો</string>
-    <string name="close_button_content_description" formatted="false">બંધ કરો</string>
     <string name="add_to_playlist_saved_in_section_header" formatted="false">આમાં સેવ કર્યું</string>
     <string name="add_to_playlist_new_playlist_button_text" formatted="false">નવું પ્લેલિસ્ટ</string>
     <string name="add_to_playlist_button_cancel" formatted="false">રદ કરો</string>
@@ -25,8 +24,6 @@
     <string name="lyrics_card_title" formatted="false">ગીતના બોલ</string>
     <string name="lyrics_card_title_preview" formatted="false">ગીતના બોલનું પ્રિવ્યૂ</string>
     <string name="lyrics_card_show_lyrics_button" formatted="false">ગીતના બોલ બતાવો</string>
-    <string name="lyrics_card_expand_button_content_description" formatted="false">ગીતના બોલ સંપૂર્ણ સ્ક્રીનમાં ખોલો</string>
-    <string name="lyrics_card_share_button_content_description" formatted="false">ગીતનાં બોલ શેર કરો</string>
     <string name="lyrics_credential_note" formatted="false">%1$s દ્વારા પ્રદાન કરાયેલ ગીતના બોલ</string>
     <string name="lyrics_fullscreen_chip_label_share" formatted="false">શેર કરો</string>
     <string name="lyrics_fullscreen_chip_label_translate" formatted="false">અનુવાદ કરો</string>
@@ -49,7 +46,6 @@
     <string name="artist_popular_tracks" formatted="false">લોકપ્રિય</string>
     <string name="curation_button_follow_state_text" formatted="false">ફોલો કરો</string>
     <string name="curation_button_following_state_text" formatted="false">ફોલો કરો છો</string>
-    <string name="search_main_entity_subtitle_artist" formatted="false">આર્ટિસ્ટ</string>
     <string name="connect_phone_is_self" formatted="false">આ ફોન</string>
     <string name="settings_item_canvas_title" formatted="false">Canvas</string>
     <string name="video_settings_canvas_subtitle" formatted="false">જ્યારે ગીત વાગી રહ્યું હોય ત્યારે ટૂંકા, લૂપિંગ વિઝ્યુઅલ.</string>
@@ -107,8 +103,6 @@
     <string name="library_search_text_hint" formatted="false">તમારી લાઇબ્રેરી શોધો</string>
     <string name="account_title" formatted="false">એકાઉન્ટ</string>
     <string name="song_dna_search_chip_followed_artists" formatted="false">આર્ટિસ્ટને ફોલો કર્યું</string>
-    <string name="settings_item_crossfade_title" formatted="false">ક્રોસફેડ</string>
-    <string name="playback_settings_crossfade_slider_seconds" formatted="false">%1$d સે</string>
     <string name="local_files_title" formatted="false">સ્થાનિક ફાઇલો</string>
     <string name="local_files_empty_section_title" formatted="false">તમારી પોતાની ઓડિયો ફાઇલ તમારી લાઇબ્રેરીમાં ઉમેરો</string>
     <string name="local_files_empty_section_subtitle" formatted="false">એવું કોઈ ગીત કે પર્સનલ પોડકાસ્ટ મળ્યું છે જે Spotify પર ન હોય?</string>
@@ -138,14 +132,10 @@
     <string name="assisted_curation_search_filter_artists" formatted="false">આર્ટિસ્ટ</string>
     <string name="assisted_curation_search_filter_albums" formatted="false">આલ્બમ</string>
     <string name="assisted_curation_search_filter_playlists" formatted="false">પ્લેલિસ્ટ</string>
-    <string name="assisted_curation_search_filter_clear_content_description" formatted="false">ફિલ્ટર દૂર કરો</string>
-    <string name="ad_category_title_music" formatted="false">મ્યુઝિક</string>
-    <string name="made_for_you_hub_title" formatted="false">ખાસ તમારા માટે</string>
     <string name="settings_item_app_language_title" formatted="false">ઍપની ભાષા</string>
     <string name="create_menu_item_folder_title" formatted="false">ફોલ્ડર</string>
     <string name="create_folder_name_suggested_folder_name" formatted="false">નવું ફોલ્ડર</string>
     <string name="context_menu_rename_folder" formatted="false">ફોલ્ડરનું નામ બદલો</string>
-    <string name="your_library_messaging_folder_rename_hint" formatted="false">ફોલ્ડરનું નામ</string>
     <string name="create_playlist_content_description" formatted="false">પ્લેલિસ્ટ બનાવો</string>
     <string name="actions_picker_delete" formatted="false">ડિલીટ કરો</string>
     <string name="filter_and_sort_sort_section_title" formatted="false">આ મુજબ ગોઠવો</string>

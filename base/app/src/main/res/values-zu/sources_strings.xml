@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="sources_audio_title">Imithombo yomsindo</string>
+    <string name="sources_download_title">Imithombo yokulanda</string>
+    <string name="sources_audio_footer">Ibuzwa kusuka phezulu kuya phansi ngomculo ngamunye: owokuqala onawo uyawudlala. Sebenzisa imitikuva ukushintsha ukuhleleka.</string>
+    <string name="sources_download_footer">Ibuzwa kusuka phezulu kuya phansi: umthombo wokuqala onalo umculo unikeza ifayela. Sebenzisa imitikuva ukushintsha ukuhleleka.</string>
+    <string name="sources_spotify">Spotify</string>
+    <string name="sources_spotify_detail">Idlala lapho kungekho mthombo ongaphezulu onomculo</string>
+    <string name="sources_ready">Ilungile</string>
+    <string name="sources_details_show">Bonisa imininingwane</string>
+    <string name="sources_details_hide">Fihla imininingwane</string>
+    <string name="sources_detail_version">Inguqulo %1$s · ngu-%2$s</string>
+    <string name="sources_last_used">Okokugcina: %1$s, %2$s</string>
+    <string name="sources_open">Vula isandiso</string>
+    <string name="sources_order_hint">Imithombo ibuzwa ngokuhleleka okusethwe kuZilungiselelo (Ukudlala, Okulandiwe).</string>
+    <string name="sources_below_spotify">Akubuzwa: i-Spotify iphezulu</string>
+</resources>

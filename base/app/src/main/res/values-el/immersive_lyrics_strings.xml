@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="immersive_lyrics_instrumental">Ενόργανο</string>
+    <string name="immersive_lyrics_none">Δεν υπάρχουν στίχοι για αυτό το κομμάτι</string>
+    <string name="immersive_queue_title">Ουρά</string>
+    <string name="immersive_queue_now_playing">Αναπαράγεται τώρα</string>
+    <string name="immersive_queue_empty">Η ουρά είναι άδεια</string>
+    <string name="immersive_queue_remove">Κατάργηση από την ουρά</string>
+    <string name="immersive_queue_reorder">Μετακίνηση στην ουρά</string>
+    <string name="immersive_queue_shuffle">Τυχαία σειρά</string>
+    <string name="immersive_queue_repeat">Επανάληψη</string>
+</resources>

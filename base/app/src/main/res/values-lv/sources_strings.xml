@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="sources_audio_title">Audio avoti</string>
+    <string name="sources_download_title">Lejupielādes avoti</string>
+    <string name="sources_audio_footer">Katrai dziesmai jautā no augšas uz leju: pirmais, kuram tā ir, to atskaņo. Kārtību maina ar bultiņām.</string>
+    <string name="sources_download_footer">Jautā no augšas uz leju: pirmais avots, kuram ir dziesma, nodrošina failu. Kārtību maina ar bultiņām.</string>
+    <string name="sources_spotify">Spotify</string>
+    <string name="sources_spotify_detail">Atskaņo, kad nevienam augstāk esošajam avotam nav dziesmas</string>
+    <string name="sources_ready">Gatavs</string>
+    <string name="sources_details_show">Rādīt detaļas</string>
+    <string name="sources_details_hide">Slēpt detaļas</string>
+    <string name="sources_detail_version">Versija %1$s · autors %2$s</string>
+    <string name="sources_last_used">Pēdējais: %1$s, %2$s</string>
+    <string name="sources_open">Atvērt paplašinājumu</string>
+    <string name="sources_order_hint">Avotiem jautā iestatījumos (Atskaņošana, Lejupielādes) noteiktajā secībā.</string>
+    <string name="sources_below_spotify">Netiek jautāts: Spotify ir augstāk</string>
+</resources>

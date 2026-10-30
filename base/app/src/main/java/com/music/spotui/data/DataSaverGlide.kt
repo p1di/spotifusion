@@ -2,10 +2,12 @@ package com.music.spotui.data
 
 import android.content.Context
 import com.bumptech.glide.Glide
+import com.bumptech.glide.GlideBuilder
 import com.bumptech.glide.Priority
 import com.bumptech.glide.load.DataSource
 import com.bumptech.glide.load.Options
 import com.bumptech.glide.load.data.DataFetcher
+import com.bumptech.glide.load.engine.cache.InternalCacheDiskCacheFactory
 import com.bumptech.glide.load.model.GlideUrl
 import com.bumptech.glide.load.model.ModelLoader
 import com.bumptech.glide.load.model.ModelLoaderFactory
@@ -18,7 +20,12 @@ import java.io.InputStream
  * the network for nothing (see [DataSaver]).
  */
 object DataSaverGlide {
+    /** Glide's default is 250 MB; covers are small, so the cache stays at 150 MB. */
+    private const val DISK_CACHE_BYTES = 150L * 1024 * 1024
+
     fun install(context: Context) {
+        // Before the first Glide.get: no annotation processor here, so the default builder is replaced by hand.
+        Glide.init(context, GlideBuilder().setDiskCache(InternalCacheDiskCacheFactory(context, DISK_CACHE_BYTES)))
         Glide.get(context).registry.replace(GlideUrl::class.java, InputStream::class.java, Factory())
     }
 

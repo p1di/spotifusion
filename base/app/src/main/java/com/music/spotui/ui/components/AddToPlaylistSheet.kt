@@ -1,5 +1,9 @@
 package com.music.spotui.ui.components
 
+import com.music.spotui.ui.theme.tone
+import com.music.spotui.ui.theme.AppText
+import com.music.spotui.ui.theme.AppMuted
+
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
@@ -72,7 +76,7 @@ fun AddToPlaylistSheet(
     var query by remember { mutableStateOf("") }
     LaunchedEffect(Unit) {
         // Folders flattened: adding to a playlist does not need the folder tree.
-        playlists = EditablePlaylists.load()
+        playlists = EditablePlaylists.loadWithCovers()
     }
     // Filtered in one pass; accent-insensitive like the other "find" fields of the app.
     val shown = remember(playlists, query) {
@@ -92,15 +96,15 @@ fun AddToPlaylistSheet(
         }
     }
 
-    ModalBottomSheet(
+    com.music.spotui.ui.components.LookSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = androidx.compose.ui.graphics.Color(0xFF1A1A1A),
+        containerColor = tone(0xFF1A1A1A),
     ) {
         Column(modifier = Modifier.navigationBarsPadding().imePadding()) {
             Text(
                 stringResource(R.string.context_menu_add_to_another_playlist),
-                color = androidx.compose.ui.graphics.Color.White,
+                color = AppText,
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
                 maxLines = 1,
@@ -139,7 +143,7 @@ fun AddToPlaylistSheet(
 
 @OptIn(ExperimentalGlideComposeApi::class)
 @Composable
-private fun PickRow(playlist: EditablePlaylist, onClick: () -> Unit) {
+internal fun PickRow(playlist: EditablePlaylist, onClick: () -> Unit) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 20.dp, vertical = 8.dp),
@@ -154,7 +158,7 @@ private fun PickRow(playlist: EditablePlaylist, onClick: () -> Unit) {
             contentDescription = "",
         )
         Column(Modifier.weight(1f).padding(start = 14.dp)) {
-            Text(playlist.name, color = androidx.compose.ui.graphics.Color.White, fontSize = 15.sp, fontWeight = FontWeight.Medium,
+            Text(playlist.name, color = AppText, fontSize = 15.sp, fontWeight = FontWeight.Medium,
                 maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text(
                 pluralStringResource(R.plurals.liked_songs_header_metadata_text, playlist.trackCount, playlist.trackCount),
@@ -165,7 +169,7 @@ private fun PickRow(playlist: EditablePlaylist, onClick: () -> Unit) {
         Icon(
             Icons.Default.Add,
             contentDescription = null,
-            tint = androidx.compose.ui.graphics.Color(0xFFB3B3B3),
+            tint = AppMuted,
             modifier = Modifier.size(22.dp),
         )
     }

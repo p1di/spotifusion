@@ -11,11 +11,9 @@ data class SongsModel(
     // Real Spotify track id (e.g. "3n3Ppam7vgaVa1iaRUc9Lp"), kept so playback can
     // seed Spotify's recommendations endpoint for autoplay radio. Empty when unknown.
     val spotifyTrackId : String = "",
-    // Whether the Spotify track is the explicit version, so the YouTube fallback
-    // can pick the matching (explicit vs clean) edit.
+    // Whether the Spotify track is the explicit version (the E badge).
     val explicit : Boolean = false,
-    // Track length in ms (from Spotify). Used to disambiguate the YouTube match:
-    // a same-title-different-artist song almost always has a different duration.
+    // Track length in ms (from Spotify), 0 when unknown.
     val durationMs : Int = 0,
     // Spotify album id of the track, when known (opens the album page by id).
     val albumId : String = "",
@@ -37,6 +35,12 @@ data class SongsModel(
     val playedPositionMs : Long = 0L,
     /** Raw Spotify id of the show the episode belongs to. */
     val showId : String = "",
+    /**
+     * This row's own id in a Spotify playlist. The same song twice in a playlist has the same
+     * [id] and [spotifyTrackId] but two row ids, and a removal must name the row, not the song.
+     * Empty outside playlists and in older caches.
+     */
+    val rowUid : String = "",
 ){
     constructor() : this(-1 ,"" ,"" ,"" ,"" ,"", "")
 

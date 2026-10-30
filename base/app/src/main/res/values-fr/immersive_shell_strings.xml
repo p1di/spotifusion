@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Textes des barres et des composants de liste partagés du look Immersive (français). -->
+<resources>
+    <string name="immersive_shell_back">Retour</string>
+    <string name="immersive_shell_more">Plus d\'options</string>
+    <string name="immersive_shell_search_hint">Rechercher</string>
+    <string name="immersive_shell_search_clear">Effacer la recherche</string>
+    <string name="immersive_shell_play">Lecture</string>
+    <string name="immersive_shell_shuffle">Aléatoire</string>
+    <string name="immersive_shell_see_all">Tout afficher</string>
+    <string name="immersive_shell_now_playing">En cours de lecture</string>
+    <string name="immersive_shell_explicit">Explicite</string>
+</resources>

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="stats_tab_spotify">Στο Spotify</string>
+    <string name="stats_tab_phone">Σε αυτό το τηλέφωνο</string>
+    <string name="stats_range_short">Τελευταίες 4 εβδομάδες</string>
+    <string name="stats_range_medium">Τελευταίοι 6 μήνες</string>
+    <string name="stats_range_long">Τελευταίο έτος</string>
+    <string name="stats_artists_ranked">%1$d καλλιτέχνες στο ιστορικό ακρόασής σας</string>
+    <string name="stats_empty">Το Spotify δεν έχει ακόμη κορυφαίους καλλιτέχνες ή κομμάτια για αυτό το διάστημα. Συνεχίστε να ακούτε και ελέγξτε ξανά αργότερα.</string>
+    <string name="stats_failed">Το Spotify δεν έστειλε τα στατιστικά σας.</string>
+    <string name="stats_spotify_note">Κατάταξη από το Spotify βάσει όσων αναπαρήγαγε αυτός ο λογαριασμός, σε κάθε συσκευή. Το Spotify δεν μοιράζεται αναπαραγωγές ή λεπτά ακρόασης: τα λεπτά στο «Σε αυτό το τηλέφωνο» είναι η δική μέτρηση του Myspoti.</string>
+    <string name="stats_weekly_minutes">Λεπτά ανά εβδομάδα</string>
+    <string name="stats_this_week">Αυτή την εβδομάδα: %1$d λεπτά</string>
+    <string name="stats_listening_stats">Στατιστικά ακρόασης</string>
+    <string name="friends_title">Δραστηριότητα φίλων</string>
+    <string name="friends_detail">Τι ακούν οι άνθρωποι που ακολουθείτε</string>
+    <string name="friends_now">Τώρα</string>
+    <string name="friends_empty">Δεν υπάρχει ακόμη δραστηριότητα φίλων. Οι φίλοι που ακολουθείτε και μοιράζονται τη δραστηριότητα ακρόασής τους στο Spotify εμφανίζονται εδώ.</string>
+    <string name="friends_failed">Το Spotify δεν έστειλε τη δραστηριότητα των φίλων.</string>
+    <string name="friends_refresh">Ανανέωση</string>
+    <string name="artist_top_short">Ο υπ\' αριθμόν %1$d καλλιτέχνης σας των τελευταίων 4 εβδομάδων</string>
+    <string name="artist_top_medium">Ο υπ\' αριθμόν %1$d καλλιτέχνης σας των τελευταίων 6 μηνών</string>
+    <string name="artist_top_long">Ο υπ\' αριθμόν %1$d καλλιτέχνης σας του τελευταίου έτους</string>
+</resources>

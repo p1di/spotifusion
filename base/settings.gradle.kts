@@ -28,8 +28,8 @@ dependencyResolutionManagement {
 rootProject.name = "Spotifusion"
 include(":app")
 include(":api")
+include(":extensions")
+include(":extensions-cli")
 include(":api-spotify")
 include(":host-cdp")
 include(":host-android")
-
-

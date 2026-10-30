@@ -9,6 +9,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
+import com.music.spotui.data.preferences.Look
+import com.music.spotui.data.preferences.LookPref
 
 /**
  * Donations and their thank-yous. Reminders: a day after first use, then every 2 weeks;
@@ -29,6 +31,10 @@ object SupportReminder {
     const val EVERY_MS = 14L * 24 * 3_600_000
     const val SUPPORTER_EVERY_MS = 90L * 24 * 3_600_000
     private const val PREFS = "support_reminder"
+    /** The single accent of earlier versions, copied to both looks once ([init]). */
+    private const val KEY_ACCENT = "accent"
+    private const val KEY_ACCENT_CLASSIC = "accent_classic"
+    private const val KEY_ACCENT_IMMERSIVE = "accent_immersive"
 
     enum class Level { NONE, ONCE, MONTHLY }
 
@@ -45,14 +51,23 @@ object SupportReminder {
     private var storedLevel by mutableStateOf(Level.NONE)
     /** The supporter level in effect (NONE while perks are off). */
     val level: Level get() = if (PERKS_ENABLED) storedLevel else Level.NONE
-    /** The accent chosen (applied only for supporters). */
-    var accent by mutableStateOf(Accent.GREEN)
+    /** The accent chosen for the Classic look. */
+    var classicAccent by mutableStateOf(Accent.GREEN)
+        private set
+    /** The accent chosen for the Immersive look. */
+    var immersiveAccent by mutableStateOf(Accent.GREEN)
+        private set
+    /** A colour was picked for Immersive (green is also the default): the look has its own default accent until then. */
+    var immersiveAccentChosen by mutableStateOf(false)
         private set
     var icon by mutableStateOf(Accent.GREEN)
         private set
 
-    /** The colour the whole app uses for its accent (Spotify green unless another was chosen in Settings). */
-    val accentColor: Color get() = accent.color
+    /** The accent chosen for a look. */
+    fun accentOf(look: Look): Accent = if (look == Look.IMMERSIVE) immersiveAccent else classicAccent
+
+    /** The colour the active look uses for its accent (Spotify green unless another was chosen in Settings). */
+    val accentColor: Color get() = accentOf(LookPref.look).color
 
     /** When the next reminder is due. */
     fun nextAt(firstSeen: Long, lastShown: Long, level: Level, supportedAt: Long): Long = when (level) {
@@ -66,7 +81,14 @@ object SupportReminder {
     fun init(context: Context) {
         val p = prefs(context)
         storedLevel = runCatching { Level.valueOf(p.getString("level", "NONE")!!) }.getOrDefault(Level.NONE)
-        accent = Accent.entries.firstOrNull { it.key == p.getString("accent", "green") } ?: Accent.GREEN
+        // One accent used to serve both looks: whoever picked one keeps it for each look.
+        if (p.contains(KEY_ACCENT) && !p.contains(KEY_ACCENT_CLASSIC) && !p.contains(KEY_ACCENT_IMMERSIVE)) {
+            val old = p.getString(KEY_ACCENT, "green")
+            p.edit().putString(KEY_ACCENT_CLASSIC, old).putString(KEY_ACCENT_IMMERSIVE, old).apply()
+        }
+        classicAccent = Accent.entries.firstOrNull { it.key == p.getString(KEY_ACCENT_CLASSIC, "green") } ?: Accent.GREEN
+        immersiveAccent = Accent.entries.firstOrNull { it.key == p.getString(KEY_ACCENT_IMMERSIVE, "green") } ?: Accent.GREEN
+        immersiveAccentChosen = p.contains(KEY_ACCENT_IMMERSIVE)
         icon = Accent.entries.firstOrNull { it.key == p.getString("icon", "green") } ?: Accent.GREEN
     }
 
@@ -85,9 +107,15 @@ object SupportReminder {
         prefs(context).edit().putString("level", value.name).putLong("supported_at", System.currentTimeMillis()).apply()
     }
 
-    fun setAccent(context: Context, value: Accent) {
-        accent = value
-        prefs(context).edit().putString("accent", value.key).apply()
+    fun setAccent(context: Context, look: Look, value: Accent) {
+        if (look == Look.IMMERSIVE) {
+            immersiveAccent = value
+            immersiveAccentChosen = true
+            prefs(context).edit().putString(KEY_ACCENT_IMMERSIVE, value.key).apply()
+        } else {
+            classicAccent = value
+            prefs(context).edit().putString(KEY_ACCENT_CLASSIC, value.key).apply()
+        }
     }
 
     /**

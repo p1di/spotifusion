@@ -17,7 +17,6 @@
     <string name="snackbar_added_to_liked_songs" formatted="false">لائیک کردہ گانیاں وچ شامل ہو گیا۔</string>
     <string name="snackbar_removed_from_liked_songs" formatted="false">لائیک کردہ گانیاں توں ہٹا دتا گیا۔</string>
     <string name="content_description_context_menu" formatted="false">ہور اختیارات</string>
-    <string name="close_button_content_description" formatted="false">بند کرو</string>
     <string name="add_to_playlist_saved_in_section_header" formatted="false">ایہدے وچ محفوظ کیتا گیا</string>
     <string name="add_to_playlist_new_playlist_button_text" formatted="false">نویں پلے لسٹ</string>
     <string name="add_to_playlist_button_cancel" formatted="false">منسوخ کرو</string>
@@ -25,8 +24,6 @@
     <string name="lyrics_card_title" formatted="false">بول</string>
     <string name="lyrics_card_title_preview" formatted="false">بولاں دا پیش نظارہ</string>
     <string name="lyrics_card_show_lyrics_button" formatted="false">بول وکھاؤ</string>
-    <string name="lyrics_card_expand_button_content_description" formatted="false">پوری اسکرین اتے بول کھولو</string>
-    <string name="lyrics_card_share_button_content_description" formatted="false">بول شئیر کرو</string>
     <string name="lyrics_credential_note" formatted="false">%1$s دے دِتے گانیاں دے بول</string>
     <string name="lyrics_fullscreen_chip_label_share" formatted="false">شئیر کرو</string>
     <string name="lyrics_fullscreen_chip_label_translate" formatted="false">ترجمہ کرو</string>
@@ -49,7 +46,6 @@
     <string name="artist_popular_tracks" formatted="false">مقبول</string>
     <string name="curation_button_follow_state_text" formatted="false">فالو کرو</string>
     <string name="curation_button_following_state_text" formatted="false">فالو کر رئیے او</string>
-    <string name="search_main_entity_subtitle_artist" formatted="false">آرٹسٹ</string>
     <string name="connect_phone_is_self" formatted="false">ایہہ فون</string>
     <string name="settings_item_canvas_title" formatted="false">Canvas</string>
     <string name="video_settings_canvas_subtitle" formatted="false">جدوں کوئی گانا چل رہیا ہوندا اے تے مختصر، لوپنگ بصریات۔</string>
@@ -106,8 +102,6 @@
     <string name="library_search_text_hint" formatted="false">اپنی لائبریری تلاش کرو</string>
     <string name="account_title" formatted="false">اکاؤنٹ</string>
     <string name="song_dna_search_chip_followed_artists" formatted="false">فالو کیتے ہوئے آرٹسٹ</string>
-    <string name="settings_item_crossfade_title" formatted="false">کراس فیڈ</string>
-    <string name="playback_settings_crossfade_slider_seconds" formatted="false">%1$d s</string>
     <string name="local_files_title" formatted="false">مقامی فائلاں</string>
     <string name="local_files_empty_section_title" formatted="false">آپنی ذاتی آڈیو فائلاں آپنی لائبریری وچ شامل کرو</string>
     <string name="local_files_empty_section_subtitle" formatted="false">اک ایہوجیہا گانا یا ذاتی پوڈکاسٹ ملی اے جیہڑی Spotify تے نہیں اے؟</string>
@@ -137,14 +131,10 @@
     <string name="assisted_curation_search_filter_artists" formatted="false">آرٹسٹس</string>
     <string name="assisted_curation_search_filter_albums" formatted="false">البمز</string>
     <string name="assisted_curation_search_filter_playlists" formatted="false">پلے لسٹس</string>
-    <string name="assisted_curation_search_filter_clear_content_description" formatted="false">فلٹر ہٹاؤ</string>
-    <string name="ad_category_title_music" formatted="false">موسیقی</string>
-    <string name="made_for_you_hub_title" formatted="false">تہاڈے لئی بنیا</string>
     <string name="settings_item_app_language_title" formatted="false">ایپ دی زبان</string>
     <string name="create_menu_item_folder_title" formatted="false">فولڈر</string>
     <string name="create_folder_name_suggested_folder_name" formatted="false">نواں فولڈر</string>
     <string name="context_menu_rename_folder" formatted="false">فولڈر دا ناں بدلو</string>
-    <string name="your_library_messaging_folder_rename_hint" formatted="false">فولڈر ناں</string>
     <string name="create_playlist_content_description" formatted="false">پلے لسٹ بناؤ</string>
     <string name="actions_picker_delete" formatted="false">ڈیلیٹ کرو</string>
     <string name="filter_and_sort_sort_section_title" formatted="false">ترتیب دو بلحاظ</string>

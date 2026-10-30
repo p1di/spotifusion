@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Textes des écrans Accueil, Recherche, Bibliothèque et Catégorie du look Immersive (français). -->
+<resources>
+    <string name="immersive_screens_account">Compte</string>
+    <string name="immersive_screens_account_page">Page du compte</string>
+    <string name="immersive_screens_account_page_detail">Abonnement, confidentialité et appareils</string>
+    <string name="immersive_screens_top_result">Meilleur résultat</string>
+    <string name="immersive_screens_reset_order">Revenir à l\'ordre par défaut</string>
+</resources>

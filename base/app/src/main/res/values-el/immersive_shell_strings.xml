@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="immersive_shell_back">Πίσω</string>
+    <string name="immersive_shell_more">Περισσότερες επιλογές</string>
+    <string name="immersive_shell_search_hint">Αναζήτηση</string>
+    <string name="immersive_shell_search_clear">Εκκαθάριση αναζήτησης</string>
+    <string name="immersive_shell_play">Αναπαραγωγή</string>
+    <string name="immersive_shell_shuffle">Τυχαία σειρά</string>
+    <string name="immersive_shell_see_all">Εμφάνιση όλων</string>
+    <string name="immersive_shell_now_playing">Αναπαράγεται τώρα</string>
+    <string name="immersive_shell_explicit">Ακατάλληλο περιεχόμενο</string>
+</resources>

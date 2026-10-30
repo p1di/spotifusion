@@ -17,7 +17,6 @@
     <string name="snackbar_added_to_liked_songs" formatted="false">ଲାଇକ୍ ହୋଇଥିବା ଗୀତରେ ଯୋଡ଼ା ଯାଇଛି।</string>
     <string name="snackbar_removed_from_liked_songs" formatted="false">ଲାଇକ୍ ହୋଇଥିବା ଗୀତରୁ କାଢ଼ି ଦିଆଯାଇଛି।</string>
     <string name="content_description_context_menu" formatted="false">ଅଧିକ ବିକଳ୍ପ</string>
-    <string name="close_button_content_description" formatted="false">ବନ୍ଦ କରନ୍ତୁ</string>
     <string name="add_to_playlist_saved_in_section_header" formatted="false">ଏଥିରେ ସେଭ୍‍ କରାଯାଇଛି</string>
     <string name="add_to_playlist_new_playlist_button_text" formatted="false">ନୂଆ ପ୍ଲେଲିଷ୍ଟ</string>
     <string name="add_to_playlist_button_cancel" formatted="false">ବାତିଲ୍ କରନ୍ତୁ</string>
@@ -25,8 +24,6 @@
     <string name="lyrics_card_title" formatted="false">ଲିରିକ୍ସ</string>
     <string name="lyrics_card_title_preview" formatted="false">ଲିରିକ୍ସର ପ୍ରିଭ୍ୟୁ</string>
     <string name="lyrics_card_show_lyrics_button" formatted="false">ଲିରିକ୍ସ ଦେଖାନ୍ତୁ</string>
-    <string name="lyrics_card_expand_button_content_description" formatted="false">ପୂର୍ଣ୍ଣ ସ୍କ୍ରିନ୍ ଲିରିକ୍ସ ଖୋଲନ୍ତୁ</string>
-    <string name="lyrics_card_share_button_content_description" formatted="false">ଲିରିକ୍ ଅଂଶୀଦାର କରନ୍ତୁ</string>
     <string name="lyrics_credential_note" formatted="false">%1$s ଦ୍ୱାରା ପ୍ରଦାନ କରାଯାଇଥିବା ଲିରିକ୍ସ</string>
     <string name="lyrics_fullscreen_chip_label_share" formatted="false">ସେୟାର୍‍</string>
     <string name="lyrics_fullscreen_chip_label_translate" formatted="false">ଅନୁବାଦ କର</string>
@@ -49,7 +46,6 @@
     <string name="artist_popular_tracks" formatted="false">ଲୋକପ୍ରିୟ</string>
     <string name="curation_button_follow_state_text" formatted="false">ଅନୁସରଣ କରନ୍ତୁ</string>
     <string name="curation_button_following_state_text" formatted="false">ଅନୁସରଣ କରୁଛନ୍ତି</string>
-    <string name="search_main_entity_subtitle_artist" formatted="false">କଳାକାର</string>
     <string name="connect_phone_is_self" formatted="false">ଏହି ଫୋନ୍</string>
     <string name="settings_item_canvas_title" formatted="false">କାନଭାସ୍</string>
     <string name="video_settings_canvas_subtitle" formatted="false">ଏକ ଗୀତ ଚାଳନ ବେଳେ ଛୋଟ, ଲୁପିଂ ଭିଜୁଆଲ୍ ।</string>
@@ -107,8 +103,6 @@
     <string name="library_search_text_hint" formatted="false">ଆପଣଙ୍କ ଲାଇବ୍ରେରୀ ସନ୍ଧାନ କରନ୍ତୁ</string>
     <string name="account_title" formatted="false">ଆକାଉଣ୍ଟ</string>
     <string name="song_dna_search_chip_followed_artists" formatted="false">ଅନୁସରଣ କରାଯାଇଥିବା କଳାକାର</string>
-    <string name="settings_item_crossfade_title" formatted="false">କ୍ରସଫେଡ୍</string>
-    <string name="playback_settings_crossfade_slider_seconds" formatted="false">%1$d ସେ</string>
     <string name="local_files_title" formatted="false">ଲୋକାଲ୍ ଫାଇଲ୍</string>
     <string name="local_files_empty_section_title" formatted="false">ଆପଣଙ୍କ ଲାଇବ୍ରେରୀରେ ଆପଣଙ୍କର ନିଜର ଅଡିଓ ଫାଇଲ୍ ଯୋଗ କରନ୍ତୁ</string>
     <string name="local_files_empty_section_subtitle" formatted="false">Spotifyରେ ନଥିବା ଏକ ଗୀତ କିମ୍ବା ବ୍ୟକ୍ତିଗତ ପୋଡକାଷ୍ଟ ପାଇଛନ୍ତି କି?</string>
@@ -138,14 +132,10 @@
     <string name="assisted_curation_search_filter_artists" formatted="false">କଳାକାରମାନେ</string>
     <string name="assisted_curation_search_filter_albums" formatted="false">ଆଲବମଗୁଡ଼ିକ</string>
     <string name="assisted_curation_search_filter_playlists" formatted="false">ପ୍ଲେଲିଷ୍ଟଗୁଡ଼ିକ</string>
-    <string name="assisted_curation_search_filter_clear_content_description" formatted="false">ଫିଲ୍ଟର୍ ଖାଲି କରନ୍ତୁ</string>
-    <string name="ad_category_title_music" formatted="false">ମ୍ୟୁଜିକ୍‍</string>
-    <string name="made_for_you_hub_title" formatted="false">ଆପଣଙ୍କ ପାଇଁ ପ୍ରସ୍ତୁତ</string>
     <string name="settings_item_app_language_title" formatted="false">ଆପର ଭାଷା</string>
     <string name="create_menu_item_folder_title" formatted="false">ଫୋଲ୍ଡର୍</string>
     <string name="create_folder_name_suggested_folder_name" formatted="false">ନୂତନ ଫୋଲ୍ଡର୍</string>
     <string name="context_menu_rename_folder" formatted="false">ଫୋଲ୍ଡର୍ ପୁନଃନାମ କରନ୍ତୁ</string>
-    <string name="your_library_messaging_folder_rename_hint" formatted="false">ଫୋଲ୍ଡର ନାମ</string>
     <string name="create_playlist_content_description" formatted="false">ପ୍ଲେଲିଷ୍ଟ ତିଆରି କରନ୍ତୁ</string>
     <string name="actions_picker_delete" formatted="false">ଡିଲିଟ୍‍ କରନ୍ତୁ</string>
     <string name="filter_and_sort_sort_section_title" formatted="false">ଦ୍ୱାରା ସର୍ଟ କରନ୍ତୁ</string>

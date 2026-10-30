@@ -71,6 +71,9 @@ object AudioAlign {
         val ex = MediaExtractor()
         var decoderToRelease: MediaCodec? = null
         var threadToStop: android.os.HandlerThread? = null
+        // Set on the codec's own thread when it is released: a callback still queued then
+        // must not touch a buffer of the released codec.
+        var closing = false
         try {
             ex.setDataSource(file.absolutePath)
             val track = (0 until ex.trackCount).first { ex.getTrackFormat(it).getString(MediaFormat.KEY_MIME)!!.startsWith("audio/") }
@@ -93,7 +96,7 @@ object AudioAlign {
             val t0 = System.nanoTime()
             codec.setCallback(object : MediaCodec.Callback() {
                 override fun onInputBufferAvailable(c: MediaCodec, index: Int) {
-                    if (inputDone) return
+                    if (inputDone || closing) return
                     if (maxSeconds > 0 && out.size() >= maxSeconds * SR) {
                         // Enough audio for a first alignment: stop here.
                         inputDone = true
@@ -113,8 +116,10 @@ object AudioAlign {
                 }
     
                 override fun onOutputBufferAvailable(c: MediaCodec, index: Int, info: MediaCodec.BufferInfo) {
+                    if (closing) return
                     try {
                         val bb = c.getOutputBuffer(index)!!.order(ByteOrder.nativeOrder())
+                        bb.position(info.offset).limit(info.offset + info.size)
                         if (isFloat) {
                             val count = info.size / 4
                             if (floatPcm.size < count) floatPcm = FloatArray(count)
@@ -147,7 +152,21 @@ object AudioAlign {
             android.util.Log.i("MusicVideo", "decode $codecName: ${(System.nanoTime() - t0) / 1_000_000} ms")
             return out.result()
         } finally {
-            decoderToRelease?.let { decoder ->
+            // Released on the codec's own thread, after the callback running there: released from
+            // here it unmapped the output buffer a callback was still copying (native crash,
+            // SIGSEGV in memcpy under ByteBufferAsShortBuffer.get, measured on the test phone).
+            val decoder = decoderToRelease
+            val looper = threadToStop?.looper
+            if (decoder != null && looper != null) {
+                val released = java.util.concurrent.CountDownLatch(1)
+                android.os.Handler(looper).post {
+                    closing = true
+                    runCatching { decoder.stop() }
+                    runCatching { decoder.release() }
+                    released.countDown()
+                }
+                released.await(5, java.util.concurrent.TimeUnit.SECONDS)
+            } else if (decoder != null) {
                 runCatching { decoder.stop() }
                 runCatching { decoder.release() }
             }

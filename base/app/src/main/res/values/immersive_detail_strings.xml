@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Texts of the Immersive look's album, playlist and artist pages (English default). -->
+<resources>
+    <string name="immersive_detail_pause">Pause</string>
+    <string name="immersive_detail_save">Save to library</string>
+    <string name="immersive_detail_unsave">Remove from library</string>
+    <string name="immersive_detail_find">Find in list</string>
+    <string name="immersive_detail_smart_shuffle_on">Smart shuffle on: recommendations join the shuffled list.</string>
+    <string name="immersive_detail_more">More</string>
+    <string name="immersive_detail_less">Less</string>
+    <string name="immersive_detail_featured_on">Featured on</string>
+    <string name="immersive_detail_remove_local">Remove from this playlist</string>
+    <string name="immersive_detail_follow">Follow</string>
+    <string name="immersive_detail_unfollow">Unfollow</string>
+</resources>

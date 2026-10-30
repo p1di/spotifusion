@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="sources_audio_title">Garso šaltiniai</string>
+    <string name="sources_download_title">Atsisiuntimo šaltiniai</string>
+    <string name="sources_audio_footer">Kiekvienai dainai klausiama iš viršaus į apačią: pirmasis, turintis ją, ją paleidžia. Eiliškumą keiskite rodyklėmis.</string>
+    <string name="sources_download_footer">Klausiama iš viršaus į apačią: pirmasis šaltinis, turintis dainą, pateikia failą. Eiliškumą keiskite rodyklėmis.</string>
+    <string name="sources_spotify">Spotify</string>
+    <string name="sources_spotify_detail">Grojama, kai nė vienas aukščiau esantis šaltinis neturi dainos</string>
+    <string name="sources_ready">Paruošta</string>
+    <string name="sources_details_show">Rodyti išsamiau</string>
+    <string name="sources_details_hide">Slėpti išsamiau</string>
+    <string name="sources_detail_version">Versija %1$s · autorius %2$s</string>
+    <string name="sources_last_used">Paskutinis: %1$s, %2$s</string>
+    <string name="sources_open">Atidaryti plėtinį</string>
+    <string name="sources_order_hint">Šaltiniai tikrinami Nustatymuose (Atkūrimas, Atsisiuntimai) nustatyta tvarka.</string>
+    <string name="sources_below_spotify">Neklausiama: Spotify yra aukščiau</string>
+</resources>

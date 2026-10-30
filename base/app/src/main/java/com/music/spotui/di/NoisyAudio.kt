@@ -15,7 +15,7 @@ object NoisyAudio {
     private val receiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             if (intent.action != AudioManager.ACTION_AUDIO_BECOMING_NOISY) return
-            if (SongPlayer.activeDevice.value == null && SongPlayer.isPlaying()) SongPlayer.pause()
+            if (SongPlayer.activeDevice.value == null && SongPlayer.isPlaying()) SongPlayer.pause(by = "headphones unplugged")
         }
     }
 

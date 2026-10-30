@@ -41,3 +41,10 @@ object CacheSettingsPref {
         prefs(c).edit().putInt(KEY_CACHE_CAP_MB, capMb).apply()
     }
 }
+
+fun isPlaybackCacheEnabled(c: Context): Boolean = CacheSettingsPref.preloadingEnabled
+fun setPlaybackCacheEnabled(c: Context, enabled: Boolean) = CacheSettingsPref.setEnabled(c, enabled)
+fun getPreloadTrackCount(c: Context): Int = CacheSettingsPref.preloadCount
+fun setPreloadTrackCount(c: Context, count: Int) = CacheSettingsPref.setCount(c, count)
+fun getMaxCacheSizeMb(c: Context): Int = CacheSettingsPref.cacheCapMb
+fun setMaxCacheSizeMb(c: Context, mb: Int) = CacheSettingsPref.setCapMb(c, mb)

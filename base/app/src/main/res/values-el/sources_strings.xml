@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="sources_audio_title">Πηγές ήχου</string>
+    <string name="sources_download_title">Πηγές λήψης</string>
+    <string name="sources_audio_footer">Ερωτώνται από πάνω προς τα κάτω για κάθε τραγούδι: η πρώτη που το έχει το παίζει. Χρησιμοποιήστε τα βέλη για να αλλάξετε τη σειρά.</string>
+    <string name="sources_download_footer">Ερωτώνται από πάνω προς τα κάτω: η πρώτη πηγή που έχει το τραγούδι δίνει το αρχείο. Χρησιμοποιήστε τα βέλη για να αλλάξετε τη σειρά.</string>
+    <string name="sources_spotify">Spotify</string>
+    <string name="sources_spotify_detail">Παίζει όταν καμία πηγή από πάνω δεν έχει το τραγούδι</string>
+    <string name="sources_ready">Έτοιμο</string>
+    <string name="sources_details_show">Εμφάνιση λεπτομερειών</string>
+    <string name="sources_details_hide">Απόκρυψη λεπτομερειών</string>
+    <string name="sources_detail_version">Έκδοση %1$s · από %2$s</string>
+    <string name="sources_last_used">Τελευταία: %1$s, %2$s</string>
+    <string name="sources_open">Άνοιγμα της επέκτασης</string>
+    <string name="sources_order_hint">Οι πηγές ερωτώνται με τη σειρά που έχει οριστεί στις Ρυθμίσεις (Αναπαραγωγή, Λήψεις).</string>
+    <string name="sources_below_spotify">Δεν ερωτάται: το Spotify είναι από πάνω</string>
+</resources>

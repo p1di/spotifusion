@@ -17,7 +17,6 @@
     <string name="snackbar_added_to_liked_songs" formatted="false">Bætt við lækuð lög.</string>
     <string name="snackbar_removed_from_liked_songs" formatted="false">Fjarlægt úr lækuðum lögum.</string>
     <string name="content_description_context_menu" formatted="false">Fleiri valkostir</string>
-    <string name="close_button_content_description" formatted="false">Loka</string>
     <string name="add_to_playlist_saved_in_section_header" formatted="false">Vistað á</string>
     <string name="add_to_playlist_new_playlist_button_text" formatted="false">Nýr spilunarlisti</string>
     <string name="add_to_playlist_button_cancel" formatted="false">Hætta við</string>
@@ -25,8 +24,6 @@
     <string name="lyrics_card_title" formatted="false">Texti</string>
     <string name="lyrics_card_title_preview" formatted="false">Textasýnishorn</string>
     <string name="lyrics_card_show_lyrics_button" formatted="false">Sýna texta</string>
-    <string name="lyrics_card_expand_button_content_description" formatted="false">Opna texta á öllum skjánum</string>
-    <string name="lyrics_card_share_button_content_description" formatted="false">Deila texta</string>
     <string name="lyrics_credential_note" formatted="false">Textar frá %1$s</string>
     <string name="lyrics_fullscreen_chip_label_share" formatted="false">Deila</string>
     <string name="lyrics_fullscreen_chip_label_translate" formatted="false">Þýða</string>
@@ -49,7 +46,6 @@
     <string name="artist_popular_tracks" formatted="false">Vinsælt</string>
     <string name="curation_button_follow_state_text" formatted="false">Fylgjast með</string>
     <string name="curation_button_following_state_text" formatted="false">Vaktin</string>
-    <string name="search_main_entity_subtitle_artist" formatted="false">Listamaður</string>
     <string name="connect_phone_is_self" formatted="false">Þessum síma</string>
     <string name="settings_item_canvas_title" formatted="false">Canvas</string>
     <string name="video_settings_canvas_subtitle" formatted="false">Stuttar myndlykkjur þegar lag er spilað.</string>
@@ -107,8 +103,6 @@
     <string name="library_search_text_hint" formatted="false">Leita í Safninu þínu</string>
     <string name="account_title" formatted="false">Reikningur</string>
     <string name="song_dna_search_chip_followed_artists" formatted="false">Flytjendur sem þú fylgist með</string>
-    <string name="settings_item_crossfade_title" formatted="false">Flæðispilun</string>
-    <string name="playback_settings_crossfade_slider_seconds" formatted="false">%1$d s.</string>
     <string name="local_files_title" formatted="false">Staðbundnar skrár</string>
     <string name="local_files_empty_section_title" formatted="false">Bættu eigin hljóðskrám í safnið þitt</string>
     <string name="local_files_empty_section_subtitle" formatted="false">Ertu með lag eða eigið hlaðvarp sem er ekki á Spotify?</string>
@@ -138,14 +132,10 @@
     <string name="assisted_curation_search_filter_artists" formatted="false">Listamenn</string>
     <string name="assisted_curation_search_filter_albums" formatted="false">Plötur</string>
     <string name="assisted_curation_search_filter_playlists" formatted="false">Spilunarlistar</string>
-    <string name="assisted_curation_search_filter_clear_content_description" formatted="false">Hreinsa síu</string>
-    <string name="ad_category_title_music" formatted="false">Tónlist</string>
-    <string name="made_for_you_hub_title" formatted="false">Fyrir þig</string>
     <string name="settings_item_app_language_title" formatted="false">Tungumál forrits</string>
     <string name="create_menu_item_folder_title" formatted="false">Mappa</string>
     <string name="create_folder_name_suggested_folder_name" formatted="false">Ný mappa</string>
     <string name="context_menu_rename_folder" formatted="false">Endurnefna möppu</string>
-    <string name="your_library_messaging_folder_rename_hint" formatted="false">Heiti möppu</string>
     <string name="create_playlist_content_description" formatted="false">Búa til spilunarlista</string>
     <string name="actions_picker_delete" formatted="false">Eyða</string>
     <string name="filter_and_sort_sort_section_title" formatted="false">Raða eftir</string>

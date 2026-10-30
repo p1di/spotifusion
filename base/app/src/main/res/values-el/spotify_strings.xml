@@ -17,7 +17,6 @@
     <string name="snackbar_added_to_liked_songs" formatted="false">Προστέθηκε στα τραγούδια που σου αρέσουν.</string>
     <string name="snackbar_removed_from_liked_songs" formatted="false">Καταργήθηκε από τα τραγούδια που σου αρέσουν.</string>
     <string name="content_description_context_menu" formatted="false">Περισσότερες επιλογές</string>
-    <string name="close_button_content_description" formatted="false">Κλείσιμο</string>
     <string name="add_to_playlist_saved_in_section_header" formatted="false">Αποθηκευμένο σε</string>
     <string name="add_to_playlist_new_playlist_button_text" formatted="false">Δημιουργία νέας playlist</string>
     <string name="add_to_playlist_button_cancel" formatted="false">Ακύρωση</string>
@@ -25,8 +24,6 @@
     <string name="lyrics_card_title" formatted="false">Στίχοι</string>
     <string name="lyrics_card_title_preview" formatted="false">Προεπισκόπηση στίχων</string>
     <string name="lyrics_card_show_lyrics_button" formatted="false">Εμφάνιση στίχων</string>
-    <string name="lyrics_card_expand_button_content_description" formatted="false">Προβολή στίχων σε πλήρη οθόνη</string>
-    <string name="lyrics_card_share_button_content_description" formatted="false">Κοινοποίηση στίχων</string>
     <string name="lyrics_credential_note" formatted="false">Οι στίχοι παρέχονται από %1$s</string>
     <string name="lyrics_fullscreen_chip_label_share" formatted="false">Κοινοποίηση</string>
     <string name="lyrics_fullscreen_chip_label_translate" formatted="false">Μετάφραση</string>
@@ -49,7 +46,6 @@
     <string name="artist_popular_tracks" formatted="false">Δημοφιλή</string>
     <string name="curation_button_follow_state_text" formatted="false">Ακολούθησε</string>
     <string name="curation_button_following_state_text" formatted="false">Ακολουθείς</string>
-    <string name="search_main_entity_subtitle_artist" formatted="false">Καλλιτέχνης</string>
     <string name="connect_phone_is_self" formatted="false">Αυτό το τηλέφωνο</string>
     <string name="settings_item_canvas_title" formatted="false">Canvas</string>
     <string name="video_settings_canvas_subtitle" formatted="false">Σύντομα, επαναλαμβανόμενα οπτικά στοιχεία κατά την αναπαραγωγή ενός τραγουδιού.</string>
@@ -107,8 +103,6 @@
     <string name="library_search_text_hint" formatted="false">Αναζήτηση στη Βιβλιοθήκη σου</string>
     <string name="account_title" formatted="false">Λογαριασμός</string>
     <string name="song_dna_search_chip_followed_artists" formatted="false">Καλλιτέχνες που ακολουθείς</string>
-    <string name="settings_item_crossfade_title" formatted="false">Crossfade</string>
-    <string name="playback_settings_crossfade_slider_seconds" formatted="false">%1$d δευτ.</string>
     <string name="local_files_title" formatted="false">Τοπικά αρχεία</string>
     <string name="local_files_empty_section_title" formatted="false">Πρόσθεσε τα δικά σου αρχεία ήχου στη Βιβλιοθήκη σου</string>
     <string name="local_files_empty_section_subtitle" formatted="false">Έχεις ένα τραγούδι ή ένα προσωπικό podcast που δεν υπάρχει στο Spotify;</string>
@@ -138,14 +132,10 @@
     <string name="assisted_curation_search_filter_artists" formatted="false">Καλλιτέχνες</string>
     <string name="assisted_curation_search_filter_albums" formatted="false">Άλμπουμ</string>
     <string name="assisted_curation_search_filter_playlists" formatted="false">Playlist</string>
-    <string name="assisted_curation_search_filter_clear_content_description" formatted="false">Διάγραψε το φίλτρο</string>
-    <string name="ad_category_title_music" formatted="false">Μουσική</string>
-    <string name="made_for_you_hub_title" formatted="false">Δημιουργήθηκε για εσένα</string>
     <string name="settings_item_app_language_title" formatted="false">Γλώσσα εφαρμογής</string>
     <string name="create_menu_item_folder_title" formatted="false">Φάκελος</string>
     <string name="create_folder_name_suggested_folder_name" formatted="false">Νέος φάκελος</string>
     <string name="context_menu_rename_folder" formatted="false">Μετονομασία φακέλου</string>
-    <string name="your_library_messaging_folder_rename_hint" formatted="false">Όνομα φακέλου</string>
     <string name="create_playlist_content_description" formatted="false">Δημιουργία playlist</string>
     <string name="actions_picker_delete" formatted="false">Διαγραφή</string>
     <string name="filter_and_sort_sort_section_title" formatted="false">Ταξινόμηση κατά</string>

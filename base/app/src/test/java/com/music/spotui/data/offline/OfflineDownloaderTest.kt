@@ -12,6 +12,14 @@ class OfflineDownloaderTest {
         assertNull(OfflineDownloader.contentRangeTotal(null))
     }
 
+    @Test fun contentRangeSpanReadsThePartSent() {
+        assertEquals(100L..199L, OfflineDownloader.contentRangeSpan("bytes 100-199/1234"))
+        assertEquals(0L..99L, OfflineDownloader.contentRangeSpan("Bytes 0-99/*"))
+        assertNull(OfflineDownloader.contentRangeSpan("bytes 199-100/1234"))
+        assertNull(OfflineDownloader.contentRangeSpan("bytes */1234"))
+        assertNull(OfflineDownloader.contentRangeSpan(null))
+    }
+
     @Test fun normalizeIsrcAcceptsDashesAndCase() {
         assertEquals("USUM71703861", OfflineDownloader.normalizeIsrc("us-um7-17-03861"))
         assertEquals("FRZ039800212", OfflineDownloader.normalizeIsrc("FR Z03 98 00212"))
@@ -23,30 +31,13 @@ class OfflineDownloaderTest {
         assertNull(OfflineDownloader.normalizeIsrc("USUM7170386"))   // one digit short
     }
 
-    private fun hit(url: String, title: String, artist: String, sec: Long) = OfflineDownloader.PreviewHit(url, title, artist, sec)
-
-    @Test fun pickPreviewKeepsTheSameSong() {
-        val results = listOf(
-            hit("https://cdn/live.mp3", "Paranoïa (Live)", "MadeInParis", 312),  // live take, much longer
-            hit("", "Paranoïa", "MadeInParis", 163),                             // no preview
-            hit("https://cdn/other.mp3", "Typical", "Al-Walid", 163),            // same length, other song
-            hit("https://cdn/album.mp3", "Paranoia", "MadeInParis", 164),
-        )
-        assertEquals("https://cdn/album.mp3", OfflineDownloader.pickPreview(results, "Paranoïa", "MadeInParis", 163_400))
-    }
-
-    @Test fun pickPreviewIgnoresFeatAndRemasterSuffixes() {
-        val results = listOf(hit("https://cdn/a.mp3", "Yellow Submarine (Remastered 2009)", "The Beatles", 157))
-        assertEquals("https://cdn/a.mp3", OfflineDownloader.pickPreview(results, "Yellow Submarine - Remastered 2009", "The Beatles", 158_000))
-        val feat = listOf(hit("https://cdn/b.mp3", "Stay (feat. Guest)", "Artist", 200))
-        assertEquals("https://cdn/b.mp3", OfflineDownloader.pickPreview(feat, "Stay", "Artist", 200_000))
-    }
-
-    @Test fun pickPreviewRejectsAnotherArtistOrDuration() {
-        val results = listOf(hit("https://cdn/a.mp3", "GO", "Someone Else", 178))
-        assertNull(OfflineDownloader.pickPreview(results, "GO", "Slimka", 178_000))
-        assertNull(OfflineDownloader.pickPreview(listOf(hit("https://cdn/a.mp3", "GO", "Slimka", 178)), "GO", "Slimka", 0))
-        assertNull(OfflineDownloader.pickPreview(listOf(hit("https://cdn/a.mp3", "GO", "Slimka", 178)), "GO", "Slimka", 190_000))
+    @Test fun lengthMismatchRefusesPreviewsAndOtherVersions() {
+        assertNull(OfflineDownloader.lengthMismatch(163, 163_400))
+        assertNull(OfflineDownloader.lengthMismatch(160, 163_400))   // a few seconds trimmed
+        assertNull(OfflineDownloader.lengthMismatch(175, 163_400))   // trailing silence
+        assertNull(OfflineDownloader.lengthMismatch(30, 0))          // the song's length unknown
+        assertTrue(OfflineDownloader.lengthMismatch(30, 163_400)!!.contains("preview"))
+        assertTrue(OfflineDownloader.lengthMismatch(312, 163_400)!!.contains("another version"))
     }
 
     @Test fun localIdsNeverCollideWithMediaStoreIds() {

@@ -17,7 +17,6 @@
     <string name="snackbar_added_to_liked_songs" formatted="false">Gehitu da Gustatu zaizkizun abestietan.</string>
     <string name="snackbar_removed_from_liked_songs" formatted="false">Kendu da Gustatu zaizkizun abestietatik.</string>
     <string name="content_description_context_menu" formatted="false">Aukera gehiago</string>
-    <string name="close_button_content_description" formatted="false">Itxi</string>
     <string name="add_to_playlist_saved_in_section_header" formatted="false">Hemen dago gordeta:</string>
     <string name="add_to_playlist_new_playlist_button_text" formatted="false">Zerrenda berria</string>
     <string name="add_to_playlist_button_cancel" formatted="false">Utzi</string>
@@ -25,8 +24,6 @@
     <string name="lyrics_card_title" formatted="false">Hitzak</string>
     <string name="lyrics_card_title_preview" formatted="false">Hitzen aurrebista</string>
     <string name="lyrics_card_show_lyrics_button" formatted="false">Erakutsi hitzak</string>
-    <string name="lyrics_card_expand_button_content_description" formatted="false">Ireki hitzak pantaila osoan</string>
-    <string name="lyrics_card_share_button_content_description" formatted="false">Partekatu hitzak</string>
     <string name="lyrics_credential_note" formatted="false">Honek eskainitako hitzak: %1$s</string>
     <string name="lyrics_fullscreen_chip_label_share" formatted="false">Partekatu</string>
     <string name="lyrics_fullscreen_chip_label_translate" formatted="false">Itzuli</string>
@@ -49,7 +46,6 @@
     <string name="artist_popular_tracks" formatted="false">Ezagunak</string>
     <string name="curation_button_follow_state_text" formatted="false">Jarraitu</string>
     <string name="curation_button_following_state_text" formatted="false">Jarraitzen</string>
-    <string name="search_main_entity_subtitle_artist" formatted="false">Artista</string>
     <string name="connect_phone_is_self" formatted="false">Telefono hau</string>
     <string name="settings_item_canvas_title" formatted="false">Canvas</string>
     <string name="video_settings_canvas_subtitle" formatted="false">Irudi labur eta errepikakorrak abesti bat erreproduzitu bitartean.</string>
@@ -107,8 +103,6 @@
     <string name="library_search_text_hint" formatted="false">Bilatu Liburutegian</string>
     <string name="account_title" formatted="false">Kontua</string>
     <string name="song_dna_search_chip_followed_artists" formatted="false">Jarraitutako artistak</string>
-    <string name="settings_item_crossfade_title" formatted="false">Gainjartze gurutzatua</string>
-    <string name="playback_settings_crossfade_slider_seconds" formatted="false">%1$d s</string>
     <string name="local_files_title" formatted="false">Fitxategi lokalak</string>
     <string name="local_files_empty_section_title" formatted="false">Gehitu gailuko audio-fitxategiak Liburutegian</string>
     <string name="local_files_empty_section_subtitle" formatted="false">Spotify-n ez dauden abesti edo podcast pertsonalak dauzkazu?</string>
@@ -138,14 +132,10 @@
     <string name="assisted_curation_search_filter_artists" formatted="false">Artistak</string>
     <string name="assisted_curation_search_filter_albums" formatted="false">Albumak</string>
     <string name="assisted_curation_search_filter_playlists" formatted="false">Zerrendak</string>
-    <string name="assisted_curation_search_filter_clear_content_description" formatted="false">Garbitu iragazkia</string>
-    <string name="ad_category_title_music" formatted="false">Musika</string>
-    <string name="made_for_you_hub_title" formatted="false">Zuretzat eginak</string>
     <string name="settings_item_app_language_title" formatted="false">Aplikazioaren hizkuntza</string>
     <string name="create_menu_item_folder_title" formatted="false">Karpeta</string>
     <string name="create_folder_name_suggested_folder_name" formatted="false">Karpeta berria</string>
     <string name="context_menu_rename_folder" formatted="false">Aldatu karpetaren izena</string>
-    <string name="your_library_messaging_folder_rename_hint" formatted="false">Karpetaren izena</string>
     <string name="create_playlist_content_description" formatted="false">Sortu zerrenda bat</string>
     <string name="actions_picker_delete" formatted="false">Ezabatu</string>
     <string name="filter_and_sort_sort_section_title" formatted="false">Ordenatzeko irizpidea</string>

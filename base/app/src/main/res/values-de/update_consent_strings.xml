@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="update_code_title">Der Code von %1$s hat sich geändert (%2$d Zeilen, +%3$d/−%4$d)</string>
+    <string name="update_code_body">Diese Erweiterung besitzt mächtige Rechte (kritische Aktionen oder weiter Netzwerkzugriff); neuer Code wird nie ohne dein OK ausgeführt.</string>
+    <string name="update_code_files">Geänderte Dateien: %1$s</string>
+    <string name="update_code_update">Aktualisieren</string>
+    <string name="update_code_later">Jetzt nicht</string>
+    <string name="update_check_waiting">Update gefunden: Es wird in 24 Stunden automatisch angewendet</string>
+    <string name="update_check_repo_changed">Update abgelehnt: Das Repository hat den Besitzer gewechselt</string>
+    <string name="update_repo_changed_title">Repository hat den Besitzer gewechselt</string>
+    <string name="update_repo_changed_body">Dieses Repository wurde unter demselben Namen neu registriert oder übertragen; seine Updates sind blockiert. Deinstalliere es oder installiere es nur neu, wenn du dem neuen Besitzer vertraust.</string>
+    <string name="update_author_owner">von %1$s · Repository von %2$s</string>
+    <string name="update_author_unverified">von %1$s · nicht überprüft</string>
+</resources>

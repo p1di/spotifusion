@@ -1,7 +1,12 @@
 package com.music.spotui.ui.screens
 
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import com.music.spotui.ui.components.secondaryClick
+import com.music.spotui.ui.theme.tone
+import com.music.spotui.ui.theme.AppText
+import com.music.spotui.ui.theme.AppMuted
+
 import kotlinx.coroutines.launch
+import com.music.spotui.ui.components.SearchClearButton
 import com.music.spotui.ui.components.pressable
 import androidx.compose.ui.res.stringResource
 
@@ -116,42 +121,25 @@ fun SumUpSearchScreen(
     failed: Boolean = false,
 ) {
     val context = LocalContext.current
-    val keyboardController = androidx.compose.ui.platform.LocalSoftwareKeyboardController.current
-    val focusManager = androidx.compose.ui.platform.LocalFocusManager.current
-    val dismissKeyboard: () -> Unit = {
-        keyboardController?.hide()
-        focusManager.clearFocus()
-    }
 
     val text = searchViewModel.query
     // Recents are the *items opened from results* (songs/artists/albums), not the
     // typed queries, and only appear once the user taps into the search bar.
     var searchFocused by remember { mutableStateOf(false) }
-    var searchActive by remember { mutableStateOf(text.isNotEmpty()) }
-    if (searchFocused || text.isNotEmpty()) {
-        searchActive = true
-    }
     var recents by remember {
         mutableStateOf(com.music.spotui.data.preferences.getRecentItems(context).filter { com.music.spotui.data.api.Features.PODCASTS || it.type != "show" })
     }
     var menuSong by remember { mutableStateOf<SongsModel?>(null) }
     // Re-tapping the Search tab while already on it focuses the field (official behaviour)
-    // and clears any existing query so the user can search something new.
+    // and shows the recents again; no query is re-run. The field lives in the sticky bar,
+    // so a focus requester is handed down to it.
     val listState = androidx.compose.foundation.lazy.rememberLazyListState()
     val searchFieldFocus = remember { androidx.compose.ui.focus.FocusRequester() }
-    androidx.activity.compose.BackHandler(enabled = searchActive) {
-        searchViewModel.search("")
-        searchActive = false
-        dismissKeyboard()
-    }
     LaunchedEffect(Unit) {
         com.music.spotui.ui.navigation.TabReselect.search.collect {
-            if (searchViewModel.query.isNotEmpty()) {
-                searchViewModel.search("")
-            }
-            searchActive = true
+            // Focus first: the keyboard should be up as soon as the tab is tapped.
+            // Not attached yet (screen being torn down): the tap is simply dropped.
             runCatching { searchFieldFocus.requestFocus() }
-            keyboardController?.show()
             if (listState.firstVisibleItemIndex != 0 || listState.firstVisibleItemScrollOffset != 0) {
                 listState.animateScrollToItem(0)
             }
@@ -192,50 +180,30 @@ fun SumUpSearchScreen(
             .filter { !it.equals(text.trim(), ignoreCase = true) }
     }
 
-    Column(
+    LazyColumn(
+        state = listState,
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = com.music.spotui.ui.components.bottomBarsSpace()),
         modifier = Modifier
             .fillMaxSize()
             .background(Color(AppBackground.toArgb()))
             .statusBarsPadding()
-    ) {
-        if (!searchActive) {
+
+    ){
+        item{
             SearchTopBar()
         }
-        SearchStickyBar(
-            text = text,
-            isActive = searchActive,
-            onFocusChange = { focused ->
-                searchFocused = focused
-                if (focused) searchActive = true
-            },
-            onActivate = {
-                searchActive = true
-                keyboardController?.show()
-            },
-            onBack = {
-                searchViewModel.search("")
-                searchActive = false
-                dismissKeyboard()
-            },
-            onClear = {
-                searchViewModel.search("")
-                runCatching { searchFieldFocus.requestFocus() }
-                keyboardController?.show()
-            },
-            focusRequester = searchFieldFocus,
-        ) {
-            searchViewModel.search(it)
+        stickyHeader {
+            SearchStickyBar(
+                text,
+                onFocusChange = { searchFocused = it },
+                focusRequester = searchFieldFocus,
+            ) {
+                searchViewModel.search(it)
+            }
         }
 
-        LazyColumn(
-            state = listState,
-            contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = com.music.spotui.ui.components.bottomBarsSpace()),
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth()
-        ) {
-            if (text.isBlank()) {
-            if (searchActive && recents.isNotEmpty()) {
+        if (text.isBlank()) {
+            if (searchFocused && recents.isNotEmpty()) {
                 // ── Recent searches: the items the user opened (Spotify-style),
                 // shown only once the search bar is focused ──
                 item {
@@ -248,17 +216,16 @@ fun SumUpSearchScreen(
                     ) {
                         Text(
                             stringResource(R.string.assisted_curation_search_search_history_title),
-                            color = Color.White,
+                            color = AppText,
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Bold,
                         )
                         Text(
                             stringResource(R.string.chat_content_picker_clear_recent_searches),
-                            color = Color(0xFFB3B3B3),
+                            color = AppMuted,
                             fontSize = 13.sp,
                             fontWeight = FontWeight.SemiBold,
                             modifier = Modifier.pressable(0.96f) {
-                                dismissKeyboard()
                                 com.music.spotui.data.preferences.clearRecentItems(context)
                                 recents = emptyList()
                                 // Spotify's own list too, so other devices forget them as well.
@@ -272,7 +239,6 @@ fun SumUpSearchScreen(
                     RecentItemRow(
                         item = item,
                         onClick = {
-                            dismissKeyboard()
                             when (item.type) {
                                 "song" -> {
                                     val songUrl = item.songUrl.ifBlank {
@@ -294,7 +260,7 @@ fun SumUpSearchScreen(
                                         durationMs = item.durationMs,
                                     )
                                     searchViewModel.startRadioFromSong(song)
-                                    SongPlayer.playSong(song.url, context)
+                                    SongPlayer.playSong(song.url, context, songs = listOf(song), alone = true)
                                     searchViewModel.updateSongState(
                                         song.coverUri, song.title, song.singer, true, song.id, 0, song.album)
                                 }
@@ -305,7 +271,6 @@ fun SumUpSearchScreen(
                             }
                         },
                         onRemove = {
-                            dismissKeyboard()
                             com.music.spotui.data.preferences.removeRecentItem(context, item)
                             recents = com.music.spotui.data.preferences.getRecentItems(context).filter { com.music.spotui.data.api.Features.PODCASTS || it.type != "show" }
                         },
@@ -317,7 +282,6 @@ fun SumUpSearchScreen(
                     // Real Spotify opens a genre *catalogue* (a page of curated
                     // playlists) rather than running a keyword song search.
                     BrowseAllSection { genre, title ->
-                        dismissKeyboard()
                         if (genre == NEW_RELEASES_GENRE) navController.navigate(com.music.spotui.ui.navigation.Routes.NewReleases.route)
                         else navController.navigate(categoryRoute(genre, title))
                     }
@@ -335,30 +299,26 @@ fun SumUpSearchScreen(
                         val q = suggestions[i]
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.clip(RoundedCornerShape(50)).background(Color(0xFF2A2A2A))
-                                .pressable(0.96f) {
-                                    dismissKeyboard()
-                                    searchViewModel.search(q)
-                                }
+                            modifier = Modifier.clip(RoundedCornerShape(50)).background(tone(0xFF2A2A2A))
+                                .pressable(0.96f) { searchViewModel.search(q) }
                                 .padding(horizontal = 12.dp, vertical = 7.dp),
                         ) {
-                            Icon(androidx.compose.material.icons.Icons.Default.Search, null, tint = Color(0xFFB3B3B3), modifier = Modifier.size(14.dp))
+                            Icon(androidx.compose.material.icons.Icons.Default.Search, null, tint = AppMuted, modifier = Modifier.size(14.dp))
                             Spacer(Modifier.width(6.dp))
-                            Text(q, color = Color.White, fontSize = 13.sp, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                            Text(q, color = AppText, fontSize = 13.sp, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
                         }
                     }
                 }
             }
-            item { SearchFilterChips(filter) { dismissKeyboard(); searchViewModel.filter = it } }
+            item { SearchFilterChips(filter) { searchViewModel.filter = it } }
             // Loading, nothing found and a failure each say what they are (never an empty page).
             if (filter != SearchFilter.Profiles && mixed.isEmpty() && results.shows.isEmpty() && results.episodes.isEmpty()) item {
-                SearchStatus(text, loading, failed) { dismissKeyboard(); searchViewModel.retry() }
+                SearchStatus(text, loading, failed) { searchViewModel.retry() }
             }
             if (filter == SearchFilter.Profiles) {
                 items(profiles.size) { i ->
                     val u = profiles[i]
                     SearchProfileRow(u.title, u.images.firstOrNull()?.url) {
-                        dismissKeyboard()
                         navController.navigate(com.music.spotui.ui.navigation.profileRoute(u.uri.substringAfterLast(':'), u.title))
                     }
                 }
@@ -367,12 +327,10 @@ fun SumUpSearchScreen(
                 when (val row = mixed[i]) {
                     is SearchRow.Song -> com.music.spotui.ui.components.SwipeToQueue(row.song) {
                         SearchSongRow(row.song, searchedList, searchViewModel, onPlayed = {
-                            dismissKeyboard()
                             recordRecent(row.song.toRecentItem())
-                        }, onLongClick = { dismissKeyboard(); menuSong = row.song })
+                        }, onLongClick = { menuSong = row.song })
                     }
                     is SearchRow.Artist -> SearchArtistRow(row.artist) {
-                        dismissKeyboard()
                         recordRecent(com.music.spotui.data.preferences.RecentItem(
                             type = "artist",
                             key = row.artist.id.ifBlank { row.artist.name },
@@ -382,7 +340,6 @@ fun SumUpSearchScreen(
                         navController.navigate(artistRoute(row.artist.name, row.artist.id))
                     }
                     is SearchRow.Album -> SearchAlbumRow(row.album) {
-                        dismissKeyboard()
                         recordRecent(com.music.spotui.data.preferences.RecentItem(
                             type = "album",
                             key = row.album.spotifyId.ifBlank { row.album.name },
@@ -393,7 +350,6 @@ fun SumUpSearchScreen(
                         navController.navigate(albumRoute(row.album.name, row.album.artists, row.album.spotifyId))
                     }
                     is SearchRow.Playlist -> SearchPlaylistRow(row.playlist) {
-                        dismissKeyboard()
                         recordRecent(com.music.spotui.data.preferences.RecentItem(
                             type = "playlist",
                             key = row.playlist.spotifyId,
@@ -412,7 +368,6 @@ fun SumUpSearchScreen(
                 items(results.shows.size) { i ->
                     val show = results.shows[i]
                     SearchShowRow(show) {
-                        dismissKeyboard()
                         recordRecent(com.music.spotui.data.preferences.RecentItem(
                             type = "show",
                             key = show.id,
@@ -429,14 +384,21 @@ fun SumUpSearchScreen(
                 items(results.episodes.size) { i ->
                     val ep = results.episodes[i]
                     SearchSongRow(ep, results.episodes, searchViewModel, onPlayed = {
-                        dismissKeyboard()
                         recordRecent(ep.toRecentItem())
-                    }, onLongClick = { dismissKeyboard(); menuSong = ep })
+                    }, onLongClick = { menuSong = ep })
                 }
             }
+            // What extensions add for this search (search.provide), under Spotify's results.
+            if (filter != SearchFilter.Profiles) item {
+                com.music.spotui.extensions.ExtensionBlocks(
+                    app.myspoti.extensions.Hook.SEARCH, app.myspoti.extensions.Surface.SEARCH,
+                    kotlinx.serialization.json.buildJsonObject { put("query", kotlinx.serialization.json.JsonPrimitive(text.trim())) }.toString(),
+                    delayMs = 400,
+                )
+            }
             }
         }
-        }
+
     }
 }
 
@@ -453,10 +415,10 @@ sealed class SearchRow {
 private fun SearchStatus(query: String, loading: Boolean, failed: Boolean, onRetry: () -> Unit) {
     Column(Modifier.fillMaxWidth().padding(24.dp, 40.dp), horizontalAlignment = Alignment.CenterHorizontally) {
         when {
-            loading -> androidx.compose.material3.CircularProgressIndicator(color = com.music.spotui.ui.theme.AppAccent)
+            loading -> com.music.spotui.ui.components.SkeletonList(count = 7, modifier = Modifier.padding(top = 0.dp))
             failed -> com.music.spotui.ui.components.ErrorRetry(stringResource(R.string.search_failed), Modifier.padding(0.dp), onRetry)
             else -> Text(stringResource(R.string.assisted_curation_search_empty_view_no_result_title, query.trim()),
-                color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold,
+                color = AppText, fontSize = 16.sp, fontWeight = FontWeight.Bold,
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center)
         }
     }
@@ -495,11 +457,11 @@ private fun SearchFilterChips(selected: SearchFilter, onSelect: (SearchFilter) -
             Box(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier.height(32.dp).clip(RoundedCornerShape(16.dp))
-                    .background(if (on) com.music.spotui.ui.theme.AppAccent else Color(0xFF2A2A2A))
+                    .background(if (on) com.music.spotui.ui.theme.AppAccent else tone(0xFF2A2A2A))
                     .pressable(0.96f) { onSelect(if (on && f != SearchFilter.Top) SearchFilter.Top else f) }
                     .padding(horizontal = 14.dp),
             ) {
-                Text(stringResource(f.label), color = if (on) Color.Black else Color.White, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                Text(stringResource(f.label), color = if (on) Color.Black else AppText, fontSize = 14.sp, fontWeight = FontWeight.Medium)
             }
         }
     }
@@ -572,7 +534,7 @@ fun RecentItemRow(
                 .weight(1f)
                 .padding(start = 10.dp, end = 8.dp),
         ) {
-            Text(text = item.name, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Medium, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+            Text(text = item.name, color = AppText, fontSize = 14.sp, fontWeight = FontWeight.Medium, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
             val subtitle = when (item.type) {
                 "song" -> stringResource(R.string.assisted_curation_search_song) + " • ${item.singer}"
                 "artist" -> stringResource(R.string.artist_subtitle)
@@ -581,11 +543,11 @@ fun RecentItemRow(
                 "playlist" -> stringResource(R.string.assisted_curation_search_playlist) + (if (item.singer.isNotBlank()) " • ${item.singer}" else "")
                 else -> ""
             }
-            Text(text = subtitle, color = Color.Gray, fontSize = 12.sp, fontWeight = FontWeight.Medium, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+            Text(text = subtitle, color = AppMuted, fontSize = 12.sp, fontWeight = FontWeight.Medium, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
         }
         Icon(
             imageVector = Icons.Default.Close,
-            tint = Color(0xFFB3B3B3),
+            tint = AppMuted,
             modifier = Modifier.pressable(0.96f) { onRemove() }
                 .size(20.dp)
                 ,
@@ -606,7 +568,7 @@ fun SearchSongRow(
     val context = LocalContext.current
     val isLiked = com.music.spotui.di.rememberTrackSaved(song.spotifyTrackId)
     val currentPlayingIndicatorColor =
-        if (song.id == searchViewModel.currentSongId.value) Color(AppPalette.toArgb()) else Color.White
+        if (song.id == searchViewModel.currentSongId.value) Color(AppPalette.toArgb()) else AppText
 
     Row(
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -614,6 +576,8 @@ fun SearchSongRow(
         modifier = Modifier
             .fillMaxWidth()
             .padding(16.dp, 8.dp)
+            // A mouse's right click opens the same menu as the long press (DeX, tablets).
+            .secondaryClick(onLongClick)
             .combinedClickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
@@ -623,7 +587,7 @@ fun SearchSongRow(
                     // Start a radio from the tapped track (queue = this song + Spotify
                     // recommendations) rather than queuing the whole search list.
                     searchViewModel.startRadioFromSong(song)
-                    SongPlayer.playSong(song.url, context)
+                    SongPlayer.playSong(song.url, context, songs = listOf(song), alone = true)
                     searchViewModel.updateSongState(
                         song.coverUri,
                         song.title,
@@ -657,7 +621,7 @@ fun SearchSongRow(
                 Text(text = song.title, color = currentPlayingIndicatorColor, fontSize = 16.sp, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
                 androidx.compose.foundation.layout.Row(verticalAlignment = Alignment.CenterVertically) {
                     if (song.explicit) { com.music.spotui.ui.screens.ExplicitBadge(); androidx.compose.foundation.layout.Spacer(Modifier.width(6.dp)) }
-                    Text(text = stringResource(R.string.assisted_curation_search_song) + " • ${song.singer}", color = Color.Gray, fontSize = 13.sp, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                    Text(text = stringResource(R.string.assisted_curation_search_song) + " • ${song.singer}", color = AppMuted, fontSize = 13.sp, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
                 }
             }
         }
@@ -673,7 +637,7 @@ com.music.spotui.ui.screens.AddButton(song = { song }, liked = isLiked, size = 2
 fun SearchSectionHeader(title: String) {
     Text(
         text = title,
-        color = Color.White,
+        color = AppText,
         fontSize = 18.sp,
         fontWeight = FontWeight.Bold,
         modifier = Modifier.padding(16.dp, 18.dp, 16.dp, 4.dp),
@@ -703,10 +667,10 @@ fun SearchShowRow(show: com.music.spotui.data.entity.PodcastModel, onClick: () -
             contentDescription = "",
         )
         Column {
-            Text(text = show.name, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Medium, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+            Text(text = show.name, color = AppText, fontSize = 14.sp, fontWeight = FontWeight.Medium, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
             Text(
                 text = stringResource(R.string.album_type_podcast) + (if (show.publisher.isNotBlank()) " • ${show.publisher}" else ""),
-                color = Color.Gray, fontSize = 12.sp, fontWeight = FontWeight.Medium, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                color = AppMuted, fontSize = 12.sp, fontWeight = FontWeight.Medium, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
             )
         }
     }
@@ -735,8 +699,8 @@ fun SearchArtistRow(artist: com.music.spotui.data.entity.ArtistsModel, onClick: 
             contentDescription = "",
         )
         Column {
-            Text(text = artist.name, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Medium, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
-            Text(text = stringResource(R.string.artist_subtitle), color = Color.Gray, fontSize = 12.sp, fontWeight = FontWeight.Medium)
+            Text(text = artist.name, color = AppText, fontSize = 14.sp, fontWeight = FontWeight.Medium, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+            Text(text = stringResource(R.string.artist_subtitle), color = AppMuted, fontSize = 12.sp, fontWeight = FontWeight.Medium)
         }
     }
 }
@@ -764,8 +728,8 @@ fun SearchAlbumRow(album: com.music.spotui.data.entity.AlbumsModel, onClick: () 
             contentDescription = "",
         )
         Column {
-            Text(text = album.name, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Medium, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
-            Text(text = stringResource(R.string.album) + " • ${album.artists}", color = Color.Gray, fontSize = 12.sp, fontWeight = FontWeight.Medium, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+            Text(text = album.name, color = AppText, fontSize = 14.sp, fontWeight = FontWeight.Medium, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+            Text(text = stringResource(R.string.album) + " • ${album.artists}", color = AppMuted, fontSize = 12.sp, fontWeight = FontWeight.Medium, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
         }
     }
 }
@@ -787,10 +751,10 @@ fun SearchPlaylistRow(playlist: com.music.spotui.data.entity.LibraryEntry, onCli
             contentDescription = "",
         )
         Column {
-            Text(text = playlist.name, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Medium, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+            Text(text = playlist.name, color = AppText, fontSize = 14.sp, fontWeight = FontWeight.Medium, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
             Text(text = stringResource(R.string.assisted_curation_search_playlist) +
                 (if (playlist.subtitle.isNotBlank()) " • ${playlist.subtitle}" else ""),
-                color = Color.Gray, fontSize = 12.sp, fontWeight = FontWeight.Medium, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                color = AppMuted, fontSize = 12.sp, fontWeight = FontWeight.Medium, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
         }
     }
 }
@@ -803,159 +767,38 @@ private data class BrowseTile(val key: String, val title: String, val color: Col
 
 @Composable
 fun BrowseAllSection(onCategoryClick: (genre: String, title: String) -> Unit) {
-    // Fetch Spotify's real categories so images & navigation routes work seamlessly
-    val apiCategories by androidx.compose.runtime.produceState(initialValue = emptyList<BrowseTile>()) {
+    val newReleases = stringResource(R.string.browse_new_releases)
+    // Spotify's real categories (the Web Player's "Browse all"), New releases first.
+    val tiles by androidx.compose.runtime.produceState(initialValue = emptyList<BrowseTile>()) {
         val categories = runCatching { app.myspoti.host.android.MyspotiRuntime.api.home.categories() }.getOrDefault(emptyList())
-        val palette = com.music.spotui.ui.theme.BrowseCategoryColors
-        value = categories.mapIndexed { idx, c ->
-            val fallbackColor = palette[idx % palette.size]
-            val color = runCatching { Color(android.graphics.Color.parseColor(c.color ?: "")) }.getOrDefault(fallbackColor)
-            BrowseTile(c.uri, c.title, color, c.images.firstOrNull()?.url.orEmpty())
-        }
-    }
-
-    fun findCover(keyword: String, fallbackIdx: Int): String {
-        val match = apiCategories.firstOrNull { it.title.contains(keyword, ignoreCase = true) && it.image.isNotBlank() }
-        if (match != null) return match.image
-        return apiCategories.getOrNull(fallbackIdx)?.image.orEmpty()
-    }
-
-    fun findKey(keyword: String, defaultKey: String): String {
-        return apiCategories.firstOrNull { it.title.contains(keyword, ignoreCase = true) }?.key ?: defaultKey
-    }
-
-    // 1. Top 4 Quick Cards (69.dp height, 6.dp corner radius, no header above them — exact Screenshot 2)
-    val topQuickTiles = listOf(
-        BrowseTile(findKey("music", "spotify:genre:0JQ5DAqbMKFHOzuVTgTizF"), "Music", Color(0xFFE1118C), findCover("music", 0)),
-        BrowseTile(findKey("podcast", "spotify:genre:0JQ5DArNBzkmxXHCqFLx2J"), "Podcasts", Color(0xFF1E8264), findCover("podcast", 1)),
-        BrowseTile(findKey("audiobook", "spotify:genre:0JQ5DAqbMKFA6SOHvT3gck"), "Audiobooks", Color(0xFF1E3264), findCover("audiobook", 2)),
-        BrowseTile(findKey("live", "spotify:genre:0JQ5DAqbMKFDXXwE9BDJAr"), "Live Events", Color(0xFF8400E7), findCover("live", 3)),
-    )
-
-    // 2. "More for you" 6 Taller Cards (102.dp height, 6.dp corner radius — exact Screenshot 2)
-    val moreForYouTiles = listOf(
-        BrowseTile(findKey("made for you", "spotify:genre:0JQ5DAqbMKFHOzuVTgTizF"), "Made\nFor You", Color(0xFF8D67AB), findCover("made", 4)),
-        BrowseTile(NEW_RELEASES_GENRE, "New\nReleases", Color(0xFF608108), findCover("new", 5)),
-        BrowseTile(findKey("upcoming", NEW_RELEASES_GENRE), "Upcom-\ning\nreleases", Color(0xFF146956), findCover("release", 6)),
-        BrowseTile(findKey("cult", "spotify:genre:0JQ5DAqbMKFEC4WFtoNRpw"), "OFF-\nCULT", Color(0xFF777777), findCover("pop", 7)),
-        BrowseTile(findKey("halloween", "spotify:genre:0JQ5DAqbMKFAXlCG6QvYQ4"), "Hal-\nloween", Color(0xFFE13300), findCover("party", 8)),
-        BrowseTile(findKey("chart", "spotify:genre:0JQ5DAudkNjCgYMM0TZXDw"), "Charts", Color(0xFF8D67AB), findCover("chart", 9)),
-    )
-
-    // 3. "Genres" section (69.dp height, starting with Hip-Hop & Indie then all remaining API categories)
-    val genreTiles = listOf(
-        BrowseTile(findKey("hip-hop", "spotify:genre:0JQ5DAqbMKFQ00XGBls6ym"), "Hip-Hop", Color(0xFF283EA3), findCover("hip-hop", 10)),
-        BrowseTile(findKey("indie", "spotify:genre:0JQ5DAqbMKFCWjUTdzaG0e"), "Indie", Color(0xFF148A08), findCover("indie", 11)),
-    ) + apiCategories.filter { c ->
-        val t = c.title.lowercase()
-        !t.contains("hip-hop") && !t.contains("indie") && !t.contains("made for you") && !t.contains("new release") && !t.contains("chart")
-    }
-
-    Column(modifier = Modifier.fillMaxWidth().padding(top = 6.dp)) {
-        // Top 4 Quick Cards (2x2)
-        topQuickTiles.chunked(2).forEachIndexed { idx, rowItems ->
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(
-                        start = 16.dp,
-                        end = 16.dp,
-                        top = if (idx == 0) 4.dp else 15.dp,
-                    ),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
-                rowItems.forEach { t ->
-                    BrowseCategoryTile(
-                        name = t.title,
-                        color = t.color,
-                        cover = t.image,
-                        cardHeight = 69.dp,
-                        maxLines = 2,
-                        modifier = Modifier.weight(1f),
-                    ) { onCategoryClick(t.key, t.title.replace("\n", " ")) }
-                }
+        value = listOf(BrowseTile(NEW_RELEASES_GENRE, newReleases, Color(0xFFE8115B), "")) +
+            categories.filter { com.music.spotui.data.api.Features.PODCASTS || !it.title.contains("odcast", ignoreCase = true) }.map { c ->
+                val color = runCatching { Color(android.graphics.Color.parseColor(c.color ?: "#333333")) }.getOrDefault(tone(0xFF333333))
+                BrowseTile(c.uri, c.title, color, c.images.firstOrNull()?.url.orEmpty())
             }
-        }
-
-        // "More for you" Header
+    }
+    Column(modifier = Modifier.fillMaxWidth()) {
         Text(
-            text = "More for you",
-            color = Color.White,
-            fontSize = 18.sp,
+            text = stringResource(R.string.browse_all),
+            color = AppText,
+            fontSize = 22.sp,
             fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 22.dp, bottom = 14.dp),
+            modifier = Modifier.padding(16.dp, 12.dp, 16.dp, 8.dp),
         )
-
-        // "More for you" 6 Cards (2x3, 102.dp tall)
-        moreForYouTiles.chunked(2).forEachIndexed { idx, rowItems ->
+        // Large windows: more tiles per row (two on phones).
+        val cols = com.music.spotui.ui.components.windowSize().columns(2, 220.dp)
+        tiles.chunked(cols).forEach { rowItems ->
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(
-                        start = 16.dp,
-                        end = 16.dp,
-                        top = if (idx == 0) 0.dp else 15.dp,
-                    ),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    .padding(8.dp, 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 rowItems.forEach { t ->
-                    BrowseCategoryTile(
-                        name = t.title,
-                        color = t.color,
-                        cover = t.image,
-                        cardHeight = 102.dp,
-                        maxLines = 3,
-                        modifier = Modifier.weight(1f),
-                    ) { onCategoryClick(t.key, t.title.replace("-\n", "").replace("\n", " ")) }
+                    BrowseCategoryTile(t.title, t.color, t.image, Modifier.weight(1f)) { onCategoryClick(t.key, t.title) }
                 }
-            }
-        }
-
-        // "Genres" Header with "See all" on right
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(start = 16.dp, end = 16.dp, top = 22.dp, bottom = 14.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = "Genres",
-                color = Color.White,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-            )
-            Text(
-                text = "See all",
-                color = Color(0xFFB3B3B3),
-                fontSize = 13.sp,
-                fontWeight = FontWeight.SemiBold,
-            )
-        }
-
-        // "Genres" Grid (69.dp tall)
-        genreTiles.chunked(2).forEachIndexed { idx, rowItems ->
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(
-                        start = 16.dp,
-                        end = 16.dp,
-                        top = if (idx == 0) 0.dp else 15.dp,
-                    ),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
-                rowItems.forEach { t ->
-                    BrowseCategoryTile(
-                        name = t.title,
-                        color = t.color,
-                        cover = t.image,
-                        cardHeight = 69.dp,
-                        maxLines = 2,
-                        modifier = Modifier.weight(1f),
-                    ) { onCategoryClick(t.key, t.title) }
-                }
-                if (rowItems.size == 1) Spacer(Modifier.weight(1f))
+                // Keep the tiles' width on a last row that is not full.
+                repeat(cols - rowItems.size) { Spacer(Modifier.weight(1f)) }
             }
         }
     }
@@ -967,15 +810,13 @@ private fun BrowseCategoryTile(
     name: String,
     color: Color,
     cover: String,
-    cardHeight: androidx.compose.ui.unit.Dp = 69.dp,
-    maxLines: Int = 2,
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
 ) {
     Box(
         modifier = modifier
-            .height(cardHeight)
-            .clip(RoundedCornerShape(6.dp))
+            .height(96.dp)
+            .clip(RoundedCornerShape(8.dp))
             .background(color)
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
@@ -990,215 +831,94 @@ private fun BrowseCategoryTile(
                 contentDescription = null,
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
-                    .size(width = 74.dp, height = 84.dp)
-                    .offset(x = 14.dp, y = 10.dp)
+                    .size(64.dp)
+                    .offset(x = 16.dp, y = 10.dp)
                     .rotate(25f)
                     .clip(RoundedCornerShape(4.dp)),
-            )
-        } else {
-            // Subtle rotated album card placeholder so every tile has Spotify's tilted artwork silhouette
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .size(width = 68.dp, height = 78.dp)
-                    .offset(x = 14.dp, y = 12.dp)
-                    .rotate(25f)
-                    .clip(RoundedCornerShape(4.dp))
-                    .background(Color.White.copy(alpha = 0.16f)),
             )
         }
         Text(
             text = name,
-            color = Color.White,
-            fontSize = 15.5.sp,
-            lineHeight = 19.sp,
+            color = AppText,
+            fontSize = 16.sp,
             fontWeight = FontWeight.Bold,
-            maxLines = maxLines,
-            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+            maxLines = 2, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
             modifier = Modifier.padding(12.dp),
         )
     }
 }
 
-@OptIn(ExperimentalGlideComposeApi::class)
 @Composable
 fun SearchTopBar() {
-    val context = LocalContext.current
-    LaunchedEffect(Unit) {
-        com.music.spotui.data.api.ProfileCache.ensure(context)
-    }
-    val avatarUrl = com.music.spotui.data.api.ProfileCache.imageUrl
-    Row(
-        horizontalArrangement = Arrangement.SpaceBetween,
+    Row(horizontalArrangement = Arrangement.Start,
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(16.dp)
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier
-                    .size(34.dp)
-                    .clip(androidx.compose.foundation.shape.CircleShape)
-                    .background(com.music.spotui.ui.theme.ScSecondary)
-                    .clickable { com.music.spotui.ui.components.ProfileDrawerState.open() },
-            ) {
-                if (avatarUrl != null) {
-                    GlideImage(
-                        transition = CrossFade,
-                        model = avatarUrl,
-                        contentScale = ContentScale.Crop,
-                        loading = placeholder(R.drawable.sc_user),
-                        failure = placeholder(R.drawable.sc_user),
-                        contentDescription = null,
-                        modifier = Modifier.size(34.dp),
-                    )
-                } else {
-                    androidx.compose.foundation.Image(
-                        painter = painterResource(R.drawable.sc_user),
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.size(34.dp),
-                    )
-                }
-            }
-            Spacer(Modifier.width(12.dp))
-            Text(
-                text = stringResource(R.string.navigationbar_musicappitems_search_title),
-                color = Color.White,
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold,
-            )
-        }
+        Text(text = stringResource(R.string.navigationbar_musicappitems_search_title), color = AppText, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+        //Icon(imageVector = Icons.Default.Person, contentDescription = "", tint = Color.White)
     }
+
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SearchStickyBar(
     text: String,
-    isActive: Boolean = false,
     onFocusChange: (Boolean) -> Unit = {},
-    onActivate: () -> Unit = {},
-    onBack: () -> Unit = {},
-    onClear: () -> Unit = {},
     focusRequester: androidx.compose.ui.focus.FocusRequester? = null,
     onTextChange: (String) -> Unit,
 ) {
-    LaunchedEffect(isActive) {
-        if (isActive && text.isEmpty()) {
-            runCatching { focusRequester?.requestFocus() }
-        }
-    }
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
+
+    // The field is always attached to a requester, so the clear button can put the cursor back in it.
+    val ownFocus = remember { androidx.compose.ui.focus.FocusRequester() }
+    val fieldFocus = focusRequester ?: ownFocus
+    Row(verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color(AppBackground.toArgb()))
-            .padding(
-                horizontal = if (isActive) 12.dp else 16.dp,
-                vertical = if (isActive) 8.dp else 6.dp,
-            ),
-    ) {
-        if (isActive) {
-            Icon(
-                imageVector = androidx.compose.material.icons.Icons.AutoMirrored.Filled.ArrowBack,
-                tint = Color.White,
-                contentDescription = stringResource(R.string.accessibility_navigate_back),
-                modifier = Modifier
-                    .size(26.dp)
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null,
-                    ) { onBack() },
-            )
-            Spacer(Modifier.width(12.dp))
-        }
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
+            .padding(10.dp)
+            .clip(RoundedCornerShape(10.dp))
+            .height(55.dp)
+            .background(Color.White)
+            .padding(10.dp, 0.dp)
+    ){
+        Icon(
+            painterResource(id = R.drawable.ic_search_big),
+            tint = Color.Black,
+            contentDescription = "")
+
+        TextField(
+            enabled = true,
             modifier = Modifier
-                .weight(1f)
-                .height(if (isActive) 42.dp else 48.dp)
-                .clip(if (isActive) RoundedCornerShape(50) else RoundedCornerShape(6.dp))
-                .background(if (isActive) Color(0xFF282828) else Color.White)
-                .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null,
-                ) {
-                    onActivate()
-                    runCatching { focusRequester?.requestFocus() }
-                }
-                .padding(horizontal = if (isActive) 16.dp else 12.dp),
-        ) {
-            if (!isActive) {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_spot_search_outline),
-                    tint = Color(0xFF121212),
-                    contentDescription = "",
-                    modifier = Modifier.size(22.dp),
+                .focusRequester(fieldFocus)
+                .onFocusChanged { onFocusChange(it.isFocused) },
+            value = text,
+            textStyle = TextStyle.Default.copy(fontSize = 16.sp, color = Color.Black, fontWeight = FontWeight(500)),
+            colors = TextFieldDefaults.colors(
+                unfocusedContainerColor = Color.Transparent,
+                disabledContainerColor = Color.Transparent,
+                focusedContainerColor = Color.Transparent,
+                disabledIndicatorColor = Color.Transparent,
+                focusedIndicatorColor = Color.Transparent,
+                unfocusedIndicatorColor = Color.Transparent,
+                cursorColor = Color.Black
+
+            ),
+            singleLine = true,
+            onValueChange = onTextChange,
+            placeholder = {
+                Text(
+                     textAlign = TextAlign.Center,
+                    fontWeight = FontWeight.Bold,
+                    text = stringResource(R.string.search_header_field_hint)
+
                 )
-                Spacer(Modifier.width(10.dp))
-            }
-            androidx.compose.foundation.text.BasicTextField(
-                value = text,
-                onValueChange = onTextChange,
-                singleLine = true,
-                cursorBrush = androidx.compose.ui.graphics.SolidColor(
-                    if (isActive) com.music.spotui.ui.theme.AppAccent else Color.Black
-                ),
-                textStyle = TextStyle(
-                    fontFamily = com.music.spotui.ui.theme.AppSans,
-                    fontSize = 15.sp,
-                    color = if (isActive) Color.White else Color(0xFF121212),
-                    fontWeight = if (isActive) FontWeight.Normal else FontWeight.SemiBold,
-                ),
-                modifier = Modifier
-                    .weight(1f)
-                    .then(if (focusRequester != null) Modifier.focusRequester(focusRequester) else Modifier)
-                    .onFocusChanged { onFocusChange(it.isFocused) },
-                decorationBox = { innerTextField ->
-                    Box(
-                        modifier = Modifier.fillMaxWidth(),
-                        contentAlignment = Alignment.CenterStart,
-                    ) {
-                        if (text.isEmpty()) {
-                            Text(
-                                text = stringResource(R.string.search_header_field_hint),
-                                style = TextStyle(
-                                    fontFamily = com.music.spotui.ui.theme.AppSans,
-                                    fontSize = 15.sp,
-                                    color = if (isActive) Color(0xFFB3B3B3) else Color(0xFF535353),
-                                    fontWeight = if (isActive) FontWeight.Normal else FontWeight.SemiBold,
-                                ),
-                                maxLines = 1,
-                            )
-                        }
-                        innerTextField()
-                    }
-                },
-            )
-            if (isActive && text.isNotEmpty()) {
-                Spacer(Modifier.width(8.dp))
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier
-                        .size(20.dp)
-                        .clip(androidx.compose.foundation.shape.CircleShape)
-                        .background(Color(0xFFB3B3B3))
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null,
-                        ) { onClear() },
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Close,
-                        tint = Color(0xFF121212),
-                        contentDescription = null,
-                        modifier = Modifier.size(14.dp),
-                    )
-                }
-            }
-        }
+            },
+            trailingIcon = if (text.isEmpty()) null else {
+                { SearchClearButton(fieldFocus, Color.Black) { onTextChange("") } }
+            },
+        )
     }
 }
 
@@ -1219,8 +939,8 @@ private fun SearchProfileRow(name: String, image: String?, onClick: () -> Unit) 
         )
         Spacer(Modifier.width(12.dp))
         Column {
-            Text(name, color = Color.White, fontSize = 15.sp, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
-            Text(stringResource(R.string.recently_played_user_profile), color = Color(0xFFB3B3B3), fontSize = 13.sp)
+            Text(name, color = AppText, fontSize = 15.sp, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+            Text(stringResource(R.string.recently_played_user_profile), color = AppMuted, fontSize = 13.sp)
         }
     }
 }

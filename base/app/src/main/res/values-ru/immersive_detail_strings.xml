@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="immersive_detail_pause">Пауза</string>
+    <string name="immersive_detail_save">Сохранить в медиатеке</string>
+    <string name="immersive_detail_unsave">Удалить из медиатеки</string>
+    <string name="immersive_detail_find">Найти в списке</string>
+    <string name="immersive_detail_smart_shuffle_on">Умное перемешивание включено: рекомендации добавляются в перемешанный список.</string>
+    <string name="immersive_detail_more">Ещё</string>
+    <string name="immersive_detail_less">Меньше</string>
+    <string name="immersive_detail_featured_on">Входит в</string>
+    <string name="immersive_detail_remove_local">Удалить из этого плейлиста</string>
+    <string name="immersive_detail_follow">Подписаться</string>
+    <string name="immersive_detail_unfollow">Отписаться</string>
+</resources>

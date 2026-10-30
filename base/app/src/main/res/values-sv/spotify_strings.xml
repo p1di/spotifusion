@@ -17,7 +17,6 @@
     <string name="snackbar_added_to_liked_songs" formatted="false">Tillagd till Gillade låtar.</string>
     <string name="snackbar_removed_from_liked_songs" formatted="false">Borttagen från Gillade Låtar.</string>
     <string name="content_description_context_menu" formatted="false">Fler alternativ</string>
-    <string name="close_button_content_description" formatted="false">Stäng</string>
     <string name="add_to_playlist_saved_in_section_header" formatted="false">Sparad i</string>
     <string name="add_to_playlist_new_playlist_button_text" formatted="false">Ny spellista</string>
     <string name="add_to_playlist_button_cancel" formatted="false">Avbryt</string>
@@ -25,8 +24,6 @@
     <string name="lyrics_card_title" formatted="false">Låttexter</string>
     <string name="lyrics_card_title_preview" formatted="false">Förhandsgranskning av låttexter</string>
     <string name="lyrics_card_show_lyrics_button" formatted="false">Visa låttexter</string>
-    <string name="lyrics_card_expand_button_content_description" formatted="false">Öppna låttexten i helskärm</string>
-    <string name="lyrics_card_share_button_content_description" formatted="false">Dela låttext</string>
     <string name="lyrics_credential_note" formatted="false">Låttexten tillhandahålls av %1$s</string>
     <string name="lyrics_fullscreen_chip_label_share" formatted="false">Dela</string>
     <string name="lyrics_fullscreen_chip_label_translate" formatted="false">Översätt</string>
@@ -49,7 +46,6 @@
     <string name="artist_popular_tracks" formatted="false">Populära</string>
     <string name="curation_button_follow_state_text" formatted="false">Följ</string>
     <string name="curation_button_following_state_text" formatted="false">Följer</string>
-    <string name="search_main_entity_subtitle_artist" formatted="false">Artist</string>
     <string name="connect_phone_is_self" formatted="false">Den här telefonen</string>
     <string name="settings_item_canvas_title" formatted="false">Canvas</string>
     <string name="video_settings_canvas_subtitle" formatted="false">Korta visuella loopar när en låt spelas upp.</string>
@@ -107,8 +103,6 @@
     <string name="library_search_text_hint" formatted="false">Sök i Ditt bibliotek</string>
     <string name="account_title" formatted="false">Konto</string>
     <string name="song_dna_search_chip_followed_artists" formatted="false">Följda artister</string>
-    <string name="settings_item_crossfade_title" formatted="false">Crossfade</string>
-    <string name="playback_settings_crossfade_slider_seconds" formatted="false">%1$d s</string>
     <string name="local_files_title" formatted="false">Lokala filer</string>
     <string name="local_files_empty_section_title" formatted="false">Lägga till egna ljudfiler i Ditt bibliotek</string>
     <string name="local_files_empty_section_subtitle" formatted="false">Har du en låt eller egen podd som inte finns på Spotify?</string>
@@ -138,14 +132,10 @@
     <string name="assisted_curation_search_filter_artists" formatted="false">Artister</string>
     <string name="assisted_curation_search_filter_albums" formatted="false">Album</string>
     <string name="assisted_curation_search_filter_playlists" formatted="false">Spellistor</string>
-    <string name="assisted_curation_search_filter_clear_content_description" formatted="false">Rensa filter</string>
-    <string name="ad_category_title_music" formatted="false">Musik</string>
-    <string name="made_for_you_hub_title" formatted="false">Skapad för dig</string>
     <string name="settings_item_app_language_title" formatted="false">Appspråk</string>
     <string name="create_menu_item_folder_title" formatted="false">Mapp</string>
     <string name="create_folder_name_suggested_folder_name" formatted="false">Ny mapp</string>
     <string name="context_menu_rename_folder" formatted="false">Byt namn på mappen</string>
-    <string name="your_library_messaging_folder_rename_hint" formatted="false">Mappnamn</string>
     <string name="create_playlist_content_description" formatted="false">Skapa spellista</string>
     <string name="actions_picker_delete" formatted="false">Radera</string>
     <string name="filter_and_sort_sort_section_title" formatted="false">Sortera efter</string>

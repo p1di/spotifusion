@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="immersive_player_close">Zamknij odtwarzacz</string>
+    <string name="immersive_player_play">Odtwarzaj</string>
+    <string name="immersive_player_pause">Wstrzymaj</string>
+    <string name="immersive_player_previous">Poprzedni</string>
+    <string name="immersive_player_next">Następny</string>
+    <string name="immersive_player_like">Dodaj do polubionych utworów</string>
+    <string name="immersive_player_unlike">Usuń z polubionych utworów</string>
+    <string name="immersive_player_more">Więcej</string>
+    <string name="immersive_player_lyrics">Tekst</string>
+    <string name="immersive_player_lyrics_close">Zamknij tekst</string>
+    <string name="immersive_player_queue">Następne</string>
+    <string name="immersive_player_queue_close">Zamknij kolejkę</string>
+    <string name="immersive_player_devices">Urządzenia</string>
+    <string name="immersive_player_shuffle_on">Losowo: włączone</string>
+    <string name="immersive_player_shuffle_off">Losowo: wyłączone</string>
+    <string name="immersive_player_repeat_off">Powtarzanie: wyłączone</string>
+    <string name="immersive_player_repeat_all">Powtarzanie: wszystko</string>
+    <string name="immersive_player_repeat_one">Powtarzanie: jeden utwór</string>
+    <string name="immersive_player_volume_down">Ciszej</string>
+    <string name="immersive_player_volume_up">Głośniej</string>
+    <string name="immersive_player_ad">Reklama</string>
+    <string name="immersive_player_explicit">Treści nieodpowiednie dla dzieci</string>
+    <string name="immersive_player_added_to_liked">Dodano do polubionych utworów</string>
+    <string name="immersive_player_mini_player">Otwórz odtwarzacz</string>
+</resources>

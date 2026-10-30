@@ -17,7 +17,6 @@
     <string name="snackbar_added_to_liked_songs" formatted="false">お気に入りの曲に追加しました。</string>
     <string name="snackbar_removed_from_liked_songs" formatted="false">お気に入りの曲から削除しました。</string>
     <string name="content_description_context_menu" formatted="false">その他のオプション</string>
-    <string name="close_button_content_description" formatted="false">閉じる</string>
     <string name="add_to_playlist_saved_in_section_header" formatted="false">保存先</string>
     <string name="add_to_playlist_new_playlist_button_text" formatted="false">新規プレイリスト</string>
     <string name="add_to_playlist_button_cancel" formatted="false">キャンセル</string>
@@ -25,8 +24,6 @@
     <string name="lyrics_card_title" formatted="false">歌詞</string>
     <string name="lyrics_card_title_preview" formatted="false">歌詞のプレビュー</string>
     <string name="lyrics_card_show_lyrics_button" formatted="false">歌詞を表示</string>
-    <string name="lyrics_card_expand_button_content_description" formatted="false">歌詞を全画面表示します</string>
-    <string name="lyrics_card_share_button_content_description" formatted="false">歌詞をシェアします</string>
     <string name="lyrics_credential_note" formatted="false">歌詞提供：%1$s</string>
     <string name="lyrics_fullscreen_chip_label_share" formatted="false">シェアします</string>
     <string name="lyrics_fullscreen_chip_label_translate" formatted="false">翻訳</string>
@@ -49,7 +46,6 @@
     <string name="artist_popular_tracks" formatted="false">人気の曲</string>
     <string name="curation_button_follow_state_text" formatted="false">フォローする</string>
     <string name="curation_button_following_state_text" formatted="false">フォロー中</string>
-    <string name="search_main_entity_subtitle_artist" formatted="false">アーティスト</string>
     <string name="connect_phone_is_self" formatted="false">このスマホ</string>
     <string name="settings_item_canvas_title" formatted="false">Canvas</string>
     <string name="video_settings_canvas_subtitle" formatted="false">楽曲の再生中に表示される短いループ動画。</string>
@@ -107,8 +103,6 @@
     <string name="library_search_text_hint" formatted="false">マイライブラリを検索</string>
     <string name="account_title" formatted="false">アカウント</string>
     <string name="song_dna_search_chip_followed_artists" formatted="false">フォローしているアーティスト</string>
-    <string name="settings_item_crossfade_title" formatted="false">クロスフェード</string>
-    <string name="playback_settings_crossfade_slider_seconds" formatted="false">%1$d秒</string>
     <string name="local_files_title" formatted="false">ローカルファイル</string>
     <string name="local_files_empty_section_title" formatted="false">マイライブラリに独自のオーディオファイルを追加しましょう</string>
     <string name="local_files_empty_section_subtitle" formatted="false">Spotifyにない楽曲や個人のポッドキャストがおありですか？</string>
@@ -138,14 +132,10 @@
     <string name="assisted_curation_search_filter_artists" formatted="false">アーティスト</string>
     <string name="assisted_curation_search_filter_albums" formatted="false">アルバム</string>
     <string name="assisted_curation_search_filter_playlists" formatted="false">プレイリスト</string>
-    <string name="assisted_curation_search_filter_clear_content_description" formatted="false">検索条件をクリアします</string>
-    <string name="ad_category_title_music" formatted="false">音楽</string>
-    <string name="made_for_you_hub_title" formatted="false">メイド・フォー・ユー</string>
     <string name="settings_item_app_language_title" formatted="false">アプリの言語</string>
     <string name="create_menu_item_folder_title" formatted="false">フォルダ</string>
     <string name="create_folder_name_suggested_folder_name" formatted="false">新しいフォルダ</string>
     <string name="context_menu_rename_folder" formatted="false">フォルダ名を変更</string>
-    <string name="your_library_messaging_folder_rename_hint" formatted="false">フォルダ名</string>
     <string name="create_playlist_content_description" formatted="false">プレイリストを作成します</string>
     <string name="actions_picker_delete" formatted="false">削除</string>
     <string name="filter_and_sort_sort_section_title" formatted="false">並べ替え</string>

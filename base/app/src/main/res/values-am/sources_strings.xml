@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="sources_audio_title">የድምጽ ምንጮች</string>
+    <string name="sources_download_title">የማውረጃ ምንጮች</string>
+    <string name="sources_audio_footer">ለእያንዳንዱ ዘፈን ከላይ ወደ ታች ይጠየቃሉ፦ ያለው የመጀመሪያው ይጫወታል። ቅደም ተከተሉን ለመቀየር ቀስቶችን ይጠቀሙ።</string>
+    <string name="sources_download_footer">ከላይ ወደ ታች ይጠየቃሉ፦ ዘፈኑ ያለው የመጀመሪያው ምንጭ ፋይሉን ይሰጣል። ቅደም ተከተሉን ለመቀየር ቀስቶችን ይጠቀሙ።</string>
+    <string name="sources_spotify">Spotify</string>
+    <string name="sources_spotify_detail">ከላይ ምንም ምንጭ ዘፈኑ ከሌለው ይጫወታል</string>
+    <string name="sources_ready">ዝግጁ</string>
+    <string name="sources_details_show">ዝርዝሮችን አሳይ</string>
+    <string name="sources_details_hide">ዝርዝሮችን ደብቅ</string>
+    <string name="sources_detail_version">ስሪት %1$s · በ%2$s</string>
+    <string name="sources_last_used">የመጨረሻ፦ %1$s, %2$s</string>
+    <string name="sources_open">ቅጥያውን ክፈት</string>
+    <string name="sources_order_hint">ምንጮች በቅንብሮች ውስጥ (መልሶ ማጫወት፣ ማውረዶች) በተዋቀረው ቅደም ተከተል ይጠየቃሉ።</string>
+    <string name="sources_below_spotify">አልተጠየቀም፦ Spotify ከላይ ነው</string>
+</resources>

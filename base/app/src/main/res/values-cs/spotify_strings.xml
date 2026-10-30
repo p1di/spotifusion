@@ -17,7 +17,6 @@
     <string name="snackbar_added_to_liked_songs" formatted="false">Přidáno ke skladbám, které se ti líbí.</string>
     <string name="snackbar_removed_from_liked_songs" formatted="false">Odstraněno ze sbírky Skladby, které se ti líbí.</string>
     <string name="content_description_context_menu" formatted="false">Více možností</string>
-    <string name="close_button_content_description" formatted="false">Zavřít</string>
     <string name="add_to_playlist_saved_in_section_header" formatted="false">Uloženo v </string>
     <string name="add_to_playlist_new_playlist_button_text" formatted="false">Nový playlist</string>
     <string name="add_to_playlist_button_cancel" formatted="false">Zrušit</string>
@@ -25,8 +24,6 @@
     <string name="lyrics_card_title" formatted="false">Text skladby</string>
     <string name="lyrics_card_title_preview" formatted="false">Náhled textu</string>
     <string name="lyrics_card_show_lyrics_button" formatted="false">Zobrazit text</string>
-    <string name="lyrics_card_expand_button_content_description" formatted="false">Otevřít text na celou obrazovku</string>
-    <string name="lyrics_card_share_button_content_description" formatted="false">Sdílej text skladby</string>
     <string name="lyrics_credential_note" formatted="false">Text ti přináší %1$s</string>
     <string name="lyrics_fullscreen_chip_label_share" formatted="false">Sdílet</string>
     <string name="lyrics_fullscreen_chip_label_translate" formatted="false">Přeložit</string>
@@ -49,7 +46,6 @@
     <string name="artist_popular_tracks" formatted="false">Oblíbené</string>
     <string name="curation_button_follow_state_text" formatted="false">Sledovat</string>
     <string name="curation_button_following_state_text" formatted="false">Sleduješ</string>
-    <string name="search_main_entity_subtitle_artist" formatted="false">Umělec</string>
     <string name="connect_phone_is_self" formatted="false">Tento telefon</string>
     <string name="settings_item_canvas_title" formatted="false">Canvas</string>
     <string name="video_settings_canvas_subtitle" formatted="false">Krátké videosmyčky při přehrávání skladby.</string>
@@ -107,8 +103,6 @@
     <string name="library_search_text_hint" formatted="false">Hledat ve sbírce Tvoje knihovna</string>
     <string name="account_title" formatted="false">Účet</string>
     <string name="song_dna_search_chip_followed_artists" formatted="false">Sledovaní umělci</string>
-    <string name="settings_item_crossfade_title" formatted="false">Prolínání</string>
-    <string name="playback_settings_crossfade_slider_seconds" formatted="false">%1$d s</string>
     <string name="local_files_title" formatted="false">Místní soubory</string>
     <string name="local_files_empty_section_title" formatted="false">Přidej si do sbírky Tvoje knihovna vlastní zvukové soubory</string>
     <string name="local_files_empty_section_subtitle" formatted="false">Máš skladbu nebo osobní podcast, které nejsou ve Spotify?</string>
@@ -138,14 +132,10 @@
     <string name="assisted_curation_search_filter_artists" formatted="false">Umělci</string>
     <string name="assisted_curation_search_filter_albums" formatted="false">Alba</string>
     <string name="assisted_curation_search_filter_playlists" formatted="false">Playlisty</string>
-    <string name="assisted_curation_search_filter_clear_content_description" formatted="false">Vymazat filtr</string>
-    <string name="ad_category_title_music" formatted="false">Hudba</string>
-    <string name="made_for_you_hub_title" formatted="false">Vytvořeno pro tebe</string>
     <string name="settings_item_app_language_title" formatted="false">Jazyk aplikace</string>
     <string name="create_menu_item_folder_title" formatted="false">Složka</string>
     <string name="create_folder_name_suggested_folder_name" formatted="false">Nová složka</string>
     <string name="context_menu_rename_folder" formatted="false">Přejmenovat složku</string>
-    <string name="your_library_messaging_folder_rename_hint" formatted="false">Název složky</string>
     <string name="create_playlist_content_description" formatted="false">Vytvořit playlist</string>
     <string name="actions_picker_delete" formatted="false">Smazat</string>
     <string name="filter_and_sort_sort_section_title" formatted="false">Řadit podle</string>

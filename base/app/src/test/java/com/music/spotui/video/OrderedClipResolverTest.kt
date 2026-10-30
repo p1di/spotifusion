@@ -24,31 +24,31 @@ class OrderedClipResolverTest {
     }
     @Test fun audioMismatchFallsBackInRankOrder() = runBlocking {
         val tried = mutableListOf<Int>()
-        val result = firstVerifiedClip(listOf(1, 2, 3), { "MUSIC_VIDEO_TYPE_OMV" }) {
+        val result = firstVerifiedClip(listOf(1, 2, 3), classify = { "MUSIC_VIDEO_TYPE_OMV" }) {
             tried += it; ClipVerification(if (it == 2) "matched" else null)
         }
         assertEquals("matched", result.value); assertEquals(listOf(1, 2), tried)
     }
     @Test fun identityWorkIsBoundedWhenEveryOfficialCandidateMismatches() = runBlocking {
         var downloaded = 0
-        val result = firstVerifiedClip((0..9).toList(), { "MUSIC_VIDEO_TYPE_OMV" }) {
+        val result = firstVerifiedClip((0..9).toList(), classify = { "MUSIC_VIDEO_TYPE_OMV" }) {
             downloaded++; ClipVerification<String>()
         }
         assertNull(result.value); assertEquals(3, downloaded)
     }
     @Test fun classificationNeverAcceptsUnofficialUploads() = runBlocking {
         var downloaded = 0
-        val result = firstVerifiedClip(listOf(0, 1), { "MUSIC_VIDEO_TYPE_UGC" }) {
+        val result = firstVerifiedClip(listOf(0, 1), classify = { "MUSIC_VIDEO_TYPE_UGC" }) {
             downloaded++; ClipVerification("bad")
         }
         assertNull(result.value); assertFalse(result.failed); assertEquals(0, downloaded)
     }
     @Test fun unknownClassificationMustNotBeCachedAsUnavailable() = runBlocking {
-        val result = firstVerifiedClip(listOf(0, 1), { if (it == 0) null else "MUSIC_VIDEO_TYPE_ATV" }) { ClipVerification("unused") }
+        val result = firstVerifiedClip(listOf(0, 1), classify = { if (it == 0) null else "MUSIC_VIDEO_TYPE_ATV" }) { ClipVerification("unused") }
         assertNull(result.value); assertTrue(result.failed)
     }
     @Test fun failedDownloadAllowsAnotherOfficialCandidate() = runBlocking {
-        val result = firstVerifiedClip(listOf(0, 1), { "MUSIC_VIDEO_TYPE_OMV" }) {
+        val result = firstVerifiedClip(listOf(0, 1), classify = { "MUSIC_VIDEO_TYPE_OMV" }) {
             if (it == 0) ClipVerification(failed = true) else ClipVerification("next")
         }
         assertEquals("next", result.value)

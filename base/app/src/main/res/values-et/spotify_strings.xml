@@ -17,7 +17,6 @@
     <string name="snackbar_added_to_liked_songs" formatted="false">Lisatud meeldivaks märgitud laulude hulka.</string>
     <string name="snackbar_removed_from_liked_songs" formatted="false">Eemaldatud meeldivaks märgitud laulude hulgast.</string>
     <string name="content_description_context_menu" formatted="false">Rohkem valikuid</string>
-    <string name="close_button_content_description" formatted="false">Sulge</string>
     <string name="add_to_playlist_saved_in_section_header" formatted="false">Salvestuskoht</string>
     <string name="add_to_playlist_new_playlist_button_text" formatted="false">Uus esitusloend</string>
     <string name="add_to_playlist_button_cancel" formatted="false">Tühista</string>
@@ -25,8 +24,6 @@
     <string name="lyrics_card_title" formatted="false">Laulusõnad</string>
     <string name="lyrics_card_title_preview" formatted="false">Laulusõnade eelvaade</string>
     <string name="lyrics_card_show_lyrics_button" formatted="false">Kuva laulusõnad</string>
-    <string name="lyrics_card_expand_button_content_description" formatted="false">Ava laulusõnad täisekraanrežiimis</string>
-    <string name="lyrics_card_share_button_content_description" formatted="false">Laulusõnade jagamine</string>
     <string name="lyrics_credential_note" formatted="false">Laulusõnade ametlik levitaja: %1$s</string>
     <string name="lyrics_fullscreen_chip_label_share" formatted="false">Jaga</string>
     <string name="lyrics_fullscreen_chip_label_translate" formatted="false">Tõlgi</string>
@@ -49,7 +46,6 @@
     <string name="artist_popular_tracks" formatted="false">Populaarsed</string>
     <string name="curation_button_follow_state_text" formatted="false">Jälgi</string>
     <string name="curation_button_following_state_text" formatted="false">Jälgin</string>
-    <string name="search_main_entity_subtitle_artist" formatted="false">Artist</string>
     <string name="connect_phone_is_self" formatted="false">See telefon</string>
     <string name="settings_item_canvas_title" formatted="false">Canvas</string>
     <string name="video_settings_canvas_subtitle" formatted="false">Lühikesed korduvad visuaalid laulu esitamise ajal.</string>
@@ -107,8 +103,6 @@
     <string name="library_search_text_hint" formatted="false">Otsi oma teegist</string>
     <string name="account_title" formatted="false">Konto</string>
     <string name="song_dna_search_chip_followed_artists" formatted="false">Jälgiti artiste</string>
-    <string name="settings_item_crossfade_title" formatted="false">Üleminek</string>
-    <string name="playback_settings_crossfade_slider_seconds" formatted="false">%1$d s</string>
     <string name="local_files_title" formatted="false">Kohalikud failid</string>
     <string name="local_files_empty_section_title" formatted="false">Lisa enda helifailid oma teeki</string>
     <string name="local_files_empty_section_subtitle" formatted="false">Kas sul on mõni laul või isiklik netisaade, mida Spotifys pole?</string>
@@ -138,14 +132,10 @@
     <string name="assisted_curation_search_filter_artists" formatted="false">Artistid</string>
     <string name="assisted_curation_search_filter_albums" formatted="false">Albumid</string>
     <string name="assisted_curation_search_filter_playlists" formatted="false">Esitusloendid</string>
-    <string name="assisted_curation_search_filter_clear_content_description" formatted="false">Tühjenda filter</string>
-    <string name="ad_category_title_music" formatted="false">Muusika</string>
-    <string name="made_for_you_hub_title" formatted="false">Sulle koostatud</string>
     <string name="settings_item_app_language_title" formatted="false">Rakenduse keel</string>
     <string name="create_menu_item_folder_title" formatted="false">Kaust</string>
     <string name="create_folder_name_suggested_folder_name" formatted="false">Uus kaust</string>
     <string name="context_menu_rename_folder" formatted="false">Nimeta kaust ümber</string>
-    <string name="your_library_messaging_folder_rename_hint" formatted="false">Kausta nimi</string>
     <string name="create_playlist_content_description" formatted="false">Loo esitusloend</string>
     <string name="actions_picker_delete" formatted="false">Kustuta</string>
     <string name="filter_and_sort_sort_section_title" formatted="false">Järjestamisalus</string>

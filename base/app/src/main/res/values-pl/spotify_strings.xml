@@ -17,7 +17,6 @@
     <string name="snackbar_added_to_liked_songs" formatted="false">Dodano do Polubionych utworów.</string>
     <string name="snackbar_removed_from_liked_songs" formatted="false">Usunięto z Polubionych utworów.</string>
     <string name="content_description_context_menu" formatted="false">Więcej opcji</string>
-    <string name="close_button_content_description" formatted="false">Zamknij</string>
     <string name="add_to_playlist_saved_in_section_header" formatted="false">Zapisane</string>
     <string name="add_to_playlist_new_playlist_button_text" formatted="false">Nowa playlista</string>
     <string name="add_to_playlist_button_cancel" formatted="false">Anuluj</string>
@@ -25,8 +24,6 @@
     <string name="lyrics_card_title" formatted="false">Teksty</string>
     <string name="lyrics_card_title_preview" formatted="false">Podgląd tekstu</string>
     <string name="lyrics_card_show_lyrics_button" formatted="false">Pokaż tekst</string>
-    <string name="lyrics_card_expand_button_content_description" formatted="false">Otwórz tekst w widoku pełnoekranowym</string>
-    <string name="lyrics_card_share_button_content_description" formatted="false">Udostępnij tekst</string>
     <string name="lyrics_credential_note" formatted="false">Tekst udostępniony przez: %1$s</string>
     <string name="lyrics_fullscreen_chip_label_share" formatted="false">Udostępnij</string>
     <string name="lyrics_fullscreen_chip_label_translate" formatted="false">Przetłumacz</string>
@@ -49,7 +46,6 @@
     <string name="artist_popular_tracks" formatted="false">Popularne</string>
     <string name="curation_button_follow_state_text" formatted="false">Obserwuj</string>
     <string name="curation_button_following_state_text" formatted="false">Obserwujesz</string>
-    <string name="search_main_entity_subtitle_artist" formatted="false">Wykonawca</string>
     <string name="connect_phone_is_self" formatted="false">Ten telefon</string>
     <string name="settings_item_canvas_title" formatted="false">Canvas</string>
     <string name="video_settings_canvas_subtitle" formatted="false">Krótkie, zapętlone wizualizacje wyświetlane podczas odtwarzania utworu.</string>
@@ -107,8 +103,6 @@
     <string name="library_search_text_hint" formatted="false">Wyszukaj w Bibliotece</string>
     <string name="account_title" formatted="false">Konto</string>
     <string name="song_dna_search_chip_followed_artists" formatted="false">Obserwowani wykonawcy</string>
-    <string name="settings_item_crossfade_title" formatted="false">Płynne przejście</string>
-    <string name="playback_settings_crossfade_slider_seconds" formatted="false">%1$d sek.</string>
     <string name="local_files_title" formatted="false">Pliki lokalne</string>
     <string name="local_files_empty_section_title" formatted="false">Dodaj własne pliki audio do Biblioteki</string>
     <string name="local_files_empty_section_subtitle" formatted="false">Masz na dysku utwór lub podcast, który jest niedostępny w Spotify?</string>
@@ -138,14 +132,10 @@
     <string name="assisted_curation_search_filter_artists" formatted="false">Wykonawcy</string>
     <string name="assisted_curation_search_filter_albums" formatted="false">Albumy</string>
     <string name="assisted_curation_search_filter_playlists" formatted="false">Playlisty</string>
-    <string name="assisted_curation_search_filter_clear_content_description" formatted="false">Wyczyść filtr</string>
-    <string name="ad_category_title_music" formatted="false">Muzyka</string>
-    <string name="made_for_you_hub_title" formatted="false">Przygotowane dla Ciebie</string>
     <string name="settings_item_app_language_title" formatted="false">Język aplikacji</string>
     <string name="create_menu_item_folder_title" formatted="false">Folder</string>
     <string name="create_folder_name_suggested_folder_name" formatted="false">Nowy folder</string>
     <string name="context_menu_rename_folder" formatted="false">Zmień nazwę folderu</string>
-    <string name="your_library_messaging_folder_rename_hint" formatted="false">Nazwa folderu</string>
     <string name="create_playlist_content_description" formatted="false">Utwórz playlistę</string>
     <string name="actions_picker_delete" formatted="false">Usuń</string>
     <string name="filter_and_sort_sort_section_title" formatted="false">Sortuj wg</string>

@@ -11,14 +11,14 @@ class EnergyPolicyTest {
         for (manual in listOf(false, true)) for (black in listOf(false, true)) {
             val p = EnergyPolicy.resolve(manual, black)
             assertEquals(if (manual) 60f else 0f, p.displayRefreshCap, 0f)
-            assertEquals(if (manual) 30 else 60, p.progressFps)
+            assertEquals(if (manual) 20 else 30, p.progressFps)
         }
     }
     @Test fun defaultRequestsAStableDisplayBudgetAndPreservesCanvas() {
         val p = EnergyPolicy.resolve(false, false)
         assertTrue(p.allowCanvas); assertTrue(p.allowBackgroundLookups)
         assertFalse(p.oledBlack); assertEquals(0f, p.displayRefreshCap, 0f)
-        assertEquals(60, p.progressFps)
+        assertEquals(30, p.progressFps)
     }
     @Test fun androidSaverIsNotFollowed() {
         // Nothing in the app's state comes from Android's battery saver.
@@ -28,7 +28,7 @@ class EnergyPolicyTest {
     @Test fun saverRestrictsVisualWork() {
         val p = EnergyPolicy.resolve(true, false)
         assertTrue(p.saverEnabled); assertFalse(p.allowCanvas); assertFalse(p.oledBlack)
-        assertEquals(480, p.videoMaxHeight); assertEquals(30, p.progressFps)
+        assertEquals(480, p.videoMaxHeight); assertEquals(20, p.progressFps)
         assertEquals(60f, p.displayRefreshCap, 0f); assertFalse(p.allowBackgroundLookups)
     }
     @Test fun blackOptionDoesNotDisableMotionOrCanvas() {
@@ -43,7 +43,7 @@ class EnergyPolicyTest {
             assertEquals(!manual, p.allowCanvas)
             assertEquals(!manual, p.allowBackgroundLookups)
             assertEquals(if (manual) 480 else 1080, p.videoMaxHeight)
-            assertEquals(if (manual) 30 else 60, p.progressFps)
+            assertEquals(if (manual) 20 else 30, p.progressFps)
             assertEquals(if (manual) 60f else 0f, p.displayRefreshCap, 0f)
         }
     }
@@ -56,7 +56,7 @@ class EnergyPolicyTest {
     }
     @Test fun leavingSaverRestoresVisualDefaults() {
         val p = EnergyPolicy.resolve(false, false)
-        assertEquals(1080, p.videoMaxHeight); assertEquals(60, p.progressFps)
+        assertEquals(1080, p.videoMaxHeight); assertEquals(30, p.progressFps)
         assertEquals(0f, p.displayRefreshCap, 0f)
         assertTrue(p.allowCanvas)
     }

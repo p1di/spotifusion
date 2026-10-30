@@ -17,7 +17,6 @@
     <string name="snackbar_added_to_liked_songs" formatted="false">Imeongezwa kwenye Nyimbo Zilizokupendeza.</string>
     <string name="snackbar_removed_from_liked_songs" formatted="false">Imeondolewa kwenye Nyimbo Zilizokupendeza.</string>
     <string name="content_description_context_menu" formatted="false">Chaguo zaidi</string>
-    <string name="close_button_content_description" formatted="false">Funga</string>
     <string name="add_to_playlist_saved_in_section_header" formatted="false">Yamehifadhiwa katika</string>
     <string name="add_to_playlist_new_playlist_button_text" formatted="false">Orodha mpya ya kucheza</string>
     <string name="add_to_playlist_button_cancel" formatted="false">Ghairi</string>
@@ -25,8 +24,6 @@
     <string name="lyrics_card_title" formatted="false">Mistari ya nyimbo</string>
     <string name="lyrics_card_title_preview" formatted="false">Kionjo cha mistari ya nyimbo</string>
     <string name="lyrics_card_show_lyrics_button" formatted="false">Onyesha mistari ya nyimbo</string>
-    <string name="lyrics_card_expand_button_content_description" formatted="false">Fungua mistari ya nyimbo kwenye skrini nzima</string>
-    <string name="lyrics_card_share_button_content_description" formatted="false">Shiriki mistari ya nyimbo</string>
     <string name="lyrics_credential_note" formatted="false">Mistari ya nyimbo imetolewa na %1$s</string>
     <string name="lyrics_fullscreen_chip_label_share" formatted="false">Shiriki</string>
     <string name="lyrics_fullscreen_chip_label_translate" formatted="false">Tafsiri</string>
@@ -49,7 +46,6 @@
     <string name="artist_popular_tracks" formatted="false">Maarufu</string>
     <string name="curation_button_follow_state_text" formatted="false">Fuatilia</string>
     <string name="curation_button_following_state_text" formatted="false">Unafuatilia</string>
-    <string name="search_main_entity_subtitle_artist" formatted="false">Msanii</string>
     <string name="connect_phone_is_self" formatted="false">Simu hii</string>
     <string name="settings_item_canvas_title" formatted="false">Canvas</string>
     <string name="video_settings_canvas_subtitle" formatted="false">Vielelezo vifupi vinavyorudiwa wakati wimbo unacheza.</string>
@@ -107,8 +103,6 @@
     <string name="library_search_text_hint" formatted="false">Tafuta Maktaba Yako</string>
     <string name="account_title" formatted="false">Akaunti</string>
     <string name="song_dna_search_chip_followed_artists" formatted="false">Wasanii unaowafuatilia</string>
-    <string name="settings_item_crossfade_title" formatted="false">Unganisha</string>
-    <string name="playback_settings_crossfade_slider_seconds" formatted="false">Sek %1$d</string>
     <string name="local_files_title" formatted="false">Faili zilizo kwenye Kifaa</string>
     <string name="local_files_empty_section_title" formatted="false">Weka faili zako za sauti kwenye Maktaba Yako</string>
     <string name="local_files_empty_section_subtitle" formatted="false">Una wimbo au podikasti ya binafsi ambayo haipo kwenye Spotify?</string>
@@ -138,14 +132,10 @@
     <string name="assisted_curation_search_filter_artists" formatted="false">Wasanii</string>
     <string name="assisted_curation_search_filter_albums" formatted="false">Albamu</string>
     <string name="assisted_curation_search_filter_playlists" formatted="false">Orodha za kucheza</string>
-    <string name="assisted_curation_search_filter_clear_content_description" formatted="false">Futa kichujio</string>
-    <string name="ad_category_title_music" formatted="false">Muziki</string>
-    <string name="made_for_you_hub_title" formatted="false">Kwa Ajili Yako</string>
     <string name="settings_item_app_language_title" formatted="false">Lugha ya programu</string>
     <string name="create_menu_item_folder_title" formatted="false">Folda</string>
     <string name="create_folder_name_suggested_folder_name" formatted="false">Folda mpya</string>
     <string name="context_menu_rename_folder" formatted="false">Badilisha jina la folda</string>
-    <string name="your_library_messaging_folder_rename_hint" formatted="false">Jina la folda</string>
     <string name="create_playlist_content_description" formatted="false">Unda orodha ya kucheza</string>
     <string name="actions_picker_delete" formatted="false">Futa</string>
     <string name="filter_and_sort_sort_section_title" formatted="false">Panga kulingana na</string>

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="immersive_detail_pause">暂停</string>
+    <string name="immersive_detail_save">保存到音乐库</string>
+    <string name="immersive_detail_unsave">从音乐库中移除</string>
+    <string name="immersive_detail_find">在列表中查找</string>
+    <string name="immersive_detail_smart_shuffle_on">智能随机播放已开启：推荐内容会加入随机列表。</string>
+    <string name="immersive_detail_more">更多</string>
+    <string name="immersive_detail_less">收起</string>
+    <string name="immersive_detail_featured_on">收录于</string>
+    <string name="immersive_detail_remove_local">从此播放列表中移除</string>
+    <string name="immersive_detail_follow">关注</string>
+    <string name="immersive_detail_unfollow">取消关注</string>
+</resources>

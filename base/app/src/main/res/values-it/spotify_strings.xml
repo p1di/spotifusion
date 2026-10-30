@@ -17,7 +17,6 @@
     <string name="snackbar_added_to_liked_songs" formatted="false">Aggiunto ai Brani che ti piacciono.</string>
     <string name="snackbar_removed_from_liked_songs" formatted="false">Rimosso dai brani che ti piacciono.</string>
     <string name="content_description_context_menu" formatted="false">Altre opzioni</string>
-    <string name="close_button_content_description" formatted="false">Chiudi</string>
     <string name="add_to_playlist_saved_in_section_header" formatted="false">Salvato in</string>
     <string name="add_to_playlist_new_playlist_button_text" formatted="false">Nuova playlist</string>
     <string name="add_to_playlist_button_cancel" formatted="false">Annulla</string>
@@ -25,8 +24,6 @@
     <string name="lyrics_card_title" formatted="false">Testi</string>
     <string name="lyrics_card_title_preview" formatted="false">Anteprima del testo</string>
     <string name="lyrics_card_show_lyrics_button" formatted="false">Mostra testo</string>
-    <string name="lyrics_card_expand_button_content_description" formatted="false">Visualizza il testo a schermo intero</string>
-    <string name="lyrics_card_share_button_content_description" formatted="false">Condividi il testo</string>
     <string name="lyrics_credential_note" formatted="false">Testo fornito da %1$s</string>
     <string name="lyrics_fullscreen_chip_label_share" formatted="false">Condividi</string>
     <string name="lyrics_fullscreen_chip_label_translate" formatted="false">Traduci</string>
@@ -49,7 +46,6 @@
     <string name="artist_popular_tracks" formatted="false">Popolare</string>
     <string name="curation_button_follow_state_text" formatted="false">Segui</string>
     <string name="curation_button_following_state_text" formatted="false">Segui già</string>
-    <string name="search_main_entity_subtitle_artist" formatted="false">Artista</string>
     <string name="connect_phone_is_self" formatted="false">Questo smartphone</string>
     <string name="settings_item_canvas_title" formatted="false">Canvas</string>
     <string name="video_settings_canvas_subtitle" formatted="false">Brevi immagini a ciclo continuo durante la riproduzione di un brano.</string>
@@ -107,8 +103,6 @@
     <string name="library_search_text_hint" formatted="false">Cerca in La tua libreria</string>
     <string name="account_title" formatted="false">Account</string>
     <string name="song_dna_search_chip_followed_artists" formatted="false">Artisti seguiti</string>
-    <string name="settings_item_crossfade_title" formatted="false">Dissolvenza</string>
-    <string name="playback_settings_crossfade_slider_seconds" formatted="false">%1$d s</string>
     <string name="local_files_title" formatted="false">File locali</string>
     <string name="local_files_empty_section_title" formatted="false">Aggiungi i tuoi file audio a La tua libreria</string>
     <string name="local_files_empty_section_subtitle" formatted="false">Hai un brano o un podcast personale che non è su Spotify?</string>
@@ -138,14 +132,10 @@
     <string name="assisted_curation_search_filter_artists" formatted="false">Artisti</string>
     <string name="assisted_curation_search_filter_albums" formatted="false">Album</string>
     <string name="assisted_curation_search_filter_playlists" formatted="false">Playlist</string>
-    <string name="assisted_curation_search_filter_clear_content_description" formatted="false">Cancella filtro</string>
-    <string name="ad_category_title_music" formatted="false">Musica</string>
-    <string name="made_for_you_hub_title" formatted="false">Realizzata per te</string>
     <string name="settings_item_app_language_title" formatted="false">Lingua app</string>
     <string name="create_menu_item_folder_title" formatted="false">Cartella</string>
     <string name="create_folder_name_suggested_folder_name" formatted="false">Nuova cartella</string>
     <string name="context_menu_rename_folder" formatted="false">Rinomina cartella</string>
-    <string name="your_library_messaging_folder_rename_hint" formatted="false">Nome cartella</string>
     <string name="create_playlist_content_description" formatted="false">Crea playlist</string>
     <string name="actions_picker_delete" formatted="false">Elimina</string>
     <string name="filter_and_sort_sort_section_title" formatted="false">Ordina per</string>

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="action_playback_mirror">Mantiene Spotify sonando en silencio aquí; cuenta reproducciones en tu cuenta</string>
+    <string name="action_attest">Demostrar que es Myspoti</string>
+    <string name="mirror_indicator">Spotify reflejado por %1$s</string>
+</resources>

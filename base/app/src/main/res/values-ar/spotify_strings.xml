@@ -17,7 +17,6 @@
     <string name="snackbar_added_to_liked_songs" formatted="false">تمت الإضافة إلى قائمة \"أغانٍ أعجبتني\".</string>
     <string name="snackbar_removed_from_liked_songs" formatted="false">تم الحذف من \"أغانٍ أعجبتني\"</string>
     <string name="content_description_context_menu" formatted="false">خيارات إضافية</string>
-    <string name="close_button_content_description" formatted="false">إغلاق</string>
     <string name="add_to_playlist_saved_in_section_header" formatted="false">تم الحفظ في</string>
     <string name="add_to_playlist_new_playlist_button_text" formatted="false">قائمة للأغاني الجديدة</string>
     <string name="add_to_playlist_button_cancel" formatted="false">إلغاء</string>
@@ -25,8 +24,6 @@
     <string name="lyrics_card_title" formatted="false">كلمات الأغنية</string>
     <string name="lyrics_card_title_preview" formatted="false">معاينة الكلمات</string>
     <string name="lyrics_card_show_lyrics_button" formatted="false">عرض الكلمات</string>
-    <string name="lyrics_card_expand_button_content_description" formatted="false">عرض الكلمات بملء الشاشة</string>
-    <string name="lyrics_card_share_button_content_description" formatted="false">مشاركة كلمات الأغنية</string>
     <string name="lyrics_credential_note" formatted="false">تم توفير الكلمات من قبل: %1$s</string>
     <string name="lyrics_fullscreen_chip_label_share" formatted="false">مشاركة</string>
     <string name="lyrics_fullscreen_chip_label_translate" formatted="false">ترجمة</string>
@@ -49,7 +46,6 @@
     <string name="artist_popular_tracks" formatted="false">الأغاني الشعبية</string>
     <string name="curation_button_follow_state_text" formatted="false">متابعة</string>
     <string name="curation_button_following_state_text" formatted="false">تتم المتابعة</string>
-    <string name="search_main_entity_subtitle_artist" formatted="false">الفنان</string>
     <string name="connect_phone_is_self" formatted="false">هذا الهاتف</string>
     <string name="settings_item_canvas_title" formatted="false">Canvas</string>
     <string name="video_settings_canvas_subtitle" formatted="false">مؤثِّرات بصرية قصيرة متكرِّرة تُعرض عند الاستماع إلى أغنية.</string>
@@ -107,8 +103,6 @@
     <string name="library_search_text_hint" formatted="false">ابحث في مكتبتك الموسيقية</string>
     <string name="account_title" formatted="false">حساب</string>
     <string name="song_dna_search_chip_followed_artists" formatted="false">الفنانون الذين تابعتهم</string>
-    <string name="settings_item_crossfade_title" formatted="false">مزج الأغاني</string>
-    <string name="playback_settings_crossfade_slider_seconds" formatted="false">%1$d ثانية</string>
     <string name="local_files_title" formatted="false">الملفات</string>
     <string name="local_files_empty_section_title" formatted="false">إضافة ملفاتك الصوتية إلى \"مكتبتك الموسيقية\"</string>
     <string name="local_files_empty_section_subtitle" formatted="false">هل لديك أغنية أو بودكاست شخصي غير متوفر على Spotify؟</string>
@@ -138,14 +132,10 @@
     <string name="assisted_curation_search_filter_artists" formatted="false">الفنانون</string>
     <string name="assisted_curation_search_filter_albums" formatted="false">الألبومات</string>
     <string name="assisted_curation_search_filter_playlists" formatted="false">قوائم الأغاني</string>
-    <string name="assisted_curation_search_filter_clear_content_description" formatted="false">مسح الفلتر</string>
-    <string name="ad_category_title_music" formatted="false">الموسيقى</string>
-    <string name="made_for_you_hub_title" formatted="false">مُصممة من أجلك</string>
     <string name="settings_item_app_language_title" formatted="false">لغة التطبيق</string>
     <string name="create_menu_item_folder_title" formatted="false">المجلد</string>
     <string name="create_folder_name_suggested_folder_name" formatted="false">مجلد جديد</string>
     <string name="context_menu_rename_folder" formatted="false">إعادة تسمية المجلد</string>
-    <string name="your_library_messaging_folder_rename_hint" formatted="false">اسم المُجلّد</string>
     <string name="create_playlist_content_description" formatted="false">إنشاء قائمة الأغاني</string>
     <string name="actions_picker_delete" formatted="false">حذف</string>
     <string name="filter_and_sort_sort_section_title" formatted="false">ترتيب حسب</string>

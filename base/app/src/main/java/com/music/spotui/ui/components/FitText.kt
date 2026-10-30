@@ -1,5 +1,7 @@
 package com.music.spotui.ui.components
 
+import com.music.spotui.ui.theme.AppText
+
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -24,7 +26,7 @@ import androidx.compose.ui.unit.sp
 fun FitText(
     text: String,
     modifier: Modifier = Modifier,
-    color: Color = Color.White,
+    color: Color = AppText,
     fontSize: TextUnit,
     minSize: TextUnit = 14.sp,
     fontWeight: FontWeight? = null,

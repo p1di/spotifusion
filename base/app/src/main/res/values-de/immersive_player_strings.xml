@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="immersive_player_close">Player schließen</string>
+    <string name="immersive_player_play">Wiedergabe</string>
+    <string name="immersive_player_pause">Pause</string>
+    <string name="immersive_player_previous">Zurück</string>
+    <string name="immersive_player_next">Weiter</string>
+    <string name="immersive_player_like">Zu Lieblingssongs hinzufügen</string>
+    <string name="immersive_player_unlike">Aus Lieblingssongs entfernen</string>
+    <string name="immersive_player_more">Mehr</string>
+    <string name="immersive_player_lyrics">Lyrics</string>
+    <string name="immersive_player_lyrics_close">Lyrics schließen</string>
+    <string name="immersive_player_queue">Als Nächstes</string>
+    <string name="immersive_player_queue_close">Warteschlange schließen</string>
+    <string name="immersive_player_devices">Geräte</string>
+    <string name="immersive_player_shuffle_on">Zufallswiedergabe: an</string>
+    <string name="immersive_player_shuffle_off">Zufallswiedergabe: aus</string>
+    <string name="immersive_player_repeat_off">Wiederholen: aus</string>
+    <string name="immersive_player_repeat_all">Wiederholen: alle</string>
+    <string name="immersive_player_repeat_one">Wiederholen: Titel</string>
+    <string name="immersive_player_volume_down">Leiser</string>
+    <string name="immersive_player_volume_up">Lauter</string>
+    <string name="immersive_player_ad">Werbung</string>
+    <string name="immersive_player_explicit">Explizit</string>
+    <string name="immersive_player_added_to_liked">Zu Lieblingssongs hinzugefügt</string>
+    <string name="immersive_player_mini_player">Player öffnen</string>
+</resources>

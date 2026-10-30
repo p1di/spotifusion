@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="sources_audio_title">Ses kaynakları</string>
+    <string name="sources_download_title">İndirme kaynakları</string>
+    <string name="sources_audio_footer">Her şarkı için yukarıdan aşağıya sorulur: şarkıya sahip ilk kaynak çalar. Sırayı değiştirmek için okları kullanın.</string>
+    <string name="sources_download_footer">Yukarıdan aşağıya sorulur: şarkıya sahip ilk kaynak dosyayı sağlar. Sırayı değiştirmek için okları kullanın.</string>
+    <string name="sources_spotify">Spotify</string>
+    <string name="sources_spotify_detail">Üstteki hiçbir kaynakta şarkı yoksa çalar</string>
+    <string name="sources_ready">Hazır</string>
+    <string name="sources_details_show">Ayrıntıları göster</string>
+    <string name="sources_details_hide">Ayrıntıları gizle</string>
+    <string name="sources_detail_version">Sürüm %1$s · geliştirici: %2$s</string>
+    <string name="sources_last_used">Son: %1$s, %2$s</string>
+    <string name="sources_open">Eklentiyi aç</string>
+    <string name="sources_order_hint">Kaynaklar Ayarlar\'da (Oynatma, İndirmeler) belirlenen sırayla sorulur.</string>
+    <string name="sources_below_spotify">Sorulmaz: Spotify yukarıda</string>
+</resources>

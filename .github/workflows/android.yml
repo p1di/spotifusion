@@ -32,10 +32,22 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v6
 
-      # App unit tests, plus the JVM modules (API contracts, ad block, offline index, GraphQL
-      # errors). The live tests in host-cdp skip themselves without a browser to drive.
+      # Unit tests of every module that has them: the Android modules (app, host-android) run
+      # testDebugUnitTest, the JVM modules (extensions, api-spotify, host-cdp) run test.
+      # The live tests in host-cdp skip themselves without a browser to drive.
       - name: Unit tests
-        run: ./gradlew testDebugUnitTest :api:test :api-spotify:test :host-cdp:test
+        run: ./gradlew :app:testDebugUnitTest :host-android:testDebugUnitTest :extensions:test :api-spotify:test :host-cdp:test
+
+      - name: Test reports
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-reports
+          path: |
+            base/**/build/reports/tests/
+            base/**/build/test-results/
+          retention-days: 14
+          if-no-files-found: ignore
 
       - name: Debug APK
         if: ${{ !startsWith(github.ref, 'refs/tags/v') }}

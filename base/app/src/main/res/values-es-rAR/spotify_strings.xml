@@ -13,7 +13,6 @@
     <string name="snackbar_added_to_liked_songs" formatted="false">Se agregó a Tus me gusta.</string>
     <string name="snackbar_removed_from_liked_songs" formatted="false">Se eliminó de Tus me gusta.</string>
     <string name="content_description_context_menu" formatted="false">Más opciones</string>
-    <string name="close_button_content_description" formatted="false">Cerrar</string>
     <string name="add_to_playlist_saved_in_section_header" formatted="false">Guardado en</string>
     <string name="add_to_playlist_new_playlist_button_text" formatted="false">Nueva playlist</string>
     <string name="add_to_playlist_button_cancel" formatted="false">Cancelar</string>
@@ -21,8 +20,6 @@
     <string name="lyrics_card_title" formatted="false">Letras</string>
     <string name="lyrics_card_title_preview" formatted="false">Vista previa de la letra</string>
     <string name="lyrics_card_show_lyrics_button" formatted="false">Mostrar la letra</string>
-    <string name="lyrics_card_expand_button_content_description" formatted="false">Abrir la letra en pantalla completa</string>
-    <string name="lyrics_card_share_button_content_description" formatted="false">Compartí la letra</string>
     <string name="lyrics_credential_note" formatted="false">Letras proporcionadas por %1$s</string>
     <string name="lyrics_fullscreen_chip_label_share" formatted="false">Compartir</string>
     <string name="lyrics_fullscreen_chip_label_translate" formatted="false">Traducir</string>
@@ -45,7 +42,6 @@
     <string name="artist_popular_tracks" formatted="false">Populares</string>
     <string name="curation_button_follow_state_text" formatted="false">Seguir</string>
     <string name="curation_button_following_state_text" formatted="false">Siguiendo</string>
-    <string name="search_main_entity_subtitle_artist" formatted="false">Artista</string>
     <string name="connect_phone_is_self" formatted="false">Este teléfono</string>
     <string name="settings_item_canvas_title" formatted="false">Canvas</string>
     <string name="video_settings_canvas_subtitle" formatted="false">Efectos visuales breves y en repetición cuando se reproduce una canción.</string>
@@ -95,8 +91,6 @@
     <string name="library_search_text_hint" formatted="false">Buscá en Tu biblioteca</string>
     <string name="account_title" formatted="false">Cuenta</string>
     <string name="song_dna_search_chip_followed_artists" formatted="false">Artistas que seguís</string>
-    <string name="settings_item_crossfade_title" formatted="false">Crossfade</string>
-    <string name="playback_settings_crossfade_slider_seconds" formatted="false">%1$d s</string>
     <string name="local_files_empty_section_title" formatted="false">Agregá tus propios archivos de audio a Tu biblioteca</string>
     <string name="local_files_empty_section_subtitle" formatted="false">¿Tenés una canción o un podcast personal que no está en Spotify?</string>
     <string name="local_files_empty_section_no_files_title" formatted="false">Tus archivos de audio van a aparecer acá</string>
@@ -125,14 +119,10 @@
     <string name="assisted_curation_search_filter_artists" formatted="false">Artistas</string>
     <string name="assisted_curation_search_filter_albums" formatted="false">Álbumes</string>
     <string name="assisted_curation_search_filter_playlists" formatted="false">Playlists</string>
-    <string name="assisted_curation_search_filter_clear_content_description" formatted="false">Eliminar filtro</string>
-    <string name="ad_category_title_music" formatted="false">Música</string>
-    <string name="made_for_you_hub_title" formatted="false">Creado para vos</string>
     <string name="settings_item_app_language_title" formatted="false">Idioma de la aplicación</string>
     <string name="create_menu_item_folder_title" formatted="false">Carpeta</string>
     <string name="create_folder_name_suggested_folder_name" formatted="false">Nueva carpeta</string>
     <string name="context_menu_rename_folder" formatted="false">Renombrar la carpeta</string>
-    <string name="your_library_messaging_folder_rename_hint" formatted="false">Nombre de la carpeta</string>
     <string name="create_playlist_content_description" formatted="false">Crear una playlist</string>
     <string name="actions_picker_delete" formatted="false">Eliminar</string>
     <string name="filter_and_sort_sort_section_title" formatted="false">Ordenar por</string>
@@ -144,4 +134,17 @@
     <string name="find_in_context_edit_text_liked_songs_hint" formatted="false">Buscar en Tus me gusta</string>
     <string name="find_in_context_edit_text_playlist_hint" formatted="false">Buscar en la playlist</string>
     <string name="assisted_curation_search_empty_view_no_result_title" formatted="false">No se pudo encontrar \"%1$s\"</string>
+    <string name="collection_liked_songs_title" formatted="false">Canciones que te gustan</string>
+    <string name="context_menu_sleep_timer" formatted="false">Temporizador</string>
+    <string name="context_menu_sleep_timer_turn_off" formatted="false">Desactivar el temporizador</string>
+    <string name="context_menu_sleep_timer_end_of_track" formatted="false">Fin de la canción</string>
+    <string name="context_type_description_play_queue" formatted="false">Reproduciendo desde la cola de reproducción</string>
+    <string name="context_type_description_collection_your_library" formatted="false">Reproduciendo desde Tu biblioteca</string>
+    <string name="context_type_description_playlist" formatted="false">Reproduciendo desde la playlist</string>
+    <string name="context_type_description_album" formatted="false">Reproduciendo desde el álbum</string>
+    <string name="context_type_description_artist" formatted="false">Reproduciendo desde el artista</string>
+    <string name="context_type_description_show" formatted="false">Reproduciendo desde el podcast</string>
+    <string name="context_type_description_search" formatted="false">Reproduciendo desde la búsqueda</string>
+    <string name="mr_user_route_category_name" formatted="false">Dispositivos</string>
+    <string name="local_files_title" formatted="false">Archivos locales</string>
 </resources>

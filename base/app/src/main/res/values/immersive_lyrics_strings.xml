@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="immersive_lyrics_instrumental">Instrumental</string>
+    <string name="immersive_lyrics_none">No lyrics for this track</string>
+    <string name="immersive_queue_title">Queue</string>
+    <string name="immersive_queue_now_playing">Now playing</string>
+    <string name="immersive_queue_empty">Nothing is queued</string>
+    <string name="immersive_queue_remove">Remove from queue</string>
+    <string name="immersive_queue_reorder">Move in queue</string>
+    <string name="immersive_queue_shuffle">Shuffle</string>
+    <string name="immersive_queue_repeat">Repeat</string>
+</resources>

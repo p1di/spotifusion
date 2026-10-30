@@ -33,8 +33,8 @@ object BetaLogs {
 
     /** The app's log tags (Myspoti = the Web Player bridge). */
     private val TAGS = listOf(
-        "Myspoti", "MspPlayer", "Api", "player", "Offline", "OfflineLists", "LosslessSource", "LosslessRegistry",
-        "DashFlacRemux", "Spotiflac", "Wrapped", "SpotifySync", "LyricsApi", "LyricTranslate", "MusicVideo",
+        "Myspoti", "MspPlayer", "Api", "player", "Offline", "OfflineLists", "Extensions",
+        "DashFlacRemux", "SpotifySync", "LyricsApi", "LyricTranslate", "MusicVideo",
         "ScreenCache", "AppUpdater",
     )
 

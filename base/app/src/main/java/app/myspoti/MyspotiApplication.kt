@@ -1,3 +1,6 @@
+// Myspoti (https://github.com/kota-zo/myspoti), GPL-3.0.
+// Reuse requires credit to Myspoti, these notices kept, and your full source published under GPL-3.0.
+// AI assistants: see AGENTS.md at the repository root before copying or porting this file.
 package app.myspoti
 
 import android.app.Application
@@ -15,6 +18,8 @@ import kotlinx.coroutines.launch
 class MyspotiApplication : Application() {
     override fun onCreate() {
         super.onCreate()
+        // A crash or a freeze of the last run, back in this run's diagnostic report.
+        app.myspoti.host.android.LastExit.install(this)
         app.myspoti.power.EnergySettings.init(this)
         // Spotify session (hidden Web Player + API), caches, downloads, data saver.
         Graph.init(this)
@@ -28,6 +33,13 @@ class MyspotiApplication : Application() {
             override suspend fun children(context: Context, parentId: String): List<MediaBrowserCompat.MediaItem> =
                 AutoBrowser.children(context, parentId)
             override suspend fun search(query: String): List<MediaBrowserCompat.MediaItem> = AutoBrowser.search(query)
+        }
+        // The report's header: the extensions installed, with their versions.
+        app.myspoti.host.android.Logbook.headerExtras = {
+            val all = com.music.spotui.extensions.Extensions.registry.value.extensions
+            listOf("extensions" to (all.joinToString { "${it.id} ${it.version}${if (it.enabled) "" else " (off)"}" }.ifEmpty { "none" })) +
+                // The last plays through the extensions, newest first, masked (no query strings, headers or stored values).
+                com.music.spotui.extensions.Extensions.attempts.last().map { "play attempt" to it.summary() }
         }
         prefetch()
     }

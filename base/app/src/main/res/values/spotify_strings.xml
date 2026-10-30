@@ -17,7 +17,6 @@
     <string name="snackbar_added_to_liked_songs" formatted="false">Added to Liked Songs.</string>
     <string name="snackbar_removed_from_liked_songs" formatted="false">Removed from Liked Songs.</string>
     <string name="content_description_context_menu" formatted="false">More options</string>
-    <string name="close_button_content_description" formatted="false">Close</string>
     <string name="add_to_playlist_saved_in_section_header" formatted="false">Saved in</string>
     <string name="add_to_playlist_new_playlist_button_text" formatted="false">New playlist</string>
     <string name="add_to_playlist_button_cancel" formatted="false">Cancel</string>
@@ -25,8 +24,6 @@
     <string name="lyrics_card_title" formatted="false">Lyrics</string>
     <string name="lyrics_card_title_preview" formatted="false">Lyrics preview</string>
     <string name="lyrics_card_show_lyrics_button" formatted="false">Show lyrics</string>
-    <string name="lyrics_card_expand_button_content_description" formatted="false">Open fullscreen lyrics</string>
-    <string name="lyrics_card_share_button_content_description" formatted="false">Share lyrics</string>
     <string name="lyrics_credential_note" formatted="false">Lyrics provided by %1$s</string>
     <string name="lyrics_fullscreen_chip_label_share" formatted="false">Share</string>
     <string name="lyrics_fullscreen_chip_label_translate" formatted="false">Translate</string>
@@ -49,7 +46,6 @@
     <string name="artist_popular_tracks" formatted="false">Popular</string>
     <string name="curation_button_follow_state_text" formatted="false">Follow</string>
     <string name="curation_button_following_state_text" formatted="false">Following</string>
-    <string name="search_main_entity_subtitle_artist" formatted="false">Artist</string>
     <string name="connect_phone_is_self" formatted="false">This phone</string>
     <string name="settings_item_canvas_title" formatted="false">Canvas</string>
     <string name="video_settings_canvas_subtitle" formatted="false">Short, looping visuals when a song is playing.</string>
@@ -107,8 +103,6 @@
     <string name="library_search_text_hint" formatted="false">Search Your Library</string>
     <string name="account_title" formatted="false">Account</string>
     <string name="song_dna_search_chip_followed_artists" formatted="false">Followed artists</string>
-    <string name="settings_item_crossfade_title" formatted="false">Crossfade</string>
-    <string name="playback_settings_crossfade_slider_seconds" formatted="false">%1$d s</string>
     <string name="local_files_title" formatted="false">Local Files</string>
     <string name="local_files_empty_section_title" formatted="false">Add your own audio files to Your Library</string>
     <string name="local_files_empty_section_subtitle" formatted="false">Got a song or personal podcast that\'s not on Spotify?</string>
@@ -138,14 +132,10 @@
     <string name="assisted_curation_search_filter_artists" formatted="false">Artists</string>
     <string name="assisted_curation_search_filter_albums" formatted="false">Albums</string>
     <string name="assisted_curation_search_filter_playlists" formatted="false">Playlists</string>
-    <string name="assisted_curation_search_filter_clear_content_description" formatted="false">Clear filter</string>
-    <string name="ad_category_title_music" formatted="false">Music</string>
-    <string name="made_for_you_hub_title" formatted="false">Made for You</string>
     <string name="settings_item_app_language_title" formatted="false">App language</string>
     <string name="create_menu_item_folder_title" formatted="false">Folder</string>
     <string name="create_folder_name_suggested_folder_name" formatted="false">New folder</string>
     <string name="context_menu_rename_folder" formatted="false">Rename folder</string>
-    <string name="your_library_messaging_folder_rename_hint" formatted="false">Folder name</string>
     <string name="create_playlist_content_description" formatted="false">Create playlist</string>
     <string name="actions_picker_delete" formatted="false">Delete</string>
     <string name="filter_and_sort_sort_section_title" formatted="false">Sort by</string>

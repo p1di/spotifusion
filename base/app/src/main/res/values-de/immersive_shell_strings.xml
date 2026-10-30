@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="immersive_shell_back">Zurück</string>
+    <string name="immersive_shell_more">Weitere Optionen</string>
+    <string name="immersive_shell_search_hint">Suchen</string>
+    <string name="immersive_shell_search_clear">Suche löschen</string>
+    <string name="immersive_shell_play">Wiedergabe</string>
+    <string name="immersive_shell_shuffle">Zufallswiedergabe</string>
+    <string name="immersive_shell_see_all">Alle anzeigen</string>
+    <string name="immersive_shell_now_playing">Aktuelle Wiedergabe</string>
+    <string name="immersive_shell_explicit">Explizit</string>
+</resources>

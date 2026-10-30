@@ -1,5 +1,8 @@
 package com.music.spotui.ui.components
 
+import com.music.spotui.ui.theme.tone
+import com.music.spotui.ui.theme.AppText
+
 import android.content.Context
 import android.content.Intent
 import android.widget.Toast
@@ -60,7 +63,7 @@ import com.music.spotui.data.offline.episodeKeyOf
 import com.music.spotui.di.SongPlayer
 
 private val Accent: Color get() = com.music.spotui.ui.theme.AppAccent
-private val Sheet: Color get() = Color(0xFF1F1F1F)
+private val Sheet: Color get() = tone(0xFF1F1F1F)
 
 /** "episode:<id>" — an episode has no track id; the downloader and the library key on this. */
 val SongsModel.episodeKey: String? get() = episodeKeyOf(this)
@@ -91,7 +94,7 @@ fun EpisodeDownloadButton(song: SongsModel, size: Dp = 26.dp) {
         },
     ) {
         when (status) {
-            null -> Icon(Icons.Outlined.Download, stringResource(R.string.episode_download), tint = Color.White.copy(alpha = 0.85f), modifier = Modifier.size(size))
+            null -> Icon(Icons.Outlined.Download, stringResource(R.string.episode_download), tint = AppText.copy(alpha = 0.85f), modifier = Modifier.size(size))
             else -> DownloadBadge(status, size = size)
         }
     }
@@ -115,7 +118,7 @@ fun EpisodeOptionsSheet(
     // The + / ✓ follows Spotify's library: ask once for this episode's saved state.
     androidx.compose.runtime.LaunchedEffect(song.url) { SongPlayer.requestSaved(song.spotifyUri) }
     val saved = SongPlayer.library[song.spotifyUri] == true
-    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = Sheet) {
+    com.music.spotui.ui.components.LookSheet(onDismissRequest = onDismiss, containerColor = Sheet) {
         Column(Modifier.navigationBarsPadding().padding(bottom = 12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(20.dp, 4.dp, 20.dp, 16.dp)) {
                 GlideImage(
@@ -126,8 +129,8 @@ fun EpisodeOptionsSheet(
                     modifier = Modifier.size(52.dp).clip(RoundedCornerShape(4.dp)),
                 )
                 Column(Modifier.weight(1f).padding(start = 12.dp)) {
-                    Text(song.title, color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                    Text(song.singer, color = Color.White.copy(alpha = 0.65f), fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(song.title, color = AppText, fontSize = 15.sp, fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    Text(song.singer, color = AppText.copy(alpha = 0.65f), fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
             }
             SheetAction(Icons.Outlined.Share, stringResource(R.string.a11y_share)) {
@@ -193,9 +196,9 @@ private fun SheetAction(icon: ImageVector, label: String, onClick: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 20.dp, vertical = 14.dp),
     ) {
-        Icon(icon, contentDescription = null, tint = Color.White.copy(alpha = 0.9f), modifier = Modifier.size(22.dp))
+        Icon(icon, contentDescription = null, tint = AppText.copy(alpha = 0.9f), modifier = Modifier.size(22.dp))
         Spacer(Modifier.width(16.dp))
-        Text(label, color = Color.White, fontSize = 15.sp)
+        Text(label, color = AppText, fontSize = 15.sp)
     }
 }
 
@@ -243,11 +246,11 @@ fun speedLabel(speed: Double): String =
 @Composable
 fun PodcastSpeedSheet(onDismiss: () -> Unit) {
     val current = SongPlayer.speed.value
-    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = Sheet) {
+    com.music.spotui.ui.components.LookSheet(onDismissRequest = onDismiss, containerColor = Sheet) {
         Column(Modifier.fillMaxWidth().navigationBarsPadding().padding(bottom = 20.dp)) {
             Text(
                 stringResource(R.string.playback_speed),
-                color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold,
+                color = AppText, fontSize = 20.sp, fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
             )
             Text(
@@ -269,7 +272,7 @@ fun PodcastSpeedSheet(onDismiss: () -> Unit) {
                             .weight(1f)
                             .height(44.dp)
                             .clip(CircleShape)
-                            .background(if (selected) Color.White else Color.White.copy(alpha = 0.12f))
+                            .background(if (selected) AppText else AppText.copy(alpha = 0.12f))
                             .clickable {
                                 SongPlayer.setSpeed(speed)
                                 onDismiss()
@@ -277,7 +280,7 @@ fun PodcastSpeedSheet(onDismiss: () -> Unit) {
                     ) {
                         Text(
                             text = speedLabel(speed),
-                            color = if (selected) Color.Black else Color.White,
+                            color = if (selected) Color.Black else AppText,
                             fontSize = 15.sp,
                             fontWeight = FontWeight.Bold,
                         )

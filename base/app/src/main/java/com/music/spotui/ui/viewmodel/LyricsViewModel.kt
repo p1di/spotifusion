@@ -40,13 +40,26 @@ class LyricsViewModel constructor() : ViewModel() {
         if (force) LyricsApi.forget(track)
         // Already resolved (prefetched while the track started): no loading flash.
         LyricsApi.cached(track)?.let { _state.value = loadedState(it); return }
-        _state.value = State.Loading
+        // Read again (the setting changed): the lyrics shown stay until the new ones replace them.
+        if (!(force && _state.value is State.Loaded)) _state.value = State.Loading
+        // Spotify's own lines shown as soon as they are there; the word-timed ones replace them.
+        val earlyJob = viewModelScope.launch {
+            LyricsApi.early.collect { e ->
+                if (e != null && e.first == key && loadedKey == key && _state.value is State.Loading) _state.value = loadedState(e.second)
+            }
+        }
         viewModelScope.launch(Dispatchers.IO) {
             val lyrics = LyricsApi.fetch(track)
+            earlyJob.cancel()
             withContext(Dispatchers.Main) {
                 // A skip during the fetch: don't show the previous song's lyrics.
                 if (loadedKey != key) return@withContext
-                _state.value = if (lyrics == null || lyrics.isEmpty) State.NotFound else loadedState(lyrics)
+                val shown = (_state.value as? State.Loaded)?.lyrics
+                _state.value = when {
+                    lyrics == null || lyrics.isEmpty -> if (shown != null) _state.value else State.NotFound
+                    shown == lyrics -> _state.value
+                    else -> loadedState(lyrics)
+                }
             }
         }
     }

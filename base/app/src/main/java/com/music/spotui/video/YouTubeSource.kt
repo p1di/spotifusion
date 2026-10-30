@@ -30,8 +30,7 @@ import kotlinx.coroutines.runInterruptible
  */
 object YouTubeSource {
     private const val TAG = "MusicVideo"
-    private const val UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36"
-    private const val EMPTY_NEXT_RESPONSE = """{"responseContext":{},"contents":{},"currentVideoEndpoint":{},"trackingParams":""}"""
+    private const val UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:128.0) Gecko/20100101 Firefox/128.0"
 
     val http: OkHttpClient = OkHttpClient.Builder()
         .addInterceptor(com.music.spotui.data.DataSaver.interceptor)
@@ -74,15 +73,9 @@ object YouTubeSource {
 
     private object OkDownloader : Downloader() {
         override fun execute(request: Request): Response {
-            val url = request.url()
-            // BitChord optimization: NewPipe calls /youtubei/v1/next during StreamInfo.getInfo
-            // only for related videos/comments which we never use; short-circuiting saves 7-12s.
-            if (url.contains("/youtubei/v1/next")) {
-                return Response(200, "OK", emptyMap(), EMPTY_NEXT_RESPONSE, url)
-            }
             val body = request.dataToSend()?.toRequestBody()
             val b = okhttp3.Request.Builder()
-                .url(url)
+                .url(request.url())
                 .method(request.httpMethod(), body)
                 .header("User-Agent", UA)
             request.headers().forEach { (k, values) ->
@@ -100,7 +93,8 @@ object YouTubeSource {
 
     data class Hit(val url: String, val name: String, val uploader: String, val durationSec: Long)
 
-    private fun folded(s: String) = java.text.Normalizer.normalize(s, java.text.Normalizer.Form.NFD)
+    // "$" read as "s" in names: "Bu$hi" is the channel "BUSHI", "A$AP" is "ASAP".
+    private fun folded(s: String) = java.text.Normalizer.normalize(s.replace('$', 's'), java.text.Normalizer.Form.NFD)
         .replace(Regex("""\p{M}+"""), "").lowercase(Locale.ROOT)
 
     private fun norm(s: String) = folded(s)
@@ -108,7 +102,7 @@ object YouTubeSource {
         .replace(Regex("""\b(?:feat|ft)\.?(?=\s|$)|\b(?:official|music|video|audio|clip|lyrics?)\b"""), " ")
         .filter { it.isLetterOrDigit() }
 
-    internal fun searchCandidates(query: String, filter: String): List<Hit> = search(query, filter)
+    fun searchCandidates(query: String, filter: String): List<Hit> = search(query, filter)
 
     private fun search(query: String, filter: String): List<Hit> {
         checkInterrupted()
@@ -291,9 +285,12 @@ object YouTubeSource {
      * the artists' own (or their VEVO / Topic), or a verified channel (label, radio)
      * whose title says it is a clip.
      */
-    fun isTrustedClip(info: StreamInfo, artist: String): Boolean {
+    fun isTrustedClip(info: StreamInfo, artist: String, spotifyHasVideo: Boolean = false): Boolean {
         val name = info.name.orEmpty()
         if (excluded.containsMatchIn(name) || notAClip.containsMatchIn(name)) return false
+        // Spotify itself has the clip: a label's channel (unverified, its upload filed as an
+        // ordinary video) can be the one; the soundtrack check still decides.
+        if (spotifyHasVideo) return true
         val hit = Hit(info.url, name, info.uploaderName.orEmpty(), info.duration)
         val own = artist.split(",").map { it.trim() }.filter { it.isNotEmpty() }.any { sameArtist(hit, it) }
         return own || (info.isUploaderVerified && looksLikeClip(name))

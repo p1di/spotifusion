@@ -31,8 +31,12 @@ sealed class Routes(
     object Episodes : Routes(0, "Episodes", "episodes")
     object Recap : Routes(0, "Recap", "recap")
     object Recent : Routes(0, "Recent", "recent")
-    object Spotiflac : Routes(0, "SpotiFLAC", "spotiflac")
+    object Friends : Routes(0, "Friends", "friends")
     object Settings : Routes(0, "Settings", "settings")
+    object Extensions : Routes(0, "Extensions", "extensions")
+    object Extension : Routes(0, "Extension", "extension")
+    /** A repository's extension, before it is installed (by id). */
+    object ExtensionEntry : Routes(0, "ExtensionEntry", "extension-store")
     object Profile : Routes(0, "Profile", "profile")
 }
 
@@ -86,3 +90,10 @@ fun artistRoute(name: String, id: String = ""): String {
 fun albumRoute(name: String, artist: String = "", id: String = ""): String =
     "${Routes.Album.route}/${android.net.Uri.encode(name.ifBlank { "album" })}" +
         "?artist=${android.net.Uri.encode(artist)}&id=${android.net.Uri.encode(id)}"
+
+/**
+ * Opens a page from outside the page's own UI (a shared link): a second link to the page already
+ * on top reuses it instead of stacking a duplicate.
+ */
+fun androidx.navigation.NavController.navigateSingleTop(route: String) =
+    navigate(route) { launchSingleTop = true }

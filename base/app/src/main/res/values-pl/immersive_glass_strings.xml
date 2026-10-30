@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_liquid_glass_title">Płynne szkło</string>
+    <string name="settings_liquid_glass_detail">Paski uginają i odbijają stronę za nimi jak szkło</string>
+    <string name="settings_liquid_glass_unsupported">Wymaga Androida 12 lub nowszego</string>
+    <string name="settings_liquid_glass_reduced">Matowy efekt, gdy telefon ogranicza rozmycie lub animacje</string>
+    <string name="immersive_expand_tab_bar">Pokaż wszystkie karty</string>
+</resources>

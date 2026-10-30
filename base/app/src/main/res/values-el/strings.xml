@@ -4,37 +4,17 @@
     <string name="aa_playlists">Playlist</string>
     <string name="aa_albums">Άλμπουμ</string>
     <string name="aa_artists">Καλλιτέχνες</string>
-    <string name="aa_podcasts">Podcast</string>
     <string name="settings_amoled_theme">Θέμα AMOLED</string>
     <string name="settings_amoled_theme_subtitle">Μαύρο φόντο για εξοικονόμηση μπαταρίας</string>
-    <string name="settings_lyrics_style_spotify_default">Προεπιλογή Spotify</string>
-    <string name="settings_lyrics_style_fullscreen">Πλήρης οθόνη (χρώματα άλμπουμ)</string>
-    <string name="settings_lyrics_style_compact">Συμπαγές</string>
-    <string name="settings_lyrics_style_karaoke">Καραόκε</string>
-    <string name="settings_lyrics_style_bold">Μεγάλο έντονο</string>
     <string name="main_update_available">Υπάρχει νέα ενημέρωση</string>
 
-    <string name="notif_channel_media_name">Αναπαραγωγή πολυμέσων</string>
-    <string name="notif_channel_media_description">Χειριστήρια αναπαραγωγής πολυμέσων του Myspoti</string>
-    <string name="notif_action_previous">Προηγούμενο</string>
-    <string name="notif_action_next">Επόμενο</string>
     <string name="notif_action_play">Αναπαραγωγή</string>
     <string name="notif_action_pause">Παύση</string>
     <string name="notif_shuffle_enable">Ενεργοποίηση τυχαίας σειράς</string>
     <string name="notif_shuffle_disable">Απενεργοποίηση τυχαίας σειράς</string>
     <string name="notif_shuffle_disable_smart">Απενεργοποίηση έξυπνης τυχαίας σειράς</string>
-    <string name="notif_action_like">Μου αρέσει</string>
-    <string name="notif_action_unlike">Δεν μου αρέσει πια</string>
-    <string name="notif_unknown_name">Άγνωστο</string>
-    <string name="notif_by_artist">από %1$s</string>
-    <string name="notif_repeat_disable">Απενεργοποίηση επανάληψης</string>
-    <string name="notif_repeat_disable_one">Απενεργοποίηση επανάληψης ενός τραγουδιού</string>
-    <string name="notif_repeat_enable">Ενεργοποίηση επανάληψης</string>
 
-    <string name="bridge_player_unlocked">Το player ξεκλειδώθηκε</string>
-    <string name="bridge_reloading">Επαναφόρτωση…</string>
 
-    <string name="service_disabled_message">Η υπηρεσία δεν είναι ενεργοποιημένη</string>
     <string name="energy_saver_title" tools:ignore="MissingTranslation">Εξοικονόμηση ενέργειας</string>
     <string name="energy_saver_summary" tools:ignore="MissingTranslation">Χωρίς Canvas, ελαφρύτερα βίντεο και κινούμενα σχέδια</string>
     <string name="video_fullscreen_enter" tools:ignore="MissingTranslation">Μετάβαση σε πλήρη οθόνη</string>
@@ -42,4 +22,6 @@
     <string name="playback_seek_description" tools:ignore="MissingTranslation">Θέση αναπαραγωγής</string>
     <string name="account_page_title">Λογαριασμός Spotify</string>
     <string name="account_page_detail">Πρόγραμμα, απόρρητο και συσκευές, στο spotify.com</string>
+    <string name="player_source_downloaded">Έχει ληφθεί</string>
+    <string name="extension_change_write">Μπορεί πλέον να στέλνει και στο Spotify: %1$s</string>
 </resources>

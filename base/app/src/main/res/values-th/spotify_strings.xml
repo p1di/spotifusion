@@ -17,7 +17,6 @@
     <string name="snackbar_added_to_liked_songs" formatted="false">เพิ่มไปยังเพลงที่ถูกใจแล้ว</string>
     <string name="snackbar_removed_from_liked_songs" formatted="false">ลบออกจาก \"เพลงที่ถูกใจ\" แล้ว</string>
     <string name="content_description_context_menu" formatted="false">ตัวเลือกเพิ่มเติม</string>
-    <string name="close_button_content_description" formatted="false">ปิด</string>
     <string name="add_to_playlist_saved_in_section_header" formatted="false">จำนวนการบันทึกใน</string>
     <string name="add_to_playlist_new_playlist_button_text" formatted="false">เพลย์ลิสต์ใหม่</string>
     <string name="add_to_playlist_button_cancel" formatted="false">ยกเลิก</string>
@@ -25,8 +24,6 @@
     <string name="lyrics_card_title" formatted="false">เนื้อเพลง</string>
     <string name="lyrics_card_title_preview" formatted="false">ตัวอย่างเนื้อเพลง</string>
     <string name="lyrics_card_show_lyrics_button" formatted="false">แสดงเนื้อเพลง</string>
-    <string name="lyrics_card_expand_button_content_description" formatted="false">เปิดเนื้อเพลงแบบเต็มจอ</string>
-    <string name="lyrics_card_share_button_content_description" formatted="false">แชร์เนื้อเพลง</string>
     <string name="lyrics_credential_note" formatted="false">เนื้อเพลงโดย %1$s</string>
     <string name="lyrics_fullscreen_chip_label_share" formatted="false">แชร์</string>
     <string name="lyrics_fullscreen_chip_label_translate" formatted="false">แปล</string>
@@ -49,7 +46,6 @@
     <string name="artist_popular_tracks" formatted="false">ยอดนิยม</string>
     <string name="curation_button_follow_state_text" formatted="false">ติดตาม</string>
     <string name="curation_button_following_state_text" formatted="false">กำลังติดตาม</string>
-    <string name="search_main_entity_subtitle_artist" formatted="false">ศิลปิน</string>
     <string name="connect_phone_is_self" formatted="false">โทรศัพท์เครื่องนี้</string>
     <string name="settings_item_canvas_title" formatted="false">Canvas</string>
     <string name="video_settings_canvas_subtitle" formatted="false">ภาพวนซ้ำสั้นๆ ขณะที่เพลงกำลังเล่น</string>
@@ -107,8 +103,6 @@
     <string name="library_search_text_hint" formatted="false">ค้นหาในคอลเลกชันของคุณ</string>
     <string name="account_title" formatted="false">บัญชี</string>
     <string name="song_dna_search_chip_followed_artists" formatted="false">ศิลปินที่ติดตาม</string>
-    <string name="settings_item_crossfade_title" formatted="false">ครอสเฟด</string>
-    <string name="playback_settings_crossfade_slider_seconds" formatted="false">%1$d วิ</string>
     <string name="local_files_title" formatted="false">ไฟล์ในเครื่อง</string>
     <string name="local_files_empty_section_title" formatted="false">เพิ่มไฟล์เสียงลงในคอลเลกชันของคุณ</string>
     <string name="local_files_empty_section_subtitle" formatted="false">หากอยากได้เพลงหรือพอดแคสต์ส่วนตัวที่ไม่มีบน Spotify</string>
@@ -138,14 +132,10 @@
     <string name="assisted_curation_search_filter_artists" formatted="false">ศิลปิน</string>
     <string name="assisted_curation_search_filter_albums" formatted="false">อัลบั้ม</string>
     <string name="assisted_curation_search_filter_playlists" formatted="false">เพลย์ลิสต์</string>
-    <string name="assisted_curation_search_filter_clear_content_description" formatted="false">ล้างตัวกรอง</string>
-    <string name="ad_category_title_music" formatted="false">เพลง</string>
-    <string name="made_for_you_hub_title" formatted="false">จัดทำขึ้นเพื่อคุณ</string>
     <string name="settings_item_app_language_title" formatted="false">ภาษาของแอป</string>
     <string name="create_menu_item_folder_title" formatted="false">โฟลเดอร์</string>
     <string name="create_folder_name_suggested_folder_name" formatted="false">โฟลเดอร์ใหม่</string>
     <string name="context_menu_rename_folder" formatted="false">เปลี่ยนชื่อโฟลเดอร์</string>
-    <string name="your_library_messaging_folder_rename_hint" formatted="false">ชื่อโฟลเดอร์</string>
     <string name="create_playlist_content_description" formatted="false">สร้างเพลย์ลิสต์</string>
     <string name="actions_picker_delete" formatted="false">ลบ</string>
     <string name="filter_and_sort_sort_section_title" formatted="false">เรียงตาม</string>

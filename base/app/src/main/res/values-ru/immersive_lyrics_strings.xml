@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="immersive_lyrics_instrumental">Инструментал</string>
+    <string name="immersive_lyrics_none">Для этого трека нет текста</string>
+    <string name="immersive_queue_title">Очередь</string>
+    <string name="immersive_queue_now_playing">Сейчас играет</string>
+    <string name="immersive_queue_empty">В очереди ничего нет</string>
+    <string name="immersive_queue_remove">Убрать из очереди</string>
+    <string name="immersive_queue_reorder">Переместить в очереди</string>
+    <string name="immersive_queue_shuffle">Перемешать</string>
+    <string name="immersive_queue_repeat">Повтор</string>
+</resources>

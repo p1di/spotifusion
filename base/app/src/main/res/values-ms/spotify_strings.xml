@@ -17,7 +17,6 @@
     <string name="snackbar_added_to_liked_songs" formatted="false">Ditambahkan pada Lagu Disukai.</string>
     <string name="snackbar_removed_from_liked_songs" formatted="false">Dikeluarkan daripada Lagu Disukai.</string>
     <string name="content_description_context_menu" formatted="false">Lebih banyak pilihan</string>
-    <string name="close_button_content_description" formatted="false">Tutup</string>
     <string name="add_to_playlist_saved_in_section_header" formatted="false">Disimpan dalam</string>
     <string name="add_to_playlist_new_playlist_button_text" formatted="false">Playlist baharu</string>
     <string name="add_to_playlist_button_cancel" formatted="false">Batal</string>
@@ -25,8 +24,6 @@
     <string name="lyrics_card_title" formatted="false">Lirik</string>
     <string name="lyrics_card_title_preview" formatted="false">Pratonton lirik</string>
     <string name="lyrics_card_show_lyrics_button" formatted="false">Tunjukkan lirik</string>
-    <string name="lyrics_card_expand_button_content_description" formatted="false">Buka lirik skrin penuh</string>
-    <string name="lyrics_card_share_button_content_description" formatted="false">Kongsi lirik</string>
     <string name="lyrics_credential_note" formatted="false">Lirik disediakan oleh %1$s</string>
     <string name="lyrics_fullscreen_chip_label_share" formatted="false">Kongsi</string>
     <string name="lyrics_fullscreen_chip_label_translate" formatted="false">Terjemah</string>
@@ -49,7 +46,6 @@
     <string name="artist_popular_tracks" formatted="false">Popular</string>
     <string name="curation_button_follow_state_text" formatted="false">Ikuti</string>
     <string name="curation_button_following_state_text" formatted="false">Mengikuti</string>
-    <string name="search_main_entity_subtitle_artist" formatted="false">Artis</string>
     <string name="connect_phone_is_self" formatted="false">Telefon ini</string>
     <string name="settings_item_canvas_title" formatted="false">Canvas</string>
     <string name="video_settings_canvas_subtitle" formatted="false">Visual pendek dan berulang apabila lagu dimainkan.</string>
@@ -107,8 +103,6 @@
     <string name="library_search_text_hint" formatted="false">Cari dalam Pustaka Anda</string>
     <string name="account_title" formatted="false">Akaun</string>
     <string name="song_dna_search_chip_followed_artists" formatted="false">Artis yang diikuti</string>
-    <string name="settings_item_crossfade_title" formatted="false">Lenyap silang</string>
-    <string name="playback_settings_crossfade_slider_seconds" formatted="false">%1$d s</string>
     <string name="local_files_title" formatted="false">Fail Tempatan</string>
     <string name="local_files_empty_section_title" formatted="false">Tambahkan fail audio anda sendiri pada Pustaka Anda</string>
     <string name="local_files_empty_section_subtitle" formatted="false">Terdapat lagu atau podcast peribadi yang tidak ada di Spotify?</string>
@@ -138,14 +132,10 @@
     <string name="assisted_curation_search_filter_artists" formatted="false">Artis</string>
     <string name="assisted_curation_search_filter_albums" formatted="false">Album</string>
     <string name="assisted_curation_search_filter_playlists" formatted="false">Playlist</string>
-    <string name="assisted_curation_search_filter_clear_content_description" formatted="false">Kosongkan penapis</string>
-    <string name="ad_category_title_music" formatted="false">Muzik</string>
-    <string name="made_for_you_hub_title" formatted="false">Dibuat untuk Anda</string>
     <string name="settings_item_app_language_title" formatted="false">Bahasa aplikasi</string>
     <string name="create_menu_item_folder_title" formatted="false">Folder</string>
     <string name="create_folder_name_suggested_folder_name" formatted="false">Folder baharu</string>
     <string name="context_menu_rename_folder" formatted="false">Namakan semula folder</string>
-    <string name="your_library_messaging_folder_rename_hint" formatted="false">Nama folder</string>
     <string name="create_playlist_content_description" formatted="false">Buat playlist</string>
     <string name="actions_picker_delete" formatted="false">Padam</string>
     <string name="filter_and_sort_sort_section_title" formatted="false">Isih mengikut</string>

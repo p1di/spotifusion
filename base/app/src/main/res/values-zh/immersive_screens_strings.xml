@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="immersive_screens_account">账号</string>
+    <string name="immersive_screens_account_page">账号页面</string>
+    <string name="immersive_screens_account_page_detail">套餐、隐私和设备</string>
+    <string name="immersive_screens_top_result">最佳结果</string>
+    <string name="immersive_screens_reset_order">恢复默认顺序</string>
+</resources>

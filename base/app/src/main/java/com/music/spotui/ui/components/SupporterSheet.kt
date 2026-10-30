@@ -1,5 +1,9 @@
 package com.music.spotui.ui.components
 
+import com.music.spotui.ui.theme.tone
+import com.music.spotui.ui.theme.AppText
+import com.music.spotui.ui.theme.AppMuted
+
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -20,7 +24,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -44,6 +47,7 @@ import androidx.compose.ui.unit.sp
 import app.myspoti.engine.R
 import com.music.spotui.data.api.SupportReminder
 import com.music.spotui.data.api.SupportReminder.Accent
+import com.music.spotui.data.preferences.LookPref
 import com.music.spotui.data.api.SupportReminder.Level
 import com.music.spotui.ui.theme.AppAccent
 
@@ -75,14 +79,14 @@ private fun iconMark(a: Accent) = when (a) {
 /** "I've supported": on trust, a donation or a monthly support. */
 @Composable
 fun SupportChoice(onChosen: (Level) -> Unit) {
-    Text(stringResource(R.string.supporter_how), color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+    Text(stringResource(R.string.supporter_how), color = AppText, fontSize = 15.sp, fontWeight = FontWeight.Bold)
     Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.padding(top = 10.dp)) {
         for ((level, label) in listOf(Level.ONCE to R.string.supporter_once, Level.MONTHLY to R.string.supporter_monthly)) {
             Box(
                 contentAlignment = Alignment.Center,
-                modifier = Modifier.height(40.dp).clip(RoundedCornerShape(50)).background(Color(0xFF3A3A3A))
+                modifier = Modifier.height(40.dp).clip(RoundedCornerShape(50)).background(tone(0xFF3A3A3A))
                     .pressable(0.96f) { onChosen(level) }.padding(horizontal = 18.dp),
-            ) { Text(stringResource(label), color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.SemiBold) }
+            ) { Text(stringResource(label), color = AppText, fontSize = 14.sp, fontWeight = FontWeight.SemiBold) }
         }
     }
 }
@@ -92,21 +96,22 @@ fun SupportChoice(onChosen: (Level) -> Unit) {
 @Composable
 fun SupporterSheet(onDismiss: () -> Unit) {
     val context = LocalContext.current
+    com.music.spotui.extensions.ProtectedSurfaceEffect(app.myspoti.extensions.ProtectedSurface.SUPPORT)
     var choosing by remember { mutableStateOf(false) }
     val level = SupportReminder.level
     // Opened in full: half open, it hid the support buttons at the bottom.
-    ModalBottomSheet(
+    LookSheet(
         onDismissRequest = onDismiss,
         sheetState = androidx.compose.material3.rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        containerColor = Color(0xFF282828),
+        containerColor = tone(0xFF282828),
     ) {
         Column(Modifier.navigationBarsPadding().verticalScroll(rememberScrollState()).padding(start = 20.dp, end = 20.dp, bottom = 20.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(stringResource(R.string.supporter_perks_title), color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.supporter_perks_title), color = AppText, fontSize = 20.sp, fontWeight = FontWeight.Bold)
                 if (level != Level.NONE) { Spacer(Modifier.width(10.dp)); SupporterBadge() }
             }
             if (level == Level.NONE) {
-                Text(stringResource(R.string.supporter_perks_locked), color = Color(0xFFB3B3B3), fontSize = 14.sp,
+                Text(stringResource(R.string.supporter_perks_locked), color = AppMuted, fontSize = 14.sp,
                     modifier = Modifier.padding(top = 8.dp, bottom = 16.dp))
                 if (choosing) SupportChoice { SupportReminder.setLevel(context, it); choosing = false }
                 else {
@@ -116,41 +121,41 @@ fun SupporterSheet(onDismiss: () -> Unit) {
                             .pressable(0.96f) { SupportReminder.open(context) },
                     ) { Text(stringResource(R.string.support_action), color = Color.Black, fontSize = 16.sp, fontWeight = FontWeight.Bold) }
                     GitHubSponsorButton(Modifier.padding(top = 10.dp))
-                    Text(stringResource(R.string.supporter_i_supported), color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold,
+                    Text(stringResource(R.string.supporter_i_supported), color = AppText, fontSize = 15.sp, fontWeight = FontWeight.Bold,
                         modifier = Modifier.align(Alignment.CenterHorizontally).padding(top = 8.dp)
                             .pressable(0.96f) { choosing = true }.padding(horizontal = 24.dp, vertical = 12.dp))
                 }
                 return@Column
             }
-            Text(stringResource(R.string.supporter_thanks_title), color = Color(0xFFB3B3B3), fontSize = 14.sp, modifier = Modifier.padding(top = 6.dp))
+            Text(stringResource(R.string.supporter_thanks_title), color = AppMuted, fontSize = 14.sp, modifier = Modifier.padding(top = 6.dp))
 
-            Text(stringResource(R.string.supporter_accent), color = Color.White, fontSize = 16.sp, modifier = Modifier.padding(top = 20.dp, bottom = 10.dp))
+            Text(stringResource(R.string.supporter_accent), color = AppText, fontSize = 16.sp, modifier = Modifier.padding(top = 20.dp, bottom = 10.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
                 for (a in Accent.entries) {
-                    val selected = SupportReminder.accent == a
+                    val selected = SupportReminder.accentOf(LookPref.look) == a
                     val name = stringResource(accentName(a))
                     Box(
                         Modifier.size(40.dp).semantics { contentDescription = name }.clip(CircleShape).background(a.color)
-                            .then(if (selected) Modifier.border(3.dp, Color.White, CircleShape) else Modifier)
-                            .pressable(0.92f) { SupportReminder.setAccent(context, a) },
+                            .then(if (selected) Modifier.border(3.dp, AppText, CircleShape) else Modifier)
+                            .pressable(0.92f) { SupportReminder.setAccent(context, LookPref.look, a) },
                     )
                 }
             }
 
-            Text(stringResource(R.string.supporter_icon), color = Color.White, fontSize = 16.sp, modifier = Modifier.padding(top = 22.dp, bottom = 10.dp))
+            Text(stringResource(R.string.supporter_icon), color = AppText, fontSize = 16.sp, modifier = Modifier.padding(top = 22.dp, bottom = 10.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 for (a in Accent.entries) {
                     val selected = SupportReminder.icon == a
                     val name = stringResource(accentName(a))
                     Image(
                         painterResource(iconMark(a)), contentDescription = name,
-                        modifier = Modifier.size(52.dp).clip(RoundedCornerShape(14.dp)).background(Color(0xFF121212))
-                            .then(if (selected) Modifier.border(3.dp, Color.White, RoundedCornerShape(14.dp)) else Modifier)
+                        modifier = Modifier.size(52.dp).clip(RoundedCornerShape(14.dp)).background(tone(0xFF121212))
+                            .then(if (selected) Modifier.border(3.dp, AppText, RoundedCornerShape(14.dp)) else Modifier)
                             .pressable(0.92f) { SupportReminder.setIcon(context, a) },
                     )
                 }
             }
-            Text(stringResource(R.string.supporter_icon_note), color = Color(0xFFB3B3B3), fontSize = 12.sp, modifier = Modifier.padding(top = 8.dp))
+            Text(stringResource(R.string.supporter_icon_note), color = AppMuted, fontSize = 12.sp, modifier = Modifier.padding(top = 8.dp))
 
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -158,7 +163,7 @@ fun SupporterSheet(onDismiss: () -> Unit) {
                     SupportReminder.setLevel(context, if (on) Level.MONTHLY else Level.ONCE)
                 },
             ) {
-                Text(stringResource(R.string.supporter_monthly_switch), color = Color.White, fontSize = 15.sp, modifier = Modifier.weight(1f))
+                Text(stringResource(R.string.supporter_monthly_switch), color = AppText, fontSize = 15.sp, modifier = Modifier.weight(1f))
                 Switch(checked = level == Level.MONTHLY, onCheckedChange = null)
             }
         }

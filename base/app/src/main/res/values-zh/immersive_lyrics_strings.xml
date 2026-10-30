@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="immersive_lyrics_instrumental">纯音乐</string>
+    <string name="immersive_lyrics_none">此曲目没有歌词</string>
+    <string name="immersive_queue_title">队列</string>
+    <string name="immersive_queue_now_playing">正在播放</string>
+    <string name="immersive_queue_empty">队列为空</string>
+    <string name="immersive_queue_remove">从队列中移除</string>
+    <string name="immersive_queue_reorder">在队列中移动</string>
+    <string name="immersive_queue_shuffle">随机播放</string>
+    <string name="immersive_queue_repeat">循环播放</string>
+</resources>

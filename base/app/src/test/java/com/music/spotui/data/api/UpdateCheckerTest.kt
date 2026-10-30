@@ -21,6 +21,16 @@ class UpdateCheckerTest {
         assertFalse(UpdateChecker.isNewer("2.0.0-beta.1", "2.0.0-beta.1"))
         assertTrue(UpdateChecker.isNewer("2.0.1-beta.1", "2.0.0"))
     }
+    @Test fun ordersBetasAndReleases() {
+        assertTrue(UpdateChecker.isNewer("2.0.2-beta.7", "2.0.2-beta.6"))
+        assertFalse(UpdateChecker.isNewer("2.0.2-beta.6", "2.0.2-beta.7"))
+        assertTrue(UpdateChecker.isNewer("2.0.2-beta.10", "2.0.2-beta.9"))
+        assertTrue(UpdateChecker.isNewer("2.0.2", "2.0.2-beta.7"))
+        assertFalse(UpdateChecker.isNewer("2.0.2-beta.7", "2.0.2"))
+        assertTrue(UpdateChecker.isNewer("2.0.3-beta.1", "2.0.2"))
+        assertTrue(UpdateChecker.isNewer("2.1.0-beta.1", "2.0.9"))
+        assertTrue(UpdateChecker.isNewer("2.0.2-beta.1", "2.0.1-beta.9"))
+    }
     @Test fun notesKeepTheChangelogSectionAsPlainLines() {
         val body = "- **Local Files**: a folder\n  - nested [link](https://x.y)\n\n**Full Changelog**: https://github.com/a/b/compare/v1...v2"
         assertEquals("• Local Files: a folder\n  • nested link", UpdateChecker.cleanNotes(body))
