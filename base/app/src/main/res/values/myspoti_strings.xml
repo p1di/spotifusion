@@ -426,4 +426,13 @@
     <string name="offline_stats_warning_body">Playing downloaded songs offline uses Spotifusion\'s local audio engine and won\'t be tracked in your official Spotify listening stats or Wrapped.</string>
     <string name="offline_stats_warning_ok">OK</string>
     <string name="offline_stats_warning_dont_show">Don\'t show again</string>
+    <string name="settings_section_caching">Playback Caching</string>
+    <string name="settings_preloading_title">Queue Preloading</string>
+    <string name="settings_preloading_detail">Proactively downloads upcoming tracks in the background for gapless playback during network dropouts.</string>
+    <string name="settings_preload_depth_title">Preload Depth</string>
+    <string name="settings_preload_depth_detail">Number of upcoming queue tracks to keep pre-cached.</string>
+    <string name="settings_cache_cap_title">Cache Storage Cap</string>
+    <string name="settings_cache_cap_detail">Maximum local storage allocated for playback caching.</string>
+    <string name="settings_clear_cache_title">Clear Playback Cache</string>
+    <string name="settings_clear_cache_detail">Currently using %1$s</string>
 </resources>

@@ -4,6 +4,7 @@ Each release on GitHub shows its section below. The app shows it too when it off
 
 ## 1.1.0
 
+- **Intelligent Playback Caching & Queue Preloading (#1)**: Dynamically caches the currently playing track and pre-downloads the next 1–10 upcoming tracks in the queue into local storage (`PlaybackCacheStore` / `QueuePreloader`), automatically purging played tracks after a 15s cooldown and enforcing a configurable storage cap (`500 MB`, `1 GB`, `2 GB`, `5 GB`, or `Unlimited`) in Settings.
 - **In-App Auto-Updater**: Automatically checks `p1di/spotifusion` on GitHub for new releases, displays the release notes right inside the app, and downloads + installs the update APK in-app.
 - **Country & Free Account Refusal Fix + BitChord Fallback**: Upgraded the WebView relay with a Chromium/Cronet HTTP/2 & HTTP/3 stack (`br, zstd`, full browser Client Hints, and single-device Connect registration) to eliminate false `402` country/account refusals. If Spotify still restricts a track on your account (e.g. regional Free account restrictions) or your device lacks Widevine DRM, Spotifusion now automatically falls back to the BitChord audio engine so the song plays anyway.
 - **Fixed Ad-Skip Skipping the Next Song**: Captured the exact upcoming track before an ad break (`AdRecoveryRules` / `pickBeforeAd` / `pickAfterReload` / `AdBlock.ahead`) and waited for page reload completion so ad recovery resumes the intended next song instead of skipping past it.

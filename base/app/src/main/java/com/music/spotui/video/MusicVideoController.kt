@@ -418,7 +418,7 @@ object MusicVideoController {
      * sides cancels its delay), lowest bitrate first; a stream YouTube no longer
      * serves (empty / truncated) falls back to the next; a refusal (403) gets fresh URLs once.
      */
-    private suspend fun downloadAudioFile(url: String, out: File): File =
+    internal suspend fun downloadAudioFile(url: String, out: File): File =
         try { downloadAudioFileOnce(url, out, runInterruptible(Dispatchers.IO) { YouTubeSource.info(url) }) } catch (t: Throwable) {
             currentCoroutineContext().ensureActive()
             if (t.message?.contains("403") != true) throw t

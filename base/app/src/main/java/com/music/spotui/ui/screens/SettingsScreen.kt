@@ -7,6 +7,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
@@ -81,6 +84,8 @@ fun SettingsScreen(navController: NavController) {
             DownloadQualityPicker()
             if (com.music.spotui.data.offline.OfflineStore.tracks.isNotEmpty()) RemoveDownloadsRow()
             Divider()
+
+            PlaybackCachingSection()
 
             Section(R.string.settings_section_data)
             OptionRow(
@@ -420,4 +425,123 @@ private fun shareDiagnosticReport(context: android.content.Context, file: java.i
         send.putExtra(android.content.Intent.EXTRA_TEXT, "Myspoti diagnostic report: ${file.absolutePath}")
     }
     context.startActivity(android.content.Intent.createChooser(send, null).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK))
+}
+
+@Composable
+private fun PlaybackCachingSection() {
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    Section(R.string.settings_section_caching)
+    OptionRow(
+        label = stringResource(R.string.settings_preloading_title),
+        detail = stringResource(R.string.settings_preloading_detail),
+        checked = com.music.spotui.data.preferences.CacheSettingsPref.preloadingEnabled,
+        onChecked = { com.music.spotui.data.preferences.CacheSettingsPref.setEnabled(ctx, it) },
+    )
+    if (com.music.spotui.data.preferences.CacheSettingsPref.preloadingEnabled) {
+        PreloadDepthRow()
+        CacheCapRow()
+        ClearCacheRow()
+    }
+    Divider()
+}
+
+@Composable
+private fun PreloadDepthRow() {
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    val pref = com.music.spotui.data.preferences.CacheSettingsPref
+    Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 10.dp)) {
+        Text(stringResource(R.string.settings_preload_depth_title), color = Color.White, fontSize = 16.sp)
+        Text(
+            stringResource(R.string.settings_preload_depth_detail),
+            color = Color(0xFFB3B3B3), fontSize = 12.sp,
+            modifier = Modifier.padding(top = 2.dp),
+        )
+        Row(
+            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 10.dp)
+                .horizontalScroll(rememberScrollState()),
+        ) {
+            for (count in listOf(1, 2, 3, 5, 8, 10)) {
+                val selected = pref.preloadCount == count
+                Text(
+                    "$count ${if (count == 1) "track" else "tracks"}",
+                    color = if (selected) Color.Black else Color.White, fontSize = 14.sp,
+                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(if (selected) com.music.spotui.ui.theme.AppAccent else Color(0xFF282828))
+                        .clickable { pref.setCount(ctx, count) }
+                        .padding(horizontal = 14.dp, vertical = 6.dp),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun CacheCapRow() {
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    val pref = com.music.spotui.data.preferences.CacheSettingsPref
+    Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 10.dp)) {
+        Text(stringResource(R.string.settings_cache_cap_title), color = Color.White, fontSize = 16.sp)
+        Text(
+            stringResource(R.string.settings_cache_cap_detail),
+            color = Color(0xFFB3B3B3), fontSize = 12.sp,
+            modifier = Modifier.padding(top = 2.dp),
+        )
+        Row(
+            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 10.dp)
+                .horizontalScroll(rememberScrollState()),
+        ) {
+            val options = listOf(
+                500 to "500 MB",
+                1000 to "1 GB",
+                2000 to "2 GB",
+                5000 to "5 GB",
+                0 to "Unlimited",
+            )
+            for ((mb, label) in options) {
+                val selected = pref.cacheCapMb == mb
+                Text(
+                    label,
+                    color = if (selected) Color.Black else Color.White, fontSize = 14.sp,
+                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(if (selected) com.music.spotui.ui.theme.AppAccent else Color(0xFF282828))
+                        .clickable { pref.setCapMb(ctx, mb) }
+                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ClearCacheRow() {
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    var sizeText by remember(com.music.spotui.data.cache.PlaybackCacheStore.cachedTracks.size) {
+        mutableStateOf(android.text.format.Formatter.formatShortFileSize(ctx, com.music.spotui.data.cache.PlaybackCacheStore.totalBytes()))
+    }
+    Column(
+        Modifier.fillMaxWidth()
+            .clickable {
+                com.music.spotui.data.cache.PlaybackCacheStore.clearAll()
+                sizeText = android.text.format.Formatter.formatShortFileSize(ctx, com.music.spotui.data.cache.PlaybackCacheStore.totalBytes())
+                android.widget.Toast.makeText(ctx, "Playback cache cleared", android.widget.Toast.LENGTH_SHORT).show()
+            }
+            .padding(horizontal = 20.dp, vertical = 10.dp),
+    ) {
+        Text(stringResource(R.string.settings_clear_cache_title), color = Color.White, fontSize = 16.sp)
+        Text(
+            stringResource(R.string.settings_clear_cache_detail, sizeText),
+            color = Color(0xFFB3B3B3), fontSize = 12.sp,
+            modifier = Modifier.padding(top = 2.dp),
+        )
+    }
 }

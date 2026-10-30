@@ -33,6 +33,8 @@ object Graph {
         com.music.spotui.data.offline.OfflineDownloader.resumePending()
         // Episodes have their own queue and their own file: resumed the same way.
         com.music.spotui.data.offline.PodcastDownloader.resumePending()
+        // Proactive playback caching and queue preloading
+        QueuePreloader.init()
     }
 
     val api: Api by lazy { Api(app) }

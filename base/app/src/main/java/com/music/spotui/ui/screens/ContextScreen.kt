@@ -274,15 +274,25 @@ class ContextViewModel(
     fun play(p: ContextPageModel, song: SongsModel, sort: TrackOrder = TrackOrder()) {
         // No connection (the Web Player cannot stream), or the data saver on mobile data:
         // the page's downloaded songs play from the phone.
-        val app = Graph.app
-        if (com.music.spotui.data.offline.OfflineStore.isDownloaded(song.spotifyTrackId) &&
-            (com.music.spotui.data.DataSaver.active || !com.music.spotui.data.offline.OfflineStore.isOnline(app))) {
-            val local = sort.apply(p.tracks).mapNotNull { com.music.spotui.data.offline.OfflineStore.tracks[it.spotifyTrackId] }.distinctBy { it.trackId }
-            val at = local.indexOfFirst { it.trackId == song.spotifyTrackId }.coerceAtLeast(0)
-            if (local.size < p.tracks.size)
-                android.widget.Toast.makeText(app, app.getString(R.string.offline_only_downloaded, local.size, p.tracks.size), android.widget.Toast.LENGTH_SHORT).show()
-            com.music.spotui.di.LocalPlayer.play(local.map(com.music.spotui.data.offline.OfflineStore::toLocalTrack), at, context = p.name)
-            return
+        val appCtx = Graph.app
+        val isOffline = com.music.spotui.data.DataSaver.active || !com.music.spotui.data.offline.OfflineStore.isOnline(appCtx)
+        val hasLocal = com.music.spotui.data.offline.OfflineStore.isDownloaded(song.spotifyTrackId) ||
+            com.music.spotui.data.cache.PlaybackCacheStore.isCached(song.spotifyTrackId)
+
+        if (hasLocal && isOffline) {
+            val local = sort.apply(p.tracks).mapNotNull { track ->
+                val id = track.spotifyTrackId
+                val off = com.music.spotui.data.offline.OfflineStore.tracks[id]?.let(com.music.spotui.data.offline.OfflineStore::toLocalTrack)
+                val cac = com.music.spotui.data.cache.PlaybackCacheStore.cachedTracks[id]?.let(com.music.spotui.data.cache.PlaybackCacheStore::toLocalTrack)
+                off ?: cac
+            }.distinctBy { it.uri.toString() }
+            val at = local.indexOfFirst { it.uri.toString().contains(song.spotifyTrackId) }.coerceAtLeast(0)
+            if (local.isNotEmpty()) {
+                if (local.size < p.tracks.size)
+                    android.widget.Toast.makeText(appCtx, appCtx.getString(R.string.offline_only_downloaded, local.size, p.tracks.size), android.widget.Toast.LENGTH_SHORT).show()
+                com.music.spotui.di.LocalPlayer.play(local, at, context = p.name)
+                return
+            }
         }
         state.updateQueue(p.tracks)
         // B26: keep the list's own name — the player header falls back to it when Spotify's
