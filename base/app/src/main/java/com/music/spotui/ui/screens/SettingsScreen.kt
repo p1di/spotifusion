@@ -383,7 +383,7 @@ private fun CheckUpdateRow() {
             if (checking) return@clickable
             checking = true
             scope.launch {
-                val found = runCatching { com.music.spotui.data.api.UpdateChecker.check(ctx) }.getOrNull()
+                val found = runCatching { com.music.spotui.data.api.UpdateChecker.check(ctx, force = true) }.getOrNull()
                 checking = false
                 // The card is the app's one update UI: fill it, it shows itself.
                 if (found != null) com.music.spotui.updateRelease.value = found

@@ -2,6 +2,20 @@
 
 Each release on GitHub shows its section below. The app shows it too when it offers the update. Every detail: [docs/CHANGELOG-full.md](docs/CHANGELOG-full.md).
 
+## 1.1.0
+
+- **In-App Auto-Updater**: Automatically checks `p1di/spotifusion` on GitHub for new releases, displays the release notes right inside the app, and downloads + installs the update APK in-app.
+- **Country & Free Account Refusal Fix + BitChord Fallback**: Upgraded the WebView relay with a Chromium/Cronet HTTP/2 & HTTP/3 stack (`br, zstd`, full browser Client Hints, and single-device Connect registration) to eliminate false `402` country/account refusals. If Spotify still restricts a track on your account (e.g. regional Free account restrictions) or your device lacks Widevine DRM, Spotifusion now automatically falls back to the BitChord audio engine so the song plays anyway.
+- **Fixed Ad-Skip Skipping the Next Song**: Captured the exact upcoming track before an ad break (`AdRecoveryRules` / `pickBeforeAd` / `pickAfterReload` / `AdBlock.ahead`) and waited for page reload completion so ad recovery resumes the intended next song instead of skipping past it.
+- **Fixed Runaway Playlist Skipping (6–7 Songs)**: Added `TrackChanges` and `licenseLimitedUntil` guards so consecutive track transitions in a playlist never trigger false ad recovery or chain-skip through multiple songs.
+- **Fixed Player Stuck on One Song Without Sound**: Added `ControlRelay` URL timeout detection and Chromium network stack fallback so a stalled relay never locks the HUD on a single silent track.
+- **Fixed TV & Spotify Connect Skipping / Seeking 1 Minute In**: Disabled local stall-recovery seeking and skipping while a remote Spotify Connect device (TV, speaker, desktop) is active (`remoteActive` guard).
+- **Full Android Auto Support + Radio**: Upgraded the Android Auto media browser tree with Home, Library, Downloads, Liked Songs, and **"Start Radio"** for the currently playing song, plus offline fallback when driving without signal.
+- **Stop Playback on App Close**: Swiping Spotifusion away from Recent Apps now fades out and stops playback cleanly (configurable via Settings -> Keep playing when closed).
+- **Fixed Songs Failing to Download**: Replaced substring version-word filtering (which falsely rejected songs/artists containing words like *Alive*, *Oliver*, *Believe*, *Discover*, or *Recover*) with word-boundary regex matching, stripped `- Remastered` / `- Radio Edit` suffixes, and added a 3rd fallback search pass.
+- **Smooth Spotify Canvas Fullscreen Animation**: Replaced instant snapping with smooth cross-fade, subtle zoom settle (`FastOutSlowInEasing`), and interpolated full-bleed transitions when Canvas loads or enters fullscreen immersive view.
+- **Offline Listening Stats Notice**: Added an in-app notice when downloading music explaining that offline playback is not tracked in Spotify listening stats, with **OK** and **Don't show again** buttons.
+
 ## 1.0.0
 
 - **1:1 Spotify UI Redesign**: Pixel-accurate layout and spacing matching the official Spotify client across Now Playing, Library, and Navigation (transport control sizing, seek bar, Spotify Mix font, and bottom peek cards).

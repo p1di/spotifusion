@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="msp_previous">Previous</string>
+    <string name="msp_play">Play</string>
+    <string name="msp_pause">Pause</string>
+    <string name="msp_next">Next</string>
+    <string name="msp_like">Like</string>
+    <string name="msp_unlike">Unlike</string>
+    <string name="msp_shuffle_on">Shuffle on</string>
+    <string name="msp_shuffle_off">Shuffle off</string>
+    <string name="msp_channel_playback">Playback</string>
+    <string name="msp_back_15">Back 15 seconds</string>
+    <string name="msp_forward_15">Forward 15 seconds</string>
+</resources>

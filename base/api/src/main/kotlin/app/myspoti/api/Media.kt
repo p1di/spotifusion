@@ -112,12 +112,42 @@ data class UserProfile(
     val publicPlaylists: List<Playlist>,
 )
 
+/**
+ * The windows Spotify ranks the account's top artists and tracks over (the official app's
+ * "Listening stats" and the profile's "Top artists this month"): about the past 4 weeks, the
+ * past 6 months, and about a year.
+ */
 enum class TimeRange { SHORT_TERM, MEDIUM_TERM, LONG_TERM }
 
-data class TopContent(val artists: List<Artist>, val tracks: List<Track>)
+/**
+ * The account's most played artists and tracks over a [TimeRange], best first. The totals are
+ * how many Spotify ranks in that window (the lists hold at most the asked limit).
+ */
+data class TopContent(
+    val artists: List<Artist>,
+    val tracks: List<Track>,
+    val artistTotal: Int? = null,
+    val trackTotal: Int? = null,
+)
 
-/** A friend's latest listen (friend activity). */
-data class FriendActivity(val user: UserRef, val track: Track?, val contextUri: Uri?, val timestampMs: Long)
+/**
+ * A friend's latest listen (the official "Friend Activity" feed): someone the account follows
+ * who shares their listening activity. [trackImageUrl] is the cover Spotify sends with it and
+ * [contextName] the playlist, album or artist it was played from.
+ */
+data class FriendActivity(
+    val user: UserRef,
+    val track: Track?,
+    val contextUri: Uri?,
+    val timestampMs: Long,
+    val contextName: String? = null,
+    val trackImageUrl: String? = null,
+) {
+    /** The official feed shows a friend as listening now for 15 minutes after their last play started. */
+    fun isNowPlaying(nowMs: Long = System.currentTimeMillis()): Boolean = nowMs - timestampMs in 0 until NOW_PLAYING_MS
+
+    companion object { const val NOW_PLAYING_MS = 15 * 60_000L }
+}
 
 data class UserRef(val uri: Uri, val name: String, val imageUrl: String?)
 

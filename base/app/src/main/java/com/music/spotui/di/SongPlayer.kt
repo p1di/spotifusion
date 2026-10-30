@@ -165,7 +165,12 @@ object SongPlayer {
         scope.launch { MyspotiRuntime.spotify.player.adPlaying.collect(::onAdPlaying) }
         scope.launch {
             MyspotiRuntime.spotify.player.refused.collect {
-                android.widget.Toast.makeText(Graph.app, app.myspoti.engine.R.string.play_refused, android.widget.Toast.LENGTH_LONG).show()
+                playFallbackWithBitChord(app.myspoti.engine.R.string.play_refused)
+            }
+        }
+        scope.launch {
+            MyspotiRuntime.spotify.player.drmMissing.collect { missing ->
+                if (missing) playFallbackWithBitChord(app.myspoti.engine.R.string.drm_missing)
             }
         }
         PlaybackService.controls = Controls
@@ -565,6 +570,10 @@ object SongPlayer {
         positionAt = SystemClock.elapsedRealtime()
     }
 
+    @Volatile private var lastRequestedSongKey: String = ""
+    @Volatile private var lastRequestedContextUri: String = ""
+    @Volatile private var fallbackInFlightTrackId: String = ""
+
     /**
      * Play [song] (a play key "spotify:track:<id>|<text>" or "episode:<id>"). [contextUri] is
      * the list it was picked from; when null, the last list that registered this track is used.
@@ -583,13 +592,139 @@ object SongPlayer {
         val trackId = episodeId ?: spotifyTrackIdForPlayback(song) ?: return
         val itemUri = if (episodeId != null) "spotify:episode:$episodeId" else SPOTIFY_TRACK_PREFIX + trackId
         val ctx = contextUri ?: contextRegistry[song]
+        lastRequestedSongKey = song
+        lastRequestedContextUri = ctx.orEmpty()
         markPending(if (episodeId != null) "" else trackId, itemUri)
+        if (episodeId == null && MyspotiRuntime.isStarted && MyspotiRuntime.spotify.player.drmMissing.value) {
+            playFallbackWithBitChord(app.myspoti.engine.R.string.drm_missing, explicitTrackId = trackId)
+            return
+        }
         transport { isLatest ->
             playChecked(itemUri, isLatest) {
                 if (ctx != null) api.player.play(ctx, trackUri = itemUri, positionMs = positionMs, order = order?.takeIf { ctx == contextUri })
                 else api.player.play(itemUri)
             }
         }
+    }
+
+    /**
+     * When Spotify's Web Player refuses playback (402 country/license restriction on Free accounts)
+     * or Widevine DRM is unavailable on the device, automatically fall back to Spotifusion's
+     * BitChord audio engine ([OfflineStore] / [com.music.spotui.data.offline.OfflineDownloader.fetchFallbackAudioFile])
+     * and play via [LocalPlayer] so the user's song still plays seamlessly.
+     */
+    private fun playFallbackWithBitChord(fallbackToastRes: Int, explicitTrackId: String? = null) {
+        val st = boundState
+        val trackId = (explicitTrackId ?: pendingTrackId ?: currentTrackId.takeIf { it.isNotBlank() }
+            ?: spotifyTrackIdForPlayback(lastRequestedSongKey)).orEmpty()
+        val matchedSong = st?.queue?.value?.firstOrNull {
+            (trackId.isNotBlank() && it.spotifyTrackId == trackId) ||
+                (st.songId.value != 0 && it.id == st.songId.value)
+        }
+        val queryHint = lastRequestedSongKey.substringAfter('|', "").trim()
+        val title = matchedSong?.title?.takeIf { it.isNotBlank() }
+            ?: st?.title?.value?.takeIf { it.isNotBlank() }
+            ?: queryHint
+        val singer = matchedSong?.singer?.takeIf { it.isNotBlank() }
+            ?: st?.singer?.value.orEmpty()
+        val album = matchedSong?.album?.takeIf { it.isNotBlank() }
+            ?: st?.album?.value.orEmpty()
+        val coverUri = matchedSong?.coverUri?.takeIf { it.isNotBlank() }
+            ?: st?.coverUri?.value.orEmpty()
+        val durMs = (matchedSong?.durationMs?.toLong()?.takeIf { it > 0L } ?: durationMs).coerceAtLeast(0L)
+        if (trackId.isBlank() && title.isBlank()) {
+            main.post {
+                android.widget.Toast.makeText(Graph.app, fallbackToastRes, android.widget.Toast.LENGTH_LONG).show()
+            }
+            return
+        }
+        val dedupKey = trackId.ifBlank { title }
+        if (fallbackInFlightTrackId == dedupKey) return
+        fallbackInFlightTrackId = dedupKey
+        bufferingState.value = true
+        scope.launch {
+            try {
+                val dl = if (trackId.isNotBlank()) com.music.spotui.data.offline.OfflineStore.tracks[trackId] else null
+                val localTrack = if (dl != null) {
+                    com.music.spotui.data.offline.OfflineStore.toLocalTrack(dl)
+                } else {
+                    val file = com.music.spotui.data.offline.OfflineDownloader.fetchFallbackAudioFile(
+                        trackId = dedupKey,
+                        title = title,
+                        artist = singer,
+                        durationMs = durMs,
+                    )
+                    file?.let {
+                        com.music.spotui.data.local.LocalTrack(
+                            id = com.music.spotui.data.offline.OfflineStore.localIdOf(dedupKey),
+                            uri = android.net.Uri.fromFile(it),
+                            title = title,
+                            artist = singer,
+                            album = album,
+                            durationMs = durMs,
+                            artUri = android.net.Uri.parse(coverUri),
+                        )
+                    }
+                }
+                main.post {
+                    fallbackInFlightTrackId = ""
+                    if (localTrack != null) {
+                        val ctxUri = lastRequestedContextUri.ifBlank { currentContextUri }
+                        val ctxName = knownContextName(ctxUri).ifBlank { album.ifBlank { "Spotifusion" } }
+                        currentTrackId = trackId
+                        LocalPlayer.play(
+                            list = listOf(localTrack),
+                            index = 0,
+                            shuffle = st?.shuffle?.value == true,
+                            context = ctxName,
+                            contextUri = ctxUri,
+                            fallback = true,
+                        )
+                    } else {
+                        bufferingState.value = false
+                        playing = false
+                        st?.updatePlayingState(false)
+                        android.widget.Toast.makeText(Graph.app, fallbackToastRes, android.widget.Toast.LENGTH_LONG).show()
+                    }
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "BitChord fallback failed: ${e.message}")
+                main.post {
+                    fallbackInFlightTrackId = ""
+                    bufferingState.value = false
+                    playing = false
+                    st?.updatePlayingState(false)
+                    android.widget.Toast.makeText(Graph.app, fallbackToastRes, android.widget.Toast.LENGTH_LONG).show()
+                }
+            }
+        }
+    }
+
+    /** Advances to the next/previous track in [boundState]'s queue when playing in BitChord fallback mode. */
+    fun advanceFallbackQueue(delta: Int) {
+        val st = boundState ?: return
+        val q = st.queue.value
+        if (q.isEmpty()) return
+        val curIdx = q.indexOfFirst {
+            (currentTrackId.isNotBlank() && it.spotifyTrackId == currentTrackId) ||
+                it.title.equals(st.title.value, ignoreCase = true)
+        }.let { if (it >= 0) it else st.songIndex.value.coerceIn(0, q.lastIndex) }
+        val nextIdx = (curIdx + delta).mod(q.size)
+        val nextSong = q[nextIdx]
+        st.updateSongState(
+            coverUri = nextSong.coverUri,
+            title = nextSong.title,
+            singer = nextSong.singer,
+            playingState = true,
+            songId = nextSong.id,
+            songIndex = nextIdx,
+            album = nextSong.album,
+        )
+        durationMs = nextSong.durationMs.toLong()
+        lastRequestedSongKey = nextSong.url
+        val tId = nextSong.spotifyTrackId.ifBlank { spotifyTrackIdForPlayback(nextSong.url).orEmpty() }
+        currentTrackId = tId
+        playFallbackWithBitChord(app.myspoti.engine.R.string.play_refused, explicitTrackId = tId.ifBlank { null })
     }
 
     fun play() {
@@ -1235,7 +1370,7 @@ object SongPlayer {
     /** The local player's track / state, shown like any other (player, mini player, notification). */
     fun onLocalState(t: com.music.spotui.data.local.LocalTrack, isPlaying: Boolean, pos: Long, dur: Long) {
         main.post {
-            currentTrackId = ""
+            if (!LocalPlayer.fallbackMode) currentTrackId = ""
             playing = isPlaying; positionMs = pos; positionAt = SystemClock.elapsedRealtime(); durationMs = dur
             bufferingState.value = false
             val uri = "local:${t.id}"

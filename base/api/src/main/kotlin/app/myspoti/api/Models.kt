@@ -25,6 +25,8 @@ data class Track(
     val uid: String? = null,
     /** When it was added to the playlist (ISO 8601), for playlist rows. */
     val addedAt: String? = null,
+    /** Spotify knows a music video of it (its own "switch to video"), when the answer says. */
+    val hasVideo: Boolean = false,
 )
 
 data class Album(
@@ -58,6 +60,10 @@ data class Playlist(
     val ownerUri: Uri? = null,
     val ownerImages: List<Image> = emptyList(),
     val followers: Long? = null,
+    /** A Spotify Blend (a playlist shared by taste between people). */
+    val isBlend: Boolean = false,
+    /** This account is a member (not the owner) and may leave: `currentUserCapabilities.canCancelMembership`. */
+    val canLeave: Boolean = false,
 )
 
 /**
@@ -167,4 +173,69 @@ data class ArtistPage(
     val popularReleases: List<Album>,
     val appearsOn: List<Album>,
     val related: List<Artist>,
+)
+
+/** A Blend invitation just made: [link] is what to send, [id] what the link carries. */
+data class BlendInvite(val id: String, val link: String)
+
+data class BlendMember(val username: String, val name: String, val imageUrl: String?)
+
+/** Who put a row in a playlist ([rowUid]: the row; [trackUri]: its song). */
+data class RowAdder(val rowUid: String, val trackUri: String, val username: String)
+
+/** Someone who can change a playlist: its owner, or a collaborator who joined it. */
+data class PlaylistMember(
+    val username: String, val name: String, val imageUrl: String?, val isOwner: Boolean,
+    /** Permission level CONTRIBUTOR (adds and removes songs); otherwise a listener (VIEWER). */
+    val isCollaborator: Boolean = !isOwner,
+)
+
+/** Where an invitation stands for the signed-in account. */
+enum class BlendInvitationState {
+    /** Made by this account, nobody has joined yet. */
+    WAITING,
+    /** Someone else's invitation, open to join. */
+    JOINABLE,
+    /** The Blend is full. */
+    FULL,
+    /** This account is in the Blend already ([BlendInvitation.playlist] opens it). */
+    JOINED,
+    /** The invitation or the Blend was deleted. */
+    DELETED,
+    UNKNOWN,
+}
+
+/** Who is in a Blend, as its page lists them, and the link that invites more people. */
+data class BlendGroup(
+    /** Spotify's heading for the list ("Other Blend members (2)"), translated. */
+    val title: String?,
+    /** Spotify's words for the invite button, translated. */
+    val inviteLabel: String?,
+    val link: String?,
+    val members: List<BlendMember>,
+)
+
+/** The Blend's taste-match card: how close the members' tastes are, in Spotify's words and colours. */
+data class BlendStory(
+    val title: String,
+    val subtitle: String?,
+    /** The song that brings the members together, as Spotify says it. */
+    val detail: String?,
+    /** "#RRGGBB" colours, as Spotify gives them. */
+    val background: String?,
+    val titleColor: String?,
+    val textColor: String?,
+    val image: String?,
+)
+
+data class BlendInvitation(
+    val state: BlendInvitationState,
+    val title: String?,
+    val subtitle: String?,
+    /** Who made the invitation. */
+    val inviter: BlendMember?,
+    /** Who is in the Blend already. */
+    val members: List<BlendMember>,
+    /** The Blend playlist, once there is one. */
+    val playlist: Uri?,
 )

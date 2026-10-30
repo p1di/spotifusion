@@ -73,7 +73,7 @@ object AppUpdater {
     private suspend fun download(context: Context, release: UpdateChecker.Release): File = withContext(Dispatchers.IO) {
         val dir = File(context.cacheDir, "updates").apply { mkdirs() }
         dir.listFiles()?.forEach { it.delete() }
-        val file = File(dir, "myspoti-${release.version}.apk")
+        val file = File(dir, "spotifusion-${release.version}.apk")
         http.newCall(Request.Builder().url(release.apkUrl).build()).execute().use { r ->
             if (!r.isSuccessful) throw java.io.IOException("HTTP ${r.code}")
             val total = r.body.contentLength()

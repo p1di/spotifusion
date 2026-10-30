@@ -62,6 +62,7 @@ class SpotifyApi(
     override val extras = SpotifyTrackExtras(gql, bridge, this.http)
     override val devices = SpotifyDevices(bridge)
     override val jam = SpotifyJam(bridge)
+    override val blends = SpotifyBlends(this.http)
     override val recents = SpotifyRecents(gql)
 
     /** Escape hatch to the 179 GraphQL operations and 89 page services, for what is not typed yet. */
@@ -72,6 +73,8 @@ class SpotifyApi(
         val operations: Set<String> get() = currentOps.names
         suspend fun service(service: String, method: String, vararg args: JsonElement): JsonElement = bridge.service(service, method, *args)
         suspend fun get(url: String): JsonElement? = http.getJson(url)
+        /** Any method on a Spotify address ([app.myspoti.spotify.gql.SpotifyHttp.sendRaw]). */
+        suspend fun request(method: String, url: String, body: ByteArray?, headers: Map<String, String>) = http.sendRaw(method, url, body, headers)
     }
 
     init {
@@ -98,6 +101,8 @@ class SpotifyApi(
 
     /** True when the page's token belongs to a signed-in user (the cached one is reused). */
     suspend fun isSignedIn(): Boolean = http.isSignedIn()
+    /** What the token in hand says, without asking the page (null: none yet); for logs. */
+    fun signedInHint(): Boolean? = http.signedInHint()
 
     suspend fun awaitReady() { ready.first { it } }
 }

@@ -53,7 +53,8 @@ fun App() {
         }
     }
 
-    // UpdatePrompt and SupportPrompt disabled so no non-Spotify dialogs interrupt the experience.
+    UpdatePrompt()
+    OfflineStatsWarningDialog()
 
     val drawerOpen by com.music.spotui.ui.components.ProfileDrawerState.isOpen
     val drawerFraction by androidx.compose.animation.core.animateFloatAsState(
@@ -131,6 +132,79 @@ private val updateCardOpen = mutableStateOf(false)
  * Settings, which is why it is not private to [UpdatePrompt].
  */
 internal val updateRelease = mutableStateOf<com.music.spotui.data.api.UpdateChecker.Release?>(null)
+
+/** Shown when downloading a track/playlist unless the user tapped "Don't show again". */
+internal val offlineStatsWarningOpen = mutableStateOf(false)
+
+@Composable
+private fun OfflineStatsWarningDialog() {
+    val open by offlineStatsWarningOpen
+    if (!open) return
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val closeOk = { offlineStatsWarningOpen.value = false }
+    val closeDontShowAgain = {
+        context.getSharedPreferences("offline_stats_warning", android.content.Context.MODE_PRIVATE)
+            .edit().putBoolean("dont_show_again", true).apply()
+        offlineStatsWarningOpen.value = false
+    }
+    androidx.compose.ui.window.Dialog(onDismissRequest = closeOk) {
+        androidx.compose.foundation.layout.Column(
+            horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(androidx.compose.foundation.shape.RoundedCornerShape(16.dp))
+                .background(androidx.compose.ui.graphics.Color(0xFF242424))
+                .padding(horizontal = 24.dp, vertical = 28.dp),
+        ) {
+            androidx.compose.material3.Text(
+                androidx.compose.ui.res.stringResource(app.myspoti.engine.R.string.offline_stats_warning_title),
+                color = androidx.compose.ui.graphics.Color.White,
+                fontFamily = com.music.spotui.ui.theme.AppSans,
+                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                fontSize = 20.sp,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+            )
+            androidx.compose.material3.Text(
+                androidx.compose.ui.res.stringResource(app.myspoti.engine.R.string.offline_stats_warning_body),
+                color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.8f),
+                fontFamily = com.music.spotui.ui.theme.AppSans,
+                fontSize = 14.sp,
+                lineHeight = 20.sp,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                modifier = Modifier.padding(top = 12.dp),
+            )
+            androidx.compose.foundation.layout.Box(
+                contentAlignment = androidx.compose.ui.Alignment.Center,
+                modifier = Modifier
+                    .padding(top = 24.dp)
+                    .fillMaxWidth()
+                    .height(48.dp)
+                    .pressable(0.96f, onClick = closeOk)
+                    .clip(androidx.compose.foundation.shape.RoundedCornerShape(50))
+                    .background(com.music.spotui.ui.theme.AppAccent),
+            ) {
+                androidx.compose.material3.Text(
+                    androidx.compose.ui.res.stringResource(app.myspoti.engine.R.string.offline_stats_warning_ok),
+                    color = androidx.compose.ui.graphics.Color.Black,
+                    fontFamily = com.music.spotui.ui.theme.AppSans,
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                    fontSize = 16.sp,
+                )
+            }
+            androidx.compose.material3.Text(
+                androidx.compose.ui.res.stringResource(app.myspoti.engine.R.string.offline_stats_warning_dont_show),
+                color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.75f),
+                fontFamily = com.music.spotui.ui.theme.AppSans,
+                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                fontSize = 15.sp,
+                modifier = Modifier
+                    .padding(top = 8.dp)
+                    .pressable(0.96f, onClick = closeDontShowAgain)
+                    .padding(horizontal = 24.dp, vertical = 12.dp),
+            )
+        }
+    }
+}
 
 /**
  * The donation reminder (see SupportReminder): a card a few seconds after launch, only
@@ -239,7 +313,7 @@ private fun UpdatePrompt() {
     androidx.compose.runtime.LaunchedEffect(Unit) {
         // Turned off in Settings: no check at launch. The manual check there still asks.
         if (!com.music.spotui.data.preferences.AutoUpdateCheckPref.on) return@LaunchedEffect
-        kotlinx.coroutines.delay(5_000)
+        kotlinx.coroutines.delay(2_000)
         release = com.music.spotui.data.api.UpdateChecker.check(context)
     }
     updateCardOpen.value = release != null

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="msp_previous">Προηγούμενο</string>
+    <string name="msp_play">Αναπαραγωγή</string>
+    <string name="msp_pause">Παύση</string>
+    <string name="msp_next">Επόμενο</string>
+    <string name="msp_like">Μου αρέσει</string>
+    <string name="msp_unlike">Δεν μου αρέσει πια</string>
+    <string name="msp_shuffle_on">Τυχαία σειρά ενεργή</string>
+    <string name="msp_shuffle_off">Τυχαία σειρά ανενεργή</string>
+    <string name="msp_channel_playback">Αναπαραγωγή</string>
+    <string name="msp_back_15">Πίσω 15 δευτερόλεπτα</string>
+    <string name="msp_forward_15">Μπροστά 15 δευτερόλεπτα</string>
+</resources>

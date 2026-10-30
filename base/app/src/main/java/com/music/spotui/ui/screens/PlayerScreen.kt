@@ -263,19 +263,30 @@ fun PlayerScreen(navController: NavController) {
     // the bare background for a moment (a flash) between the cover and the clip.
     // Prepared beforehand by the mini player: the clip is shown from the first frame, no cover.
     var canvasShown by remember(canvasUrl) { mutableStateOf(canvasUrl != null && com.music.spotui.ui.components.CanvasPlayer.isReady(canvasUrl)) }
-    // Cover to Canvas as one cross-fade: the clip (full screen) fades in while the cover fades
-    // out and grows a little into it, instead of the background switching at once.
+    // Cover to Canvas as one smooth animation: the clip (full screen) fades and settles in
+    // while the cover fades out and grows slightly into it, instead of snapping into place.
     val canvasOn = canvasUrl != null && canvasShown
-    // A clip already loaded shows at once; one still loading fades in over the cover.
-    val readyAtOnce = remember(canvasUrl) { canvasUrl != null && com.music.spotui.ui.components.CanvasPlayer.isReady(canvasUrl) }
-    val canvasProgress = remember { androidx.compose.animation.core.Animatable(if (readyAtOnce) 1f else 0f) }
-    LaunchedEffect(canvasOn, readyAtOnce) {
+    val canvasProgress = remember(displayedTrackId) { androidx.compose.animation.core.Animatable(0f) }
+    LaunchedEffect(canvasOn, canvasUrl) {
         val target = if (canvasOn) 1f else 0f
-        if (canvasOn && readyAtOnce) canvasProgress.snapTo(target)
-        else canvasProgress.animateTo(target, androidx.compose.animation.core.tween(CANVAS_FADE_MS, easing = androidx.compose.animation.core.FastOutSlowInEasing))
+        canvasProgress.animateTo(
+            target,
+            androidx.compose.animation.core.tween(
+                CANVAS_FADE_MS,
+                easing = androidx.compose.animation.core.FastOutSlowInEasing,
+            ),
+        )
     }
     val canvasAlpha = canvasProgress.value
     val coverAlpha = 1f - canvasProgress.value
+    val immersiveProgress by androidx.compose.animation.core.animateFloatAsState(
+        targetValue = if (immersive) 1f else 0f,
+        animationSpec = androidx.compose.animation.core.tween(
+            durationMillis = 380,
+            easing = androidx.compose.animation.core.FastOutSlowInEasing,
+        ),
+        label = "immersiveProgress",
+    )
     // A tap on the Canvas no longer needs its own mode: the immersive view below handles both
     // cases (Canvas playing or plain cover), so the Canvas-only fade ("chrome") is gone.
     // Music video (YouTube, synced to the Spotify playback): looked up for every track
@@ -331,16 +342,21 @@ fun PlayerScreen(navController: NavController) {
                 url = canvasUrl,
                 onFirstFrame = { canvasShown = true },
                 playing = songPlayingState && !showLyrics && !audioBuffering,
-                modifier = Modifier.fillMaxSize().alpha(canvasAlpha),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .graphicsLayer {
+                        alpha = canvasAlpha
+                        val settleScale = (1.05f - 0.05f * canvasAlpha) * (1f + 0.02f * immersiveProgress)
+                        scaleX = settleScale
+                        scaleY = settleScale
+                    },
             )
             // Darker than the clip itself while the player shows over it, so the text reads;
-            // gone when the Canvas is shown alone.
+            // smoothly lightens when entering full-screen immersive view.
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    // Lighter dim in the immersive view: the clip is the page there, only the
-                    // compact strip needs something to sit on.
-                    .alpha(canvasAlpha * if (immersive) 0.35f else 1f)
+                    .alpha(canvasAlpha * (1f - 0.65f * immersiveProgress))
                     .background(
                         Brush.verticalGradient(
                             colors = listOf(
@@ -374,9 +390,9 @@ fun PlayerScreen(navController: NavController) {
         // Height budget from the screen, as before (the list item is shorter than the screen and
         // gave a smaller cover); the width cap only matters on wide windows.
         val screenHeight = androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp.dp
-        // Immersive: the artwork takes the whole height instead of leaving room for controls.
-        val artSide = if (immersive) screenHeight
-            else minOf(contentWidth, screenHeight - PLAYER_CONTROLS_DP.dp).coerceAtLeast(160.dp)
+        // Immersive: the artwork smoothly expands to take the whole height instead of snapping.
+        val baseArtSide = minOf(contentWidth, screenHeight - PLAYER_CONTROLS_DP.dp).coerceAtLeast(160.dp)
+        val artSide = androidx.compose.ui.unit.lerp(baseArtSide, contentWidth, immersiveProgress)
         Column(
             modifier = Modifier
                 .fillMaxHeight()
@@ -400,7 +416,8 @@ fun PlayerScreen(navController: NavController) {
             // screens): otherwise play / pause ends up under the lyrics card.
             // A clear upward drag on the artwork opens the lyrics (observed on the initial pass,
             // never consumed, so the pager and the pull-to-close keep working).
-            val artBoxHeight = if (immersive) artSide else (artSide - 72.dp).coerceAtLeast(160.dp)
+            val normalArtHeight = (baseArtSide - 72.dp).coerceAtLeast(160.dp)
+            val artBoxHeight = androidx.compose.ui.unit.lerp(normalArtHeight, screenHeight, immersiveProgress)
             Box(modifier = Modifier.width(artSide).height(artBoxHeight).pointerInput(immersive, videoOn) {
                 detectTapGestures(onTap = {
                     // Plain tap on the artwork: the immersive toggle, with or without a Canvas
@@ -446,15 +463,17 @@ fun PlayerScreen(navController: NavController) {
                     2 -> np.next?.coverUri
                     else -> null
                 } ?: songCoverUri
+                val artHorizPad = 36.dp * (1f - immersiveProgress)
+                val artCorner = 8.dp * (1f - immersiveProgress)
                 Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                     GlideImage(
                         transition = CrossFade,
-                        modifier = (if (immersive) Modifier.fillMaxSize()
-                            // Normal layout keeps the inset, rounded cover (36.dp horizontal padding matching official screenshot).
-                            else Modifier.padding(horizontal = 36.dp).aspectRatio(1f).clip(RoundedCornerShape(8.dp)))
+                        modifier = (if (immersiveProgress > 0.98f) Modifier.fillMaxSize()
+                            // Smoothly interpolates from inset rounded cover to full-bleed immersive view.
+                            else Modifier.padding(horizontal = artHorizPad).fillMaxSize().clip(RoundedCornerShape(artCorner)))
                             .graphicsLayer {
                                 alpha = coverAlpha
-                                val grow = 1f + (1f - coverAlpha) * 0.06f
+                                val grow = 1f + (1f - coverAlpha) * 0.08f
                                 scaleX = grow; scaleY = grow
                             },
                         model = cover,
@@ -574,10 +593,16 @@ fun PlayerScreen(navController: NavController) {
         }
         }
         // Immersive: one compact strip at the bottom of the full-bleed artwork, the official
-        // app's collapsed layout. It swallows taps, so only the artwork leaves the mode.
-        if (immersive) {
+        // app's collapsed layout. Smoothly fades and slides in/out.
+        AnimatedVisibility(
+            visible = immersive,
+            modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding(),
+            enter = androidx.compose.animation.fadeIn(tween(280, easing = EaseOut)) +
+                slideInVertically(tween(280, easing = EaseOut)) { it / 2 },
+            exit = androidx.compose.animation.fadeOut(tween(200, easing = EaseOut)) +
+                slideOutVertically(tween(200, easing = EaseOut)) { it / 2 },
+        ) {
             ImmersiveStrip(
-                modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding(),
                 coverUri = songCoverUri,
                 title = songTitle,
                 artists = songSinger,

@@ -48,17 +48,64 @@ class Bridge(private val host: BridgeHost, scope: CoroutineScope) {
         }
     }
 
+    /** The last track the page's state named, to count the songs it started. */
+    private var lastTrack: String? = null
+    private var lastStateLine: String? = null
+    private var lastStateKey: String? = null
+    private var lastStateAt = 0L
+
+    /**
+     * The page posts its state several times a second while a song buffers (a "page state" line
+     * was the most frequent of every report, 755 in the Discord attachments). Logged when the song
+     * or paused changes; a buffering flip of the same song at most every [STATE_EVERY_MS].
+     */
+    private fun stateWorthLogging(line: String, key: String): Boolean {
+        val now = System.currentTimeMillis()
+        if (line == lastStateLine) return false
+        val changed = key != lastStateKey
+        if (!changed && now - lastStateAt < STATE_EVERY_MS) return false
+        lastStateLine = line; lastStateKey = key; lastStateAt = now
+        return true
+    }
+
+    /**
+     * The page's resource notes: only failed ones are logged (status 0 is "not readable", left
+     * out too unless it is a command). Every audio licence answer goes to the 402 summary's counts
+     * instead of the log (it came three times per answer: page net, http, licence answer).
+     */
+    private fun netWorthLogging(msg: JsonObject): Boolean {
+        val url = (msg["url"] as? JsonPrimitive)?.contentOrNull ?: return true
+        val status = (msg["status"] as? JsonPrimitive)?.intOrNull ?: 0
+        if ("widevine-license" in url) return false
+        return status >= 400 || (status == 0 && "player/command" in url)
+    }
+
+    private fun licenceNote(msg: JsonObject) {
+        val url = (msg["url"] as? JsonPrimitive)?.contentOrNull ?: return
+        if ("widevine-license" !in url) return
+        app.myspoti.spotify.report.Refusal402.licence((msg["status"] as? JsonPrimitive)?.intOrNull ?: 0)
+    }
+
     private fun handle(raw: String) {
         val msg = runCatching { json.parseToJsonElement(raw) }.getOrNull() as? JsonObject ?: return
         // Lenient reads: a field of an unexpected type counts as missing.
         fun field(name: String) = msg[name] as? JsonPrimitive
         val type = field("type")?.contentOrNull
+        if (type == "state") {
+            val track = ((msg["state"] as? JsonObject)?.get("track") as? JsonObject)?.get("name")?.toString()
+            if (track != null && track != lastTrack) { lastTrack = track; app.myspoti.spotify.report.Refusal402.song() }
+        }
+        if (type == "ready") app.myspoti.spotify.report.Refusal402.pageReady()
+        if (type == "net") licenceNote(msg)
         logger?.let { log ->
             if (type == "state") {
                 val s = msg["state"] as? JsonObject
-                log("page state: " + (s?.get("track") as? JsonObject)?.get("name") + " paused=" + s?.get("isPaused") + " buffering=" + s?.get("isBuffering"))
+                val line = "page state: " + (s?.get("track") as? JsonObject)?.get("name") + " paused=" + s?.get("isPaused") + " buffering=" + s?.get("isBuffering")
+                if (stateWorthLogging(line, s?.get("track")?.toString() + s?.get("isPaused"))) log(line)
             } else if (type == "result") {
                 // Results are logged by call(); never write their values (tokens) here.
+            } else if (type == "net" && !netWorthLogging(msg)) {
+                // A playback request that went through, or a licence answer (counted in the 402 summary).
             } else if (type != "queue") log("page $type: " + raw.take(300))
         }
         when (type) {
@@ -73,6 +120,8 @@ class Bridge(private val host: BridgeHost, scope: CoroutineScope) {
             "queue" -> _events.tryEmit("queue" to (msg["queue"] ?: JsonNull))
             // Spotify refused a playback command (HTTP 402/403 on Connect), see ControlRelay.
             "refused" -> _events.tryEmit("refused" to msg)
+            // The page's EME probe (see player-bridge.js): whether Widevine works in this WebView.
+            "drm" -> _events.tryEmit("drm" to msg)
             "error" -> _ready.value = false
         }
     }
@@ -91,10 +140,16 @@ class Bridge(private val host: BridgeHost, scope: CoroutineScope) {
      * injected again, and the calls still waiting fail now instead of each timing out.
      */
     fun pageGone() {
+        pagesGone++
         gone = true
+        PageDevice.pageGone()
         _ready.value = false
         pending.values.forEach { it.completeExceptionally(BridgeException("page reloaded")) }
     }
+
+    /** How many pages went away ([pageGone]): a reload waits for this to move, not for "ready" alone. */
+    @Volatile var pagesGone = 0
+        private set
 
     /** Between [pageGone] and the new page's "ready". */
     @Volatile private var gone = false
@@ -144,6 +199,9 @@ class Bridge(private val host: BridgeHost, scope: CoroutineScope) {
 
     companion object {
         val json = Json { ignoreUnknownKeys = true }
+
+        /** A buffering flip of the same song is logged at most this often (see stateWorthLogging). */
+        const val STATE_EVERY_MS = 5_000L
     }
 }
 

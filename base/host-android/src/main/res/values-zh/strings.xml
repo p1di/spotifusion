@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="msp_previous">上一首</string>
+    <string name="msp_play">播放</string>
+    <string name="msp_pause">暂停</string>
+    <string name="msp_next">下一首</string>
+    <string name="msp_like">点赞</string>
+    <string name="msp_unlike">取消点赞</string>
+    <string name="msp_shuffle_on">随机播放已开</string>
+    <string name="msp_shuffle_off">随机播放已关</string>
+    <string name="msp_channel_playback">播放</string>
+    <string name="msp_back_15">后退 15 秒</string>
+    <string name="msp_forward_15">快进 15 秒</string>
+</resources>

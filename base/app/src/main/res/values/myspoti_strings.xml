@@ -413,4 +413,17 @@
     <string name="player_show_elapsed">Show the time elapsed</string>
     <string name="player_sleep_timer">Sleep timer</string>
     <string name="player_speed_a11y">Playback speed, %1$s×</string>
+    <string name="drm_missing">Android System WebView has no Widevine DRM on this device: switching to Spotifusion BitChord audio engine.</string>
+    <string name="aa_recent">Recently played</string>
+    <string name="aa_songs">Songs</string>
+    <string name="aa_start_radio">Start radio</string>
+    <string name="aa_downloaded_lists">Downloaded playlists and albums</string>
+    <string name="aa_downloaded_songs">Downloaded songs</string>
+    <string name="aa_home">Home</string>
+    <string name="aa_library">Library</string>
+    <string name="aa_downloads">Downloads</string>
+    <string name="offline_stats_warning_title">Offline Listening Notice</string>
+    <string name="offline_stats_warning_body">Playing downloaded songs offline uses Spotifusion\'s local audio engine and won\'t be tracked in your official Spotify listening stats or Wrapped.</string>
+    <string name="offline_stats_warning_ok">OK</string>
+    <string name="offline_stats_warning_dont_show">Don\'t show again</string>
 </resources>

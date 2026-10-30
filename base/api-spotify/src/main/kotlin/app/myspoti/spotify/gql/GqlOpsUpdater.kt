@@ -68,8 +68,10 @@ class GqlOpsUpdater(private val http: OkHttpClient, private val cache: File) {
     }
 
     private fun parse(text: String): GqlOps {
-        val ops = Bridge.json.parseToJsonElement(text).jsonObject["operations"]!!.jsonObject
-        return GqlOps(ops.mapValues { it.value.jsonObject["hash"]!!.jsonPrimitive.content })
+        val ops = Bridge.json.parseToJsonElement(text).jsonObject["operations"] as? JsonObject ?: throw GqlException("ops", "no operations in the table")
+        return GqlOps(ops.mapValues { (name, op) ->
+            (op.jsonObject["hash"] as? JsonPrimitive)?.content ?: throw GqlException(name, "no hash in the table")
+        })
     }
 
     private fun get(url: String): String =

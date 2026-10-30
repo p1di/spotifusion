@@ -1,7 +1,12 @@
 package app.myspoti.spotify.gql
 
 import app.myspoti.spotify.bridge.Bridge
+import app.myspoti.spotify.bridge.BridgeException
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -83,7 +88,8 @@ class SpotifyHttp(
      */
     private val deviceId: String = java.util.UUID.randomUUID().toString(),
 ) {
-    private data class WebToken(val access: String, val expiresAtMs: Long, val clientId: String, val appVersion: String, val anonymous: Boolean)
+    private data class WebToken(val access: String, val expiresAtMs: Long, val clientId: String, val appVersion: String, val anonymous: Boolean,
+                                val fetchedAtMs: Long = System.currentTimeMillis())
     private data class ClientToken(val value: String, val expiresAtMs: Long)
 
     private val lock = Mutex()
@@ -94,18 +100,34 @@ class SpotifyHttp(
     suspend fun forgetWebToken() = lock.withLock { web = null }
 
     /** True when the page's token belongs to a signed-in user (the cached one is reused). */
-    suspend fun isSignedIn(): Boolean = lock.withLock { !webToken().anonymous }
+    /**
+     * Asks the page, never the cached token: a token cached before a logout (valid up to an hour)
+     * said "signed in" while the user was still on the e-mail code step, the sign-in page was put
+     * away under them and the code was lost (log seen). A fresh answer also refreshes the cache.
+     * "Fresh" is a few seconds: several checks at once (startup asks five times within five
+     * seconds) share one answer, and every request waits behind this lock while the page answers
+     * (0.3 to 2 s each, measured at startup).
+     */
+    suspend fun isSignedIn(): Boolean = lock.withLock {
+        if (web?.let { System.currentTimeMillis() - it.fetchedAtMs < SIGNED_IN_FRESH_MS } != true) web = null
+        !webToken().anonymous
+    }
+
+    /** What the token in hand says (null: none yet), without asking the page; for logs only. */
+    fun signedInHint(): Boolean? = web?.let { !it.anonymous }
 
     /** The account's token, fetched again only when the cached one is missing or stale. */
     private suspend fun webToken(): WebToken {
         val now = System.currentTimeMillis()
         return web?.takeIf { it.expiresAtMs - now > 60_000 } ?: run {
             val t = bridge.call("token.get").jsonObject
+            // A page that answers without a field (a build that changed) is a bridge error, not a crash.
+            fun field(name: String): JsonPrimitive = t[name] as? JsonPrimitive ?: throw BridgeException("token.get: no $name")
             WebToken(
-                access = t["accessToken"]!!.jsonPrimitive.content,
-                expiresAtMs = t["expiresAtMs"]!!.jsonPrimitive.long,
-                clientId = t["clientId"]!!.jsonPrimitive.content,
-                appVersion = t["appVersion"]!!.jsonPrimitive.content,
+                access = field("accessToken").content,
+                expiresAtMs = field("expiresAtMs").long,
+                clientId = field("clientId").content,
+                appVersion = field("appVersion").content,
                 anonymous = t["isAnonymous"]?.jsonPrimitive?.contentOrNull == "true",
             ).also { web = it }
         }
@@ -130,8 +152,68 @@ class SpotifyHttp(
         // Bytes keep the content type exactly as given (OkHttp appends a charset to String bodies,
         // which some Spotify endpoints reject with 400).
         builder.method(method, body?.toByteArray()?.toRequestBody(contentType.toMediaType()) ?: if (method == "GET" || method == "DELETE") null else ByteArray(0).toRequestBody(null))
-        val result = withContext(Dispatchers.IO) { http.newCall(builder.build()).execute().use { it.code to it.body.string() } }
+        val call = http.newCall(builder.build())
+        // A read is given up with its caller (a timeout, a song skipped): a blocking execute ignores
+        // the coroutine's cancellation, and a caller's 3 s timeout then lasted the client's 10 s
+        // (log seen: an extension asked for a skipped-to song 10 s late, behind its ISRC lookup).
+        // Writes still run to their end: a caller gone must not leave one half sent.
+        val result = if (method == "GET") call.executeCancellable() else withContext(Dispatchers.IO) { call.execute().use { it.code to it.body.string() } }
         if (result.first == 401) lock.withLock { web = null }
+        return result
+    }
+
+    /** Runs the call on the IO pool; the coroutine cancelled, the call is cancelled too (it then fails at once). */
+    private suspend fun okhttp3.Call.executeCancellable(): Pair<Int, String> = coroutineScope {
+        val call = this@executeCancellable
+        val done = java.util.concurrent.atomic.AtomicBoolean(false)
+        val watch = launch(start = CoroutineStart.UNDISPATCHED) { try { awaitCancellation() } finally { if (!done.get()) call.cancel() } }
+        try {
+            withContext(Dispatchers.IO) { call.execute().use { it.code to it.body.string() } }
+        } finally {
+            done.set(true)
+            watch.cancel()
+        }
+    }
+
+    /** What [sendRaw] got back: the status, lower-case header names (values joined by ", "), the body text. */
+    data class RawResponse(val status: Int, val headers: Map<String, String>, val body: String)
+
+    /**
+     * Any method on a Spotify address, for the extensions' raw door. `*.spotify.com` gets the
+     * account's credentials as every other call here (web token, client token, the Web Player's
+     * headers); `*.spotifycdn.com` (public files) gets none. Other hosts, plain http, and caller
+     * headers that would replace the credentials are refused or dropped. No X-Requested-With.
+     */
+    suspend fun sendRaw(method: String, url: String, body: ByteArray?, headers: Map<String, String>): RawResponse {
+        val target = url.toHttpUrl()
+        val kind = rawTarget(target.scheme, target.host) ?: throw IllegalArgumentException("not a Spotify address: ${target.host}")
+        val m = method.uppercase()
+        require(m in RAW_METHODS) { "method $method" }
+        val extra = headers.filterKeys { it.lowercase() !in RAW_DROPPED }
+        val contentType = extra.entries.firstOrNull { it.key.equals("content-type", true) }?.value ?: JSON_TYPE
+        val builder = Request.Builder().url(target)
+        if (kind == RawTarget.ACCOUNT) {
+            val (w, c) = tokens()
+            builder.header("authorization", "Bearer ${w.access}")
+                .header("client-token", c.value)
+                .header("app-platform", "WebPlayer")
+                .header("spotify-app-version", w.appVersion)
+                .header("origin", "https://open.spotify.com")
+                .header("referer", "https://open.spotify.com/")
+        }
+        builder.header("accept", "application/json").header("accept-language", language)
+            .header("user-agent", browserUserAgent ?: USER_AGENT)
+        extra.forEach { (k, v) -> if (!k.equals("content-type", true)) builder.header(k, v) }
+        val payload = body?.toRequestBody(contentType.toMediaType())
+            ?: if (m == "GET" || m == "HEAD" || m == "DELETE") null else ByteArray(0).toRequestBody(null)
+        builder.method(m, payload)
+        val result = withContext(Dispatchers.IO) {
+            http.newCall(builder.build()).execute().use { r ->
+                RawResponse(r.code, r.headers.names().associate { n -> n.lowercase() to r.headers.values(n).joinToString(", ") },
+                    if (m == "HEAD") "" else r.body.string())
+            }
+        }
+        if (result.status == 401 && kind == RawTarget.ACCOUNT) lock.withLock { web = null }
         return result
     }
 
@@ -177,10 +259,34 @@ class SpotifyHttp(
         val granted = runCatching { Bridge.json.parseToJsonElement(text).jsonObject["granted_token"]?.jsonObject }.getOrNull()
             ?: throw GqlException("clienttoken", "HTTP $code: ${text.take(200)}")
         val seconds = (granted["expires_after_seconds"] as? JsonPrimitive)?.long ?: 86_400
-        return ClientToken(granted["token"]!!.jsonPrimitive.content, System.currentTimeMillis() + seconds * 1000)
+        val token = (granted["token"] as? JsonPrimitive)?.content ?: throw GqlException("clienttoken", "no token in the answer")
+        return ClientToken(token, System.currentTimeMillis() + seconds * 1000)
     }
 
+    /** Who a raw request may go to: the account's own hosts (with its credentials) or Spotify's public CDN. */
+    enum class RawTarget { ACCOUNT, PUBLIC }
+
     companion object {
+        private val RAW_METHODS = setOf("GET", "HEAD", "POST", "PUT", "PATCH", "DELETE")
+        /** The credentials and what the transport sets itself: never taken from an extension. */
+        private val RAW_DROPPED = setOf(
+            "authorization", "client-token", "cookie", "host", "content-length", "connection", "transfer-encoding",
+            "x-requested-with", "origin", "referer", "app-platform", "spotify-app-version",
+        )
+
+        /** [RawTarget] for https on `spotify.com` / `*.spotify.com` / `spotifycdn.com` / `*.spotifycdn.com`; null for anything else. */
+        fun rawTarget(scheme: String, host: String): RawTarget? {
+            if (scheme != "https") return null
+            val h = host.lowercase()
+            return when {
+                h == "spotify.com" || h.endsWith(".spotify.com") -> RawTarget.ACCOUNT
+                h == "spotifycdn.com" || h.endsWith(".spotifycdn.com") -> RawTarget.PUBLIC
+                else -> null
+            }
+        }
+
+        /** How long a signed-in check answers from the token just fetched (see isSignedIn). */
+        const val SIGNED_IN_FRESH_MS = 10_000L
         const val JSON_TYPE = "application/json;charset=UTF-8"
         const val USER_AGENT =
             "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36"

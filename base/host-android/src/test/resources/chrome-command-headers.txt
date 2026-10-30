@@ -1,0 +1,14 @@
+# Desktop Chrome 155 on Linux, POST https://<spclient>/connect-state/v1/player/command/from/<id>/to/<id>
+# (the 02-playback capture, 2026-10). Header names without the HTTP/2 pseudo-headers, and the values
+# that carry no account data. No token, no id, no cookie: the request has no cookie header at all.
+names=accept,accept-encoding,accept-language,app-platform,authorization,client-token,content-length,content-type,origin,priority,referer,sec-ch-ua,sec-ch-ua-mobile,sec-ch-ua-platform,sec-fetch-dest,sec-fetch-mode,sec-fetch-site,spotify-app-version,user-agent
+accept=*/*
+accept-encoding=gzip, deflate, br, zstd
+priority=u=1, i
+origin=https://open.spotify.com
+referer=https://open.spotify.com/
+sec-fetch-site=same-site
+sec-fetch-mode=cors
+sec-fetch-dest=empty
+sec-ch-ua-mobile=?0
+sec-ch-ua-platform="Linux"

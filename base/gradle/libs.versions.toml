@@ -6,13 +6,13 @@ appcompat = "1.7.1"
 material = "1.14.0"
 webkit = "1.13.0"
 composeBom = "2026.06.01"
-material3 = "1.5.0-beta01"
+material3 = "1.5.0-beta02"
 activityCompose = "1.10.0"
 lifecycleRuntime = "2.9.0"
-media = "1.7.1"
+media = "1.8.0"
 securityCrypto = "1.0.0"
 bouncycastle = "1.70"
-ktor = "3.5.1"
+ktor = "3.6.0"
 brotli = "0.1.2"
 newpipe = "0.26.3"
 okhttp = "5.4.0"
@@ -60,6 +60,11 @@ brotli = { module = "org.brotli:dec", version.ref = "brotli" }
 
 # Utils
 okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }
+# Chrome's Accept-Encoding on the relayed requests (br, zstd), decoded on the OkHttp path.
+okhttp-brotli = { module = "com.squareup.okhttp3:okhttp-brotli", version.ref = "okhttp" }
+okhttp-zstd = { module = "com.squareup.okhttp3:okhttp-zstd", version.ref = "okhttp" }
+# Cronet from Google Play services: the Chromium network stack for refused commands before Android 14.
+play-services-cronet = { module = "com.google.android.gms:play-services-cronet", version = "18.1.1" }
 
 # Serialization
 serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "serialization" }

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="msp_previous">Назад</string>
+    <string name="msp_play">Воспроизвести</string>
+    <string name="msp_pause">Пауза</string>
+    <string name="msp_next">Далее</string>
+    <string name="msp_like">Нравится</string>
+    <string name="msp_unlike">Убрать из любимых</string>
+    <string name="msp_shuffle_on">Перемешивание вкл.</string>
+    <string name="msp_shuffle_off">Перемешивание выкл.</string>
+    <string name="msp_channel_playback">Воспроизведение</string>
+    <string name="msp_back_15">Назад на 15 секунд</string>
+    <string name="msp_forward_15">Вперёд на 15 секунд</string>
+</resources>

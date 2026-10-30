@@ -90,18 +90,18 @@ fun groupRecents(entries: List<RecentEntry>): List<RecentSection> {
             openPlays += entry.item
             continue
         }
-        // No group key at all: the server gave this row on its own, so it is its own row.
-        if (group == null) {
-            closeOpen()
-            rows += RecentGroup(
-                context = entry.item,
-                count = 1,
-                saved = entry.saved,
-                music = entry.music,
-                plays = listOf(entry.item),
-                dayMs = entry.item.playedAtMs,
-            )
-        }
+        // No group key at all, or a key no open context announced (a page that starts mid-group, a
+        // play listed away from its context): the row is its own, never dropped. A keyed stray
+        // leaves the open group as it is, so the plays that follow still join it.
+        if (group == null) closeOpen()
+        rows += RecentGroup(
+            context = entry.item,
+            count = 1,
+            saved = entry.saved,
+            music = entry.music,
+            plays = listOf(entry.item),
+            dayMs = entry.item.playedAtMs,
+        )
     }
     closeOpen()
 

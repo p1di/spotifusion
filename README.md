@@ -61,9 +61,11 @@ Playback operates through a lightweight, headless official Spotify Web Player ru
   - Downloads high-bitrate audio (up to 320kbps AAC and progressive Opus streams) using range-chunked acceleration that bypasses server throttling.
   - Zero verification gates or login barriers for downloads.
 - **Real-Time Synced Lyrics**: Powered by [LRCLIB](https://lrclib.net) with instant line-by-line sync and smooth transitions.
-- **Synchronized Music Videos**: Official music videos from YouTube play seamlessly in sync with audio tracks when available.
+- **Smooth Spotify Canvas & Synchronized Music Videos**: Full-screen looping Spotify Canvas animations with smooth transitions, plus official music videos from YouTube synced to playback.
+- **Automatic Regional/Account Fallback**: Chromium Cronet network relay prevents false account/country refusals, with automatic BitChord audio fallback if Spotify restricts a track on your account or device.
+- **In-App Auto-Updater**: Checks GitHub Releases automatically, displays release notes in-app, and downloads + installs updates seamlessly.
 - **Complete Library & Navigation**: Full support for Liked Songs, user playlists (with pinned item styling), albums, artists, podcasts, and audiobooks.
-- **System Integration**: Bluetooth metadata & device naming, lock screen controls, media notifications, Android Auto support, and Spotify Connect.
+- **System Integration**: Bluetooth metadata & device naming, lock screen controls, media notifications, full Android Auto support (including Start Radio & Offline Downloads), and Spotify Connect.
 - **Privacy & Recents**: Built-in Recap and listening history stored locally on your device.
 
 ---

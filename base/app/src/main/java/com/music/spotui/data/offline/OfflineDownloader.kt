@@ -148,6 +148,12 @@ object OfflineDownloader {
                 return
             }
         } else {
+            val prefs = Graph.app.getSharedPreferences("offline_stats_warning", android.content.Context.MODE_PRIVATE)
+            if (!prefs.getBoolean("dont_show_again", false)) {
+                scope.launch(Dispatchers.Main) {
+                    com.music.spotui.offlineStatsWarningOpen.value = true
+                }
+            }
             if (com.music.spotui.data.DataSaver.metered) scope.launch(Dispatchers.Main) {
                 android.widget.Toast.makeText(Graph.app, app.myspoti.engine.R.string.download_on_mobile_data, android.widget.Toast.LENGTH_LONG).show()
             }
@@ -358,14 +364,46 @@ object OfflineDownloader {
 
     private class StreamExpiredException(val code: Int) : IOException("Stream HTTP $code")
 
+    /**
+     * Resolves and downloads a temporary audio file for immediate local fallback playback
+     * when Spotify refuses a track due to country/account restrictions or missing Widevine DRM.
+     */
+    suspend fun fetchFallbackAudioFile(trackId: String, title: String, artist: String, durationMs: Long): File? {
+        if (title.isBlank()) return null
+        val dir = File(Graph.app.cacheDir, "playback_fallback").apply { mkdirs() }
+        // Reuse existing cached file if already fetched
+        dir.listFiles()?.firstOrNull { it.name.startsWith("$trackId.") && it.length() >= 10_000L }?.let {
+            it.setLastModified(System.currentTimeMillis())
+            return it
+        }
+        // Keep cache bounded (at most 15 recent fallback songs)
+        dir.listFiles()?.sortedByDescending { it.lastModified() }?.drop(15)?.forEach { runCatching { it.delete() } }
+
+        val meta = Meta(title = title, artist = artist, album = "", albumId = "", durationMs = durationMs, coverUrl = "", isrc = null)
+        val tmp = File(dir, "$trackId.tmp")
+        val resolved = runCatching {
+            resolveAndFetchBitChord(trackId, meta, 320, tmp)
+        }.getOrNull() ?: run {
+            tmp.delete()
+            return null
+        }
+        val finalFile = File(dir, "$trackId.${resolved.ext}")
+        if (finalFile.exists()) finalFile.delete()
+        return if (tmp.renameTo(finalFile)) finalFile else tmp.takeIf { it.exists() && it.length() >= 10_000L }
+    }
+
     // ── BitChord TrackMatcher (YouTube Music SONGS + official audio fallback) ──
 
     private val VERSION_WORDS = listOf(
         "remix", "live", "instrumental", "karaoke", "acapella",
         "cover", "sped up", "slowed", "reverb", "nightcore", "8d",
     )
-    private val BRACKET_NOISE = Regex("""[\(\[][^\)\]]*?\b(?:official|video|audio|lyric|lyrics|visualizer|hd|hq|4k|mv|music video|explicit|clean|remaster(?:ed)?|anniversary|deluxe|edition|version|feat\.?|ft\.?)[^\)\]]*?[\)\]]""", RegexOption.IGNORE_CASE)
-    private val FEAT_TAIL = Regex("""\s+(?:feat\.?|ft\.?|featuring)\s+.*$""", RegexOption.IGNORE_CASE)
+    private val VERSION_REGEXES = VERSION_WORDS.associateWith { w ->
+        Regex("""\b${Regex.escape(w)}\b""", RegexOption.IGNORE_CASE)
+    }
+    private val BRACKET_NOISE = Regex("""[\(\[][^\)\]]*?\b(?:official|video|audio|lyric|lyrics|visualizer|hd|hq|4k|mv|music video|explicit|clean|remaster(?:ed)?|anniversary|deluxe|edition|version|feat\.?|ft\.?|with\b)[^\)\]]*?[\)\]]""", RegexOption.IGNORE_CASE)
+    private val HYPHEN_NOISE = Regex("""\s+-\s+(?:.*?\b(?:remaster(?:ed)?|radio edit|single version|album version|explicit|clean|deluxe|edition|anniversary|mono|stereo|from\b).*)$""", RegexOption.IGNORE_CASE)
+    private val FEAT_TAIL = Regex("""\s+(?:feat\.?|ft\.?|featuring|with)\s+.*$""", RegexOption.IGNORE_CASE)
     private val PUNCT_CLEAN = Regex("""[^\p{L}\p{N}\s]""")
     private val MULTI_SPACE = Regex("""\s+""")
 
@@ -373,7 +411,7 @@ object OfflineDownloader {
         PUNCT_CLEAN.replace(s.lowercase(Locale.ROOT), " ").replace(MULTI_SPACE, " ").trim()
 
     private fun coreTitle(s: String): String =
-        cleanNorm(FEAT_TAIL.replace(BRACKET_NOISE.replace(s, ""), ""))
+        cleanNorm(FEAT_TAIL.replace(HYPHEN_NOISE.replace(BRACKET_NOISE.replace(s, ""), ""), ""))
 
     private fun matchYouTubeTrack(meta: Meta): String? {
         // First try Spotifusion's strict 3s YouTube Music song finder
@@ -386,17 +424,25 @@ object OfflineDownloader {
             YouTubeSource.searchCandidates(query, YoutubeSearchQueryHandlerFactory.MUSIC_SONGS)
         }.getOrDefault(emptyList())
 
-        pickBestBitChordHit(meta, songHits)?.let { return it.url }
+        pickBestBitChordHit(meta, songHits, minScore = 40, maxDurDiffSec = 35L)?.let { return it.url }
 
         // Fallback to official audio on YouTube VIDEOS (still filtered by BitChord's version/duration rules)
         YouTubeSource.findAudio(meta.title, meta.artist, meta.durationMs)?.let { return it.url }
         val videoHits = runCatching {
             YouTubeSource.searchCandidates("$query official audio", YoutubeSearchQueryHandlerFactory.VIDEOS)
         }.getOrDefault(emptyList())
-        return pickBestBitChordHit(meta, videoHits)?.url
+        pickBestBitChordHit(meta, videoHits, minScore = 38, maxDurDiffSec = 45L)?.let { return it.url }
+
+        // Final relaxed fallback search on YouTube VIDEOS for indie/regional/untagged tracks
+        val plainVideoHits = runCatching {
+            YouTubeSource.searchCandidates(query, YoutubeSearchQueryHandlerFactory.VIDEOS)
+        }.getOrDefault(emptyList())
+        return pickBestBitChordHit(meta, plainVideoHits, minScore = 28, maxDurDiffSec = 90L)?.url
+            ?: songHits.firstOrNull()?.url
+            ?: videoHits.firstOrNull()?.url
     }
 
-    private fun pickBestBitChordHit(meta: Meta, hits: List<YouTubeSource.Hit>): YouTubeSource.Hit? {
+    private fun pickBestBitChordHit(meta: Meta, hits: List<YouTubeSource.Hit>, minScore: Int = 40, maxDurDiffSec: Long = 35L): YouTubeSource.Hit? {
         if (hits.isEmpty()) return null
         val tNorm = cleanNorm(meta.title)
         val tCore = coreTitle(meta.title)
@@ -411,14 +457,14 @@ object OfflineDownloader {
             val cCore = coreTitle(c.name)
             val uNorm = cleanNorm(c.uploader)
 
-            // Hard filter: reject version mismatches (remix, live, sped up, slowed, etc.)
-            val badVersion = VERSION_WORDS.any { w ->
-                (cNorm.contains(w) || uNorm.contains(w)) && !tNorm.contains(w)
+            // Hard filter: reject version mismatches (remix, live, sped up, slowed, etc.) using word boundaries on title
+            val badVersion = VERSION_REGEXES.any { (_, rx) ->
+                rx.containsMatchIn(cNorm) && !rx.containsMatchIn(tNorm)
             }
             if (badVersion) continue
 
-            // Hard filter: reject > 30s duration difference when both durations are known
-            if (targetDurSec > 0 && c.durationSec > 0 && abs(targetDurSec - c.durationSec) > 30L) continue
+            // Hard filter: reject large duration difference when both durations are known
+            if (targetDurSec > 0 && c.durationSec > 0 && abs(targetDurSec - c.durationSec) > maxDurDiffSec) continue
 
             // Score title (0..45)
             val titleScore = when {
@@ -433,7 +479,7 @@ object OfflineDownloader {
                     else (tTokens.intersect(cTokens).size * 24) / maxOf(tTokens.size, cTokens.size)
                 }
             }
-            if (titleScore < 15) continue
+            if (titleScore < 12) continue
 
             // Score artist (0..35)
             val cleanUploader = uNorm.removeSuffix(" - topic").removeSuffix(" topic").trim()
@@ -457,7 +503,7 @@ object OfflineDownloader {
                     diff <= 5L -> 16
                     diff <= 10L -> 8
                     diff <= 20L -> 0
-                    else -> -15
+                    else -> -10
                 }
             } else 5
 
@@ -467,7 +513,7 @@ object OfflineDownloader {
                 best = c
             }
         }
-        return if (bestScore >= 45) best else null
+        return if (bestScore >= minScore) best else null
     }
 
     // ── BitChord StreamResolver (NewPipe progressive audio stream selection) ──

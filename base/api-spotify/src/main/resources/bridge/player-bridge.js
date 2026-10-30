@@ -27,6 +27,21 @@
     return;
   }
 
+  // The page always sees itself visible: a hidden page has its timers and rendering throttled,
+  // and the engine runs with the app in the background (the host already tells Chromium the view
+  // is shown). Nothing in this bridge reads the page's visibility.
+  try {
+    Object.defineProperty(Document.prototype, 'hidden', { configurable: true, get: () => false });
+    Object.defineProperty(Document.prototype, 'visibilityState', { configurable: true, get: () => 'visible' });
+    Object.defineProperty(Document.prototype, 'webkitHidden', { configurable: true, get: () => false });
+    Object.defineProperty(Document.prototype, 'webkitVisibilityState', { configurable: true, get: () => 'visible' });
+    document.hasFocus = () => true;
+    for (const t of ['visibilitychange', 'webkitvisibilitychange']) {
+      document.addEventListener(t, e => e.stopImmediatePropagation(), true);
+      window.addEventListener(t, e => e.stopImmediatePropagation(), true);
+    }
+  } catch (e) { /* keep the real values */ }
+
   const VERSION = 1;
   const READY_TIMEOUT_MS = 60000;
 
@@ -218,7 +233,74 @@
   // cancel the pending ones, or they would override it seconds later (the up-ramp of a
   // crossfade undone by the tail of its own down-ramp, a restored volume pulled down again).
   let fadeTimers = [];
-  const cancelFade = () => { fadeTimers.forEach(clearTimeout); fadeTimers = []; };
+  // The watch of a change of song (riseOnSwitch): apart, as it outlives the fade-out it follows.
+  let riseTimers = [];
+  const cancelFade = () => { fadeTimers.forEach(clearTimeout); fadeTimers = []; riseTimers.forEach(clearTimeout); riseTimers = []; };
+
+  // A ramp heard as even: the gain follows a cubic curve (the usual "audio taper", the one the
+  // page applies to its own volume when _cubicVolume is set), so equal times give equal steps
+  // to the ear. A linear or stepped ramp was heard as a jump: most of it in the first moments.
+  // Ticks every 16 ms; each sets the level the clock is at (a late tick never stretches it).
+  // fromK/toK: positions on that curve (0 = silent, 1 = the player's own level, read at every
+  // tick so a volume change meanwhile is kept). -> a function that starts it.
+  const ramp = (el, player, fromK, toK, ms, done) => () => {
+    cancelFade();
+    const t0 = performance.now();
+    const tick = () => {
+      const k = Math.min(1, (performance.now() - t0) / ms);
+      const p = fromK + (toK - fromK) * k;
+      el.volume = Math.min(1, Math.max(SILENT, ownLevel(player) * p * p * p));
+      if (k < 1) fadeTimers.push(setTimeout(tick, 16));
+      else if (done) done();
+    };
+    tick();
+  };
+  // The sound held down through a change of song, and up along the curve over {ms} once the next
+  // song's own sound starts. Reported: a skip faded the old song out, and the level came back on
+  // the state's word that the next song was there, while the element still played the old one's
+  // last buffered moments (heard as a fragment of it, or a pop). The change is the element's own:
+  // another element, another source, or its clock jumping (a new song starts from 0, or where it
+  // was asked to). Until then the fade-out that came with it goes on; from then the element stays
+  // at SILENT (the page sets its own level on a new song) until its clock moves. Never left down:
+  // the level comes back after {wait} ms whatever happened. Any other fade or volume set ends it.
+  const riseOnSwitch = (player, ms, wait) => {
+    const first = player._player;
+    const src = first.currentSrc;
+    const now = () => (player._player instanceof HTMLMediaElement ? player._player : first);
+    let el = first, switched = false, prev = first.currentTime, at = performance.now();
+    const tick = () => {
+      const cur = now();
+      if (!switched) {
+        const t = cur.currentTime, wall = performance.now();
+        // What the clock should have done since the last look: anything else is a jump (a late
+        // timer on a busy page is not one).
+        const expected = cur.paused ? 0 : (wall - at) / 1000 * (cur.playbackRate || 1);
+        if (cur !== first || cur.currentSrc !== src || Math.abs(t - prev - expected) > 1) {
+          switched = true;
+          el = cur;
+          // The fade-out is over: its last steps would land on the new song.
+          fadeTimers.forEach(clearTimeout); fadeTimers = [];
+          el.volume = SILENT;
+          prev = el.currentTime;
+        } else { prev = t; at = wall; }
+        riseTimers.push(setTimeout(tick, 16));
+        return;
+      }
+      if (cur !== el) { el = cur; prev = el.currentTime; }
+      if (el.volume > SILENT) el.volume = SILENT;
+      const t = el.currentTime, step = t - prev;
+      prev = t;
+      if (!el.paused && step > 0.005 && step < 0.5) { ramp(el, player, 0, 1, Math.max(1, ms))(); return; }
+      riseTimers.push(setTimeout(tick, 16));
+    };
+    riseTimers.push(setTimeout(() => { cancelFade(); now().volume = ownLevel(player); }, Math.max(500, Number(wait) || 3000)));
+    tick();
+  };
+  // Where the element stands on that curve now.
+  const curveAt = (el, player) => {
+    const own = ownLevel(player);
+    return own > 0 ? Math.min(1, Math.cbrt(Math.max(0, el.volume) / own)) : 1;
+  };
 
   // "Is this page Spotify Connect's active device": a full device-list round trip, so it is
   // read at most once every ACTIVE_CACHE_MS and reused (a transfer happens minutes apart).
@@ -253,10 +335,12 @@
   // web player to force `adsEnabled` off; the very same managers are reachable at runtime through
   // the service registry, so they are turned off here instead of patching a bundle we do not ship.
   //
-  // `disable` alone is not enough: the page re-arms its managers at every ad opportunity (a
-  // "Test ad" still came through on a free account, 19/10 02:29). `enable`/`disable` sit on the
-  // prototype and `enabled` is a plain field, so the instance is shadowed here: after this, the
-  // page cannot arm an ad again for the life of the page.
+  // `enable`/`disable` sit on the prototype and `enabled` is a plain field, so the instance is
+  // shadowed here: after this, the page cannot arm its own managers again for the life of the page.
+  // This does not stop audio ads: Spotify's server puts those in the queue itself (measured on
+  // 20/10, desktop, free account: one ad after ~17 min with this latch on, as without it). Those
+  // are left out of the queue by the host (AdBlock.withoutAds). The "Test ad" once taken for an
+  // ad that came through was tools/playback_test.py's own fake.
   let adsLatched = false;
   const adsOff = () => {
     if (!services) return 'not ready';
@@ -280,9 +364,8 @@
   };
 
   /**
-   * Ends the ad the in-stream ad manager owns, its own way (a skip of the ad break, not of the
-   * song). The app asks for this before it falls back to reloading the page, which is what a
-   * "Test ad" used to cost: a visible reload of the whole player.
+   * Asks the in-stream ad manager to end its break. Kept for diagnosis only: on a real ad whose
+   * audio was refused it did nothing (20/10), the server holds the ad ("ad_disallow").
    */
   const adsSkip = () => {
     if (!services) return 'not ready';
@@ -377,9 +460,31 @@
       window.__mspMuted = !!a.on;
       const player = await localPlayer().catch(() => null);
       const els = new Set([...(window.__mspMedia || []), ...document.querySelectorAll('audio, video'), ...await playerMedia()]);
+      // The end of an ad's mute leaves a hushed page unheard ('media.hush'): seen, the page heard
+      // over the local player it mirrors after an ad, on an element the hush had not reached yet.
       for (const el of els) {
         el.muted = false;
-        el.volume = a.on ? SILENT : (player && el === player._player ? ownLevel(player) : 1);
+        el.volume = a.on || window.__mspHushed ? SILENT : (player && el === player._player ? ownLevel(player) : 1);
+      }
+      return els.size;
+    },
+
+    // "Clip sound": the music video's own soundtrack is heard instead of the song. The song keeps
+    // playing here (still Spotify's play of it, counted as one), only unheard, at the same
+    // unheard volume as above. Held against the page's own volume sets (a new song, a fade, a
+    // volume change) by a listener on each element; an ad's mute keeps the upper hand. {on} -> elements.
+    'media.hush': async a => {
+      window.__mspHushed = !!a.on;
+      const player = await localPlayer().catch(() => null);
+      const els = new Set([...(window.__mspMedia || []), ...document.querySelectorAll('audio, video'), ...await playerMedia()]);
+      for (const el of els) {
+        if (!el.__mspHush) {
+          el.__mspHush = () => { if (window.__mspHushed && !window.__mspMuted && el.volume > SILENT) el.volume = SILENT; };
+          el.addEventListener('volumechange', el.__mspHush);
+          el.addEventListener('playing', el.__mspHush);
+        }
+        if (a.on) { cancelFade(); el.muted = false; el.volume = SILENT; }
+        else if (!window.__mspMuted) el.volume = player && el === player._player ? ownLevel(player) : 1;
       }
       return els.size;
     },
@@ -389,14 +494,14 @@
     // level: the element's volume (0..1), which local fades move; own: the level the page
     // player itself wants there. playerVolume: what the page player itself is set to, read
     // here too so the host's periodic volume check costs no second call.
-    // -> {paused, muted, volume, level, own, time, readyState, ended, playerVolume, active} | null (no element yet)
+    // -> {paused, muted, volume, level, own, time, readyState, networkState, error, keys, ended, playerVolume, active} | null (no element yet)
     'media.state': async () => {
       const player = await localPlayer();
       const el = player && player._player;
       if (!(el instanceof HTMLMediaElement)) return null;
       let playerVolume = null;
       try { playerVolume = await need().playback.getVolume(); } catch (e) { /* unknown */ }
-      return { paused: el.paused, muted: el.muted, volume: el.volume, level: el.volume, own: ownLevel(player), time: el.currentTime, readyState: el.readyState, ended: el.ended, playerVolume, active: await activeDevice() };
+      return { paused: el.paused, muted: el.muted, volume: el.volume, level: el.volume, own: ownLevel(player), time: el.currentTime, readyState: el.readyState, networkState: el.networkState, error: el.error ? el.error.code + ':' + String(el.error.message || '').slice(0, 80) : null, keys: el.mediaKeys ? 1 : 0, ended: el.ended, playerVolume, active: await activeDevice() };
     },
     // The media element's volume, on this phone only: no Spotify Connect command (refused on
     // some accounts, slow on a busy network) and nothing reported to Spotify, as the player's
@@ -414,7 +519,8 @@
 
     // A whole fade in one call: the page applies the steps itself, so the host sends the play
     // command while the sound goes down instead of waiting for every step (a round trip each).
-    // {steps: [level, ...], ms, restore: true?} -> true. Levels are never 0: see 'media.mute'.
+    // {steps: [level, ...], ms, restore: true?, rise: {ms, wait}?} -> true. Levels are never 0: see
+    // 'media.mute'. rise: the sound is then held through the change of song (riseOnSwitch).
     'media.fade': async a => {
       const player = await localPlayer();
       const el = player && player._player;
@@ -425,8 +531,57 @@
       // A ramp replaces the one before it (a crossfade's up-ramp must not be pulled back down
       // by steps still pending from its down-ramp).
       cancelFade();
-      fadeTimers = steps.map((v, i) => setTimeout(() => set(v), i * per));
-      if (a.restore) fadeTimers.push(setTimeout(() => { el.volume = ownLevel(player); }, steps.length * per));
+      // Each tick sets the step the clock is at, not the next one in line: a late timer (a busy
+      // or throttled page) lands on the right level instead of stretching the ramp.
+      const t0 = performance.now();
+      const tick = () => {
+        const i = Math.floor((performance.now() - t0) / per);
+        if (i >= steps.length) { if (a.restore) el.volume = ownLevel(player); else if (steps.length) set(steps[steps.length - 1]); return; }
+        set(steps[i]);
+        fadeTimers.push(setTimeout(tick, per - ((performance.now() - t0) % per)));
+      };
+      tick();
+      if (a.rise) riseOnSwitch(player, Number(a.rise.ms) || 80, Number(a.rise.wait));
+      return true;
+    },
+
+    // The sound going down (a pause) or up, as one smooth ramp. {to: 0..1, ms} -> true
+    'media.ramp': async a => {
+      const player = await localPlayer();
+      const el = player && player._player;
+      if (!(el instanceof HTMLMediaElement)) return null;
+      ramp(el, player, curveAt(el, player), Math.min(1, Math.max(0, Number(a.to) || 0)), Math.max(1, Number(a.ms) || 150))();
+      return true;
+    },
+
+    // The sound rising back when a paused song plays again, as the official app does: silent
+    // now, then up along the curve once the element's clock really moves, the moment sound comes
+    // out. Not on the state saying "playing", nor on the element's own 'playing' event: after a
+    // long pause both came 0.5 to 0.9 s before the first sound (measured), and the whole ramp
+    // was spent on silence. Not playing within {wait} ms: the level comes back as it was.
+    // {ms, wait, keep?, switch?} -> true. switch: held through the change of song first
+    // (riseOnSwitch), the fade under way going on meanwhile.
+    'media.rise': async a => {
+      const player = await localPlayer();
+      const el = player && player._player;
+      if (!(el instanceof HTMLMediaElement)) return null;
+      if (a.switch) { riseOnSwitch(player, Number(a.ms) || 80, Number(a.wait)); return true; }
+      cancelFade();
+      // keep: from where the element is now (the end of a crossfade), not from silence.
+      const from = a.keep ? curveAt(el, player) : 0;
+      if (!a.keep) el.volume = SILENT;
+      const rise = ramp(el, player, from, 1, Math.max(1, Number(a.ms) || 500));
+      // Moving: ahead of the last look by a little (a new song's clock starting again from 0 is
+      // a jump back, not sound; a seek is a jump, not sound either).
+      let prev = el.currentTime;
+      const waitSound = () => {
+        const t = el.currentTime, step = t - prev;
+        prev = t;
+        if (!el.paused && step > 0.005 && step < 0.5) rise();
+        else fadeTimers.push(setTimeout(waitSound, 16));
+      };
+      fadeTimers.push(setTimeout(() => { cancelFade(); el.volume = ownLevel(player); }, Math.max(500, Number(a.wait) || 3000)));
+      waitSound();
       return true;
     },
 
@@ -492,11 +647,16 @@
     },
   };
 
+  // Inside one of the app's own commands (see traceSkips).
+  let calling = 0;
   const call = async (id, method, args) => {
     try {
       const fn = commands[method];
       if (!fn) throw new Error(`unknown method ${method}`);
-      const value = await fn(args || {});
+      let pending;
+      calling++;
+      try { pending = fn(args || {}); } finally { calling--; }
+      const value = await pending;
       const out = value === undefined ? null : value;
       post({ type: 'result', id, ok: true, value: out });
       return out;
@@ -530,6 +690,41 @@
     events.addListener('queue_update', pushQueue);
     // Ads off from the first moment: a break queued before the bridge attached never starts.
     try { adsOff(); } catch (e) { /* no service yet */ }
+    traceSkips();
+  };
+
+  // Diagnosis (read-only): who asks the page for another song. A tester's song changed with no
+  // command from the app (the clip going full screen); the caller's stack, a key or a media
+  // session action says where it came from.
+  const stackTop = () => String(new Error().stack || '').split('\n').slice(2, 8).map(l => l.trim()).join(' < ').slice(0, 400);
+  const traceSkips = () => {
+    try {
+      const p = services.player;
+      for (const name of ['skipToNext', 'skipToPrevious', 'seekTo']) {
+        const own = p[name];
+        if (typeof own !== 'function' || own.__mspTraced) continue;
+        const traced = function (...args) {
+          if (!calling) post({ type: 'skip', by: name, stack: stackTop() });
+          return own.apply(this, args);
+        };
+        traced.__mspTraced = true;
+        p[name] = traced;
+      }
+    } catch (e) { /* left as it is */ }
+    try {
+      const ms = navigator.mediaSession;
+      if (ms && !ms.__mspTraced) {
+        const set = ms.setActionHandler.bind(ms);
+        ms.setActionHandler = (action, handler) => set(action, handler && ((...a) => {
+          post({ type: 'skip', by: 'mediaSession.' + action });
+          return handler(...a);
+        }));
+        ms.__mspTraced = true;
+      }
+    } catch (e) { /* no media session */ }
+    window.addEventListener('keydown', e => {
+      if (/Arrow|Media|Key[NPJL]/.test(e.code)) post({ type: 'skip', by: 'key ' + e.code + (e.ctrlKey ? '+ctrl' : '') + (e.shiftKey ? '+shift' : '') });
+    }, true);
   };
 
   // --- boot -----------------------------------------------------------------
@@ -549,9 +744,32 @@
   window.addEventListener('error', e => post({ type: 'jserror', error: String(e.message || e.error || '').slice(0, 300) }));
   window.addEventListener('unhandledrejection', e => post({ type: 'jserror', error: String((e.reason && (e.reason.stack || e.reason.message)) || e.reason || '').slice(0, 300) }));
 
+  // Widevine, which every Spotify stream is encrypted with: a WebView without a working one (an
+  // outdated or stripped Android System WebView, a device without a licence) plays nothing, which
+  // looks like "no sound", "refused" or "stuck at 0:00". Asked once per page, from the page's own
+  // EME; an empty robustness is the weakest level every Widevine device has (L3).
+  // Only on the host's request after a play failed ("drm.probe"), never at boot: asked while the
+  // player sets up its own EME (2.0.2-beta.1), the page never registered its playback device.
+  let drm = null;
+  let drmAsked = false;
+  const probeDrm = () => {
+    if (drmAsked) return;
+    drmAsked = true;
+    const report = (ok, error) => { drm = { type: 'drm', ok, error: error || '' }; post(drm); };
+    try {
+      if (!navigator.requestMediaKeySystemAccess) return report(false, 'no EME in this WebView');
+      navigator.requestMediaKeySystemAccess('com.widevine.alpha', [{
+        initDataTypes: ['cenc'],
+        audioCapabilities: [{ contentType: 'audio/mp4; codecs="mp4a.40.2"' }],
+      }]).then(() => report(true), e => report(false, String((e && e.message) || e).slice(0, 200)));
+    } catch (e) { report(false, String((e && e.message) || e).slice(0, 200)); }
+  };
+  commands['drm.probe'] = () => { probeDrm(); return drm; };
+
   const announce = () => {
     if (!services) return;
     post({ type: 'ready', version: VERSION });
+    if (drm) post(drm);
     lastState = '';
     pushState();
   };

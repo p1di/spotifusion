@@ -205,6 +205,21 @@ class SpotifyPodcasts(private val gql: Gql, private val bridge: Bridge, private 
 }
 
 class SpotifyUsers(private val gql: Gql, private val bridge: Bridge, private val http: SpotifyHttp) : Users {
+    internal companion object {
+        val BUDDYLIST_HOSTS = listOf("guc-spclient.spotify.com", "spclient.wg.spotify.com")
+
+        /** `/{me}/is-blocking/{user}` on the social graph; both ids are the usernames, never the uris. */
+        fun blockUrl(username: String, userUri: Uri): String {
+            require(username.isNotEmpty()) { "no username" }
+            val me = URLEncoder.encode(username, "UTF-8").replace("+", "%20")
+            val target = URLEncoder.encode(idOf(userUri), "UTF-8").replace("+", "%20")
+            return "https://spclient.wg.spotify.com/socialgraph/v4/$me/is-blocking/$target"
+        }
+
+        /** The protobuf `containsResult` (field 1, varint) of the GET, read from the body text: `08 01` is true, an empty body false. */
+        fun blockedAnswer(body: String): Boolean = body.length >= 2 && body[0] == '\u0008' && body[1] == '\u0001'
+    }
+
     override suspend fun me(): Account {
         val p = gql.query("profileAttributes", vars()).at("data.me.profile")
         val a = gql.query("accountAttributes", vars()).at("data.me.account")
@@ -249,14 +264,10 @@ class SpotifyUsers(private val gql: Gql, private val bridge: Bridge, private val
     }
 
     override suspend fun top(range: TimeRange, limit: Int): TopContent {
-        val input = mapOf("offset" to 0, "limit" to limit, "sortBy" to "AFFINITY", "timeRange" to range.name)
-        val p = gql.query("userTopContent", vars(
+        val input = mapOf("offset" to 0, "limit" to limit, "sortBy" to "AFFINITY", "timeRange" to range.gqlName)
+        return topContent(gql.query("userTopContent", vars(
             "includeTopArtists" to true, "topArtistsInput" to input, "includeTopTracks" to true, "topTracksInput" to input,
-        )).at("data.me.profile")
-        return TopContent(
-            artists = p.list("topArtists.items").mapNotNull { artist(it.at("data")) },
-            tracks = p.list("topTracks.items").mapNotNull { track(it.at("data")) },
-        )
+        )).at("data.me.profile"))
     }
 
     override suspend fun follow(userUris: List<Uri>) { gql.query("followUsers", vars("usernames" to userUris.map(::idOf))) }
@@ -268,23 +279,45 @@ class SpotifyUsers(private val gql: Gql, private val bridge: Bridge, private val
         return userUris.map { u -> list.firstOrNull { it.str("uri") == u }?.bool("following") ?: false }
     }
 
-    /** The Web Player has no friend feed; this reads the desktop client's presence endpoint and returns nothing when refused. */
-    override suspend fun friendActivity(): List<FriendActivity> {
-        val r = runCatching { http.getJson("https://spclient.wg.spotify.com/presence-view/v1/buddylist") }.getOrNull() ?: return emptyList()
-        return r.list("friends").mapNotNull { f ->
-            val user = f.obj("user") ?: return@mapNotNull null
-            val t = f.obj("track")
-            FriendActivity(
-                user = UserRef(user.str("uri") ?: "", user.str("name") ?: "", user.str("imageUrl")),
-                track = t?.let { tr ->
-                    app.myspoti.api.Track(tr.str("uri") ?: "", tr.str("name") ?: "", 0,
-                        listOfNotNull(tr.obj("artist")?.let { ArtistRef(it.str("uri") ?: "", it.str("name") ?: "") }),
-                        tr.obj("album")?.let { app.myspoti.api.AlbumRef(it.str("uri") ?: "", it.str("name") ?: "") })
-                },
-                contextUri = t?.str("context.uri"),
-                timestampMs = f.long("timestamp") ?: 0,
-            )
+    // The Web Player's "Block" in a profile's menu is a plain spclient call on the social graph, with
+    // the account's own username in the path; its answer to the GET is a protobuf `{ bool contains = 1 }`.
+    override suspend fun isBlocked(userUri: Uri): Boolean {
+        val (code, text) = http.send("GET", blockUrl(ownUsername(), userUri), accept = "application/x-protobuf")
+        return when (code) {
+            200 -> blockedAnswer(text)
+            204, 404 -> false
+            else -> throw app.myspoti.spotify.gql.HttpException(code, text.take(200))
         }
+    }
+
+    @Volatile private var username: String? = null
+    private suspend fun ownUsername(): String = username ?: me().username.also { username = it }
+
+    override suspend fun blockUser(userUri: Uri) = writeBlock("POST", userUri)
+    override suspend fun unblockUser(userUri: Uri) = writeBlock("DELETE", userUri)
+
+    private suspend fun writeBlock(method: String, userUri: Uri) {
+        val (code, text) = http.send(method, blockUrl(ownUsername(), userUri))
+        if (code !in 200..299) throw app.myspoti.spotify.gql.HttpException(code, text.take(200))
+    }
+
+    /**
+     * The Web Player's own friend feed is a stub (its BuddyFeedAPI says `isSupported: false`), so
+     * this reads the endpoint the desktop client's feed uses, with the page's token: guc-spclient
+     * first (the desktop's host), then the generic spclient host.
+     */
+    override suspend fun friendActivity(): List<FriendActivity> {
+        var last: Exception? = null
+        for (host in BUDDYLIST_HOSTS) {
+            try {
+                return buddyList(http.getJson("https://$host/presence-view/v1/buddylist"))
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                last = e
+            }
+        }
+        throw last ?: IllegalStateException("friend activity unavailable")
     }
 
     override suspend fun history(): List<HistoryEntry> =

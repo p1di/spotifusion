@@ -16,6 +16,8 @@ interface MyspotiApi {
     val extras: TrackExtras
     val devices: Devices
     val jam: Jam
+    /** Blends ("Mix à plusieurs"): playlists made of several people's taste, joined through an invitation link. */
+    val blends: Blends
     /** The account's "Recently played", as Spotify's own list has it. */
     val recents: Recents
 
@@ -48,6 +50,8 @@ interface Player {
     suspend fun skipTo(item: NowPlaying)
     /** "Play next": before everything already queued. */
     suspend fun playNext(uris: List<Uri>)
+    /** Queues [uris] just before [before], a queued item of [Queue.queued]. */
+    suspend fun insertInQueue(uris: List<Uri>, before: NowPlaying)
     /** Moves [item] just before or after [target], in the same part of the queue. */
     suspend fun moveInQueue(item: NowPlaying, target: NowPlaying, after: Boolean)
 
@@ -56,6 +60,12 @@ interface Player {
     suspend fun setVolume(level: Double)
     /** Playback speed (podcasts): 0.5 to 3.5. */
     suspend fun setSpeed(speed: Double)
+    /**
+     * Unheard on this phone while it keeps playing: an extension plays the song itself and only
+     * mirrors it here. The app then ignores this player's state ([localMute]).
+     */
+    suspend fun setLocalMute(on: Boolean) {}
+    val localMute: Boolean get() = false
 }
 
 interface Search {
@@ -139,6 +149,9 @@ interface Playlists {
     /** Who may see or change the playlist (owner only). */
     suspend fun access(uri: Uri): PlaylistAccess
     suspend fun setAccess(uri: Uri, access: PlaylistAccess)
+    /** Shown on the user's profile (the official "Add to profile"); a private playlist never is. */
+    suspend fun published(uri: Uri): Boolean
+    suspend fun setPublished(uri: Uri, published: Boolean)
     /** Public playlists show on the profile and in search; private ones only to the owner. */
     suspend fun setPublic(uri: Uri, public: Boolean) = setAccess(uri, if (public) PlaylistAccess.PUBLIC else PlaylistAccess.PRIVATE)
     /** Collaborative playlists let other users add and remove tracks (owner only). */
@@ -149,13 +162,56 @@ interface Playlists {
     suspend fun delete(uri: Uri)
     suspend fun follow(uri: Uri)
     suspend fun unfollow(uri: Uri)
+    /**
+     * Joins a collaborative playlist through the `pt` token of its invitation link
+     * (`open.spotify.com/playlist/{id}?si=…&pt={token}`): the account becomes a member with the
+     * level the token grants and the playlist is put in the library when it is not there yet.
+     * Fails (HTTP 400) when the token is wrong or has expired. Returns the level granted.
+     */
+    suspend fun join(uri: Uri, invitationToken: String): PlaylistAccess
+
+    /**
+     * The invitation link of a collaborative playlist (owner): whoever opens it becomes a
+     * collaborator ([join]). A plain link only lets people see the playlist. Valid 7 days.
+     */
+    suspend fun collaboratorInvite(uri: Uri): String
+
+    /** The owner and the collaborators of a playlist (just the owner when it is not shared). */
+    suspend fun members(uri: Uri): List<PlaylistMember>
+
+    /**
+     * Leaves a playlist this account joined as a collaborator ([Playlist.canLeave]): the page's
+     * `PlaylistPermissionsAPI.removeMember(uri, ownUsername)`. A private one (owner-only base
+     * permission) also leaves the library, as in the Web Player's dialog.
+     */
+    suspend fun leave(uri: Uri)
+
+    /**
+     * Owner: turns a member into a collaborator or back into a listener (the "Shared with" list's
+     * menu): `PlaylistPermissionsAPI.setMemberPermission(uri, username, "CONTRIBUTOR" | "VIEWER")`.
+     */
+    suspend fun setMemberCollaborator(uri: Uri, username: String, collaborator: Boolean)
+
+    /** Owner: removes a member from the playlist (`PlaylistPermissionsAPI.removeMember(uri, username)`). */
+    suspend fun removeMember(uri: Uri, username: String)
+
+    /**
+     * Owner: stops collaborating. Every collaborator becomes a listener when the playlist is private
+     * (not listed on the profile), or is removed from it when it is public; then the base permission
+     * goes back to private / public. The invitation links already shared are NOT revoked: the Web
+     * Player has no call for it (they expire by themselves, after 7 days).
+     */
+    suspend fun stopCollaboration(uri: Uri)
+
+    /** Who added each row of a playlist (shown on collaborative ones). */
+    suspend fun addedBy(uri: Uri): List<RowAdder>
 
     suspend fun addTracks(uri: Uri, trackUris: List<Uri>)
     /** Rows are addressed by [Track.uid]. */
     suspend fun removeTracks(uri: Uri, uids: List<String>)
     suspend fun moveTracks(uri: Uri, uids: List<String>, beforeUid: String?)
     /** Tracks Spotify suggests adding at the bottom of the playlist. */
-    suspend fun recommended(uri: Uri, limit: Int = 10): List<Track>
+    suspend fun recommended(uri: Uri, limit: Int = 10, skip: List<Uri> = emptyList()): List<Track>
 }
 
 interface Home {
@@ -196,6 +252,16 @@ interface Users {
     suspend fun follow(userUris: List<Uri>)
     suspend fun unfollow(userUris: List<Uri>)
     suspend fun isFollowing(userUris: List<Uri>): List<Boolean>
+    /** Whether this account blocked [userUri] (the Web Player's profile menu: `GET /socialgraph/v4/{me}/is-blocking/{user}`). */
+    suspend fun isBlocked(userUri: Uri): Boolean
+    /** Blocks [userUri] (`POST /socialgraph/v4/{me}/is-blocking/{user}`); Spotify also drops the follow between the two. */
+    suspend fun blockUser(userUri: Uri)
+    /** Lifts the block ([blockUser]'s `DELETE`). */
+    suspend fun unblockUser(userUri: Uri)
+    /**
+     * What the people the account follows are listening to, latest first. Throws when Spotify
+     * refuses the feed (an empty list means nobody shares their activity).
+     */
     suspend fun friendActivity(): List<FriendActivity>
     /** Contexts played lately (Recents). */
     suspend fun history(): List<HistoryEntry>
@@ -237,6 +303,27 @@ interface Jam {
     suspend fun removeMember(userUri: Uri)
     suspend fun setQueueOnly(on: Boolean)
     suspend fun setParticipantVolumeControl(on: Boolean)
+}
+
+/**
+ * Spotify Blend. A Blend starts as an invitation link; the Blend playlist itself only exists
+ * once someone else has joined through it. An existing Blend is an ordinary playlist
+ * ([Playlist.isBlend]), opened with [Playlists].
+ */
+interface Blends {
+    /** Makes a new invitation. */
+    suspend fun invite(): BlendInvite
+    /** What an invitation (its link or its bare id) leads to for this account. */
+    suspend fun invitation(linkOrId: String): BlendInvitation
+    /** Joins through an invitation; the uri of the Blend playlist. */
+    suspend fun join(linkOrId: String): Uri
+    /** Who is in the Blend [playlist], and the link to invite more people. */
+    suspend fun group(playlist: Uri): BlendGroup
+    /** The Blend's taste-match card, or null when Spotify has none for it. */
+    suspend fun story(playlist: Uri): BlendStory?
+    suspend fun rename(playlist: Uri, name: String)
+    /** Leaves the Blend: it goes from the library, the others keep it. */
+    suspend fun leave(playlist: Uri)
 }
 
 interface Recents {

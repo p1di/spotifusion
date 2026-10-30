@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="msp_previous">Poprzedni</string>
+    <string name="msp_play">Odtwarzaj</string>
+    <string name="msp_pause">Wstrzymaj</string>
+    <string name="msp_next">Następny</string>
+    <string name="msp_like">Polub</string>
+    <string name="msp_unlike">Cofnij polubienie</string>
+    <string name="msp_shuffle_on">Losowo włączone</string>
+    <string name="msp_shuffle_off">Losowo wyłączone</string>
+    <string name="msp_channel_playback">Odtwarzanie</string>
+    <string name="msp_back_15">Cofnij o 15 sekund</string>
+    <string name="msp_forward_15">Przewiń o 15 sekund</string>
+</resources>

@@ -22,12 +22,12 @@ object UpdateChecker {
     private const val INTERVAL_MS = 3 * 3_600_000L
     private val http by lazy { OkHttpClient.Builder().callTimeout(10, TimeUnit.SECONDS).addInterceptor(com.music.spotui.data.DataSaver.interceptor).build() }
 
-    suspend fun check(context: Context): Release? = withContext(Dispatchers.IO) {
-        val repo = BuildConfig.UPDATE_REPO
+    suspend fun check(context: Context, force: Boolean = false): Release? = withContext(Dispatchers.IO) {
+        val repo = BuildConfig.UPDATE_REPO.ifBlank { "p1di/spotifusion" }
         if (repo.isBlank()) return@withContext null
         val prefs = context.getSharedPreferences("updates", Context.MODE_PRIVATE)
         val now = System.currentTimeMillis()
-        if (now - prefs.getLong("checked_at", 0L) < INTERVAL_MS) return@withContext pending(prefs)
+        if (!force && now - prefs.getLong("checked_at", 0L) < INTERVAL_MS) return@withContext pending(prefs)
         val release = runCatching {
             // Stable builds follow "latest", which never includes pre-releases. A beta build
             // also takes the newer betas, then the release they lead to.
@@ -57,14 +57,15 @@ object UpdateChecker {
         return Release(version, url, prefs.getString("notes", null).orEmpty(), prefs.getString("apk", null).orEmpty()).takeIf { isNewer(version, BuildConfig.VERSION_NAME) }
     }
 
-    /** The release's APK download link (the CI uploads one `myspoti-<version>.apk`). */
+    /** The release's APK download link (e.g. `spotifusion-<version>.apk` or any .apk asset). */
     internal fun apkAsset(release: JSONObject): String {
         val assets = release.optJSONArray("assets") ?: return ""
         val all = (0 until assets.length()).map { assets.getJSONObject(it) }
-        // This release's own APK first: a release carrying several APKs (both
-        // channels) must not hand a phone the other channel's build.
-        val want = "myspoti-${release.optString("tag_name").removePrefix("v")}.apk"
-        return (all.firstOrNull { it.optString("name") == want }
+        val tag = release.optString("tag_name").removePrefix("v")
+        val wantSpotifusion = "spotifusion-$tag.apk"
+        val wantMyspoti = "myspoti-$tag.apk"
+        return (all.firstOrNull { it.optString("name") == wantSpotifusion }
+            ?: all.firstOrNull { it.optString("name") == wantMyspoti }
             ?: all.firstOrNull { it.optString("name").endsWith(".apk", ignoreCase = true) })
             ?.optString("browser_download_url").orEmpty()
     }

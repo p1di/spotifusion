@@ -30,24 +30,66 @@ object MyspotiRuntime {
         if (isStarted) return
         val updater = app.myspoti.spotify.gql.GqlOpsUpdater(okhttp3.OkHttpClient(), java.io.File(context.filesDir, "spotify/gql-ops.json"))
         host = WebPlayerHost(context)
+        AudioModeWatch.install(context.applicationContext)
         spotify = SpotifyApi(host, scope, language = Locale.getDefault().language, ops = updater.load(), deviceId = clientDeviceId(context), userAgent = host.userAgent)
         spotify.bridge.logger = { line -> Logbook.log(line) }
         host.onPageLoaded = { scope.launch { spotify.onPageLoaded() } }
         host.onPageStarting = { spotify.onPageStarting() }
         spotify.player.reloadHost = { host.reload() }
+        // Repairs wait while Spotify limits playback, and while a Spotify sign-in page is open:
+        // the player is not there to answer, and the "page not answering" reload threw the user
+        // off the e-mail code step while they were away reading the code (reported, log seen).
+        spotify.player.recoveryHeld = { host.licenseLimited() || host.loginRequired.value }
+        spotify.player.playbackHeld = { host.licenseLimited() }
+        // Spotify limiting this client: stop asking (a paused player requests no licence).
+        scope.launch {
+            host.licenseLimitedUntil.collect { until ->
+                if (until > android.os.SystemClock.elapsedRealtime()) runCatching { spotify.player.pause() }
+            }
+        }
         // The bridge, the page and the player in Logcat (diagnostics of a bug report): what
         // changes is logged when it changes, not once every 10 s whether or not anything happened.
         scope.launch {
             var last = ""
+            var planLogged = false
+            // A page that loaded but whose player never became ready (no bridge, a script that
+            // failed): loaded again, after 60 s, then twice as long each time, up to 10 min.
+            var notReadySince = 0L
+            var notReadyWait = 60_000L
             while (true) {
                 kotlinx.coroutines.delay(10_000)
+                val clock = android.os.SystemClock.elapsedRealtime()
+                val waiting = !spotify.ready.value && !host.loginRequired.value && !host.licenseLimited() &&
+                    host.url.value.startsWith(WebPlayerHost.PLAYER_URL)
+                if (!waiting) { notReadySince = 0L; if (spotify.ready.value) notReadyWait = 60_000L }
+                else if (notReadySince == 0L) notReadySince = clock
+                else if (clock - notReadySince >= notReadyWait) {
+                    Logbook.log("player not ready for ${(clock - notReadySince) / 1000} s: loading it again")
+                    notReadySince = 0L
+                    notReadyWait = (notReadyWait * 2).coerceAtMost(600_000L)
+                    host.reload()
+                }
+                // Once per signed-in session: the account's plan, the first thing a refused play
+                // (402) needs. No name, no id — only what decides what the account may play.
+                if (!planLogged && spotify.ready.value && runCatching { isSignedIn() }.getOrDefault(false)) {
+                    planLogged = true
+                    runCatching {
+                        val a = spotify.raw.gql("accountAttributes", kotlinx.serialization.json.buildJsonObject { })
+                            .let { (it as kotlinx.serialization.json.JsonObject)["data"] as kotlinx.serialization.json.JsonObject }
+                            .let { (it["me"] as kotlinx.serialization.json.JsonObject)["account"] as kotlinx.serialization.json.JsonObject }
+                        val attrs = a["attributes"] as? kotlinx.serialization.json.JsonObject
+                        fun v(o: kotlinx.serialization.json.JsonObject?, k: String) = (o?.get(k) as? kotlinx.serialization.json.JsonPrimitive)?.content
+                        Logbook.log("account: product=${v(a, "product")} country=${v(a, "country")} catalogue=${v(attrs, "catalogue")} onDemand=${v(attrs, "onDemand")} ads=${v(attrs, "ads")}")
+                        Logbook.fact("account", "product=${v(a, "product")} country=${v(a, "country")} catalogue=${v(attrs, "catalogue")} onDemand=${v(attrs, "onDemand")} ads=${v(attrs, "ads")}")
+                    }.onFailure { planLogged = false }
+                }
                 val s = spotify.player.state.value
                 // "login" alone said nothing (it only meant "the page is on a login URL"): a bug
                 // report needs the session itself — a token that is anonymous means no account.
                 val session = when {
                     host.loginRequired.value -> "login-page"
-                    runCatching { isSignedIn() }.getOrDefault(false) -> "signed-in"
-                    else -> "anonymous"
+                    // The token in hand: a fresh one every 10 s held every request behind the page's answer.
+                    else -> when (spotify.signedInHint()) { true -> "signed-in"; false -> "anonymous"; null -> "unknown" }
                 }
                 val line = "status ready=${spotify.ready.value} session=$session " +
                     "track=${s?.item?.name} paused=${s?.isPaused} buffering=${s?.isBuffering} url=${host.url.value.take(60)}"
@@ -66,7 +108,8 @@ object MyspotiRuntime {
     }
 
     /** True when the Web Player holds a signed-in user's token (not an anonymous one). */
-    suspend fun isSignedIn(): Boolean = spotify.isSignedIn()
+    /** Never while a Spotify sign-in page is open: whatever a token says, the user is mid sign-in. */
+    suspend fun isSignedIn(): Boolean = !host.loginRequired.value && spotify.isSignedIn()
 
     /**
      * Waits for a signed-in session (a non-anonymous token) up to [timeoutMs]. The login flow is

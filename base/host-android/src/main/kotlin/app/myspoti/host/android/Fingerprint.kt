@@ -147,7 +147,11 @@ internal data class Fingerprint(val major: Int, val build: Int, val patch: Int, 
                     file.writeText(JSONObject().put("lag", draw.lag).put("patch", draw.patch).put("kernel", draw.kernel).toString())
                 }
             }
-            return resolve(engine, draw)
+            // The WebView's own major, whatever lag was drawn: the page's requests leave through that
+            // WebView's network stack (and the relay's Chromium routes come from the same family), so a
+            // user agent one or two releases behind it ("Chrome/154" on WebView 155) contradicts the
+            // TLS and HTTP/2 shape under it. The draw keeps its lag on disk, unused.
+            return resolve(engine, draw.copy(lag = 0))
         }
     }
 }
