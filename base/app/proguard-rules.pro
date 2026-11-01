@@ -77,3 +77,15 @@
 # no-argument constructors it fails to start and the scan crashes.
 -keep class * implements com.google.firebase.components.ComponentRegistrar { <init>(); }
 -keep class com.google.mlkit.** { *; }
+
+# API models & Cronet / Zstd / Brotli JNI keep rules
+-keepclassmembers class app.myspoti.api.** { <fields>; }
+-keep class app.myspoti.api.** { *; }
+-keep class app.myspoti.spotify.** { *; }
+-keep class app.myspoti.host.android.** { *; }
+-keep class com.google.android.gms.net.PlayServicesCronetProvider { *; }
+-keep class com.google.android.gms.net.GmsCoreCronetProvider { *; }
+-keep class org.chromium.net.** { *; }
+-keep class com.squareup.zstd.** { *; }
+-keep class okhttp3.zstd.** { *; }
+-keep class okhttp3.brotli.** { *; }

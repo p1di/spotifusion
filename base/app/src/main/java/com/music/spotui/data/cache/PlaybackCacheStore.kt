@@ -3,6 +3,7 @@ package com.music.spotui.data.cache
 import android.content.Context
 import android.net.Uri
 import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.runtime.snapshots.SnapshotStateMap
 import com.music.spotui.data.local.LocalTrack
 import com.music.spotui.di.Graph
@@ -65,11 +66,16 @@ object PlaybackCacheStore {
     private const val COOLDOWN_MS = 15_000L // 15 seconds grace period before purging played tracks
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val lock = Any()
     private lateinit var cacheDir: File
     private lateinit var indexFile: File
 
     val cachedTracks: SnapshotStateMap<String, CachedTrack> = mutableStateMapOf()
     private val pendingPurges = ConcurrentHashMap<String, Job>()
+
+    private inline fun <T> withStateMutation(block: () -> T): T = synchronized(lock) {
+        Snapshot.withMutableSnapshot(block)
+    }
 
     fun init(context: Context) {
         if (::cacheDir.isInitialized) return
@@ -86,15 +92,17 @@ object PlaybackCacheStore {
     }
 
     private fun loadIndex() {
-        cachedTracks.clear()
+        withStateMutation { cachedTracks.clear() }
         if (!indexFile.exists()) return
         runCatching {
             val json = JSONArray(indexFile.readText())
-            for (i in 0 until json.length()) {
-                val t = CachedTrack.fromJson(json.getJSONObject(i))
-                val audioFile = File(cacheDir, t.fileName)
-                if (audioFile.isFile) {
-                    cachedTracks[t.trackId] = t
+            withStateMutation {
+                for (i in 0 until json.length()) {
+                    val t = CachedTrack.fromJson(json.getJSONObject(i))
+                    val audioFile = File(cacheDir, t.fileName)
+                    if (audioFile.isFile) {
+                        cachedTracks[t.trackId] = t
+                    }
                 }
             }
         }.onFailure {
@@ -105,8 +113,9 @@ object PlaybackCacheStore {
     private fun saveIndex() {
         ensureInit()
         runCatching {
+            val snapshot = synchronized(lock) { cachedTracks.values.toList() }
             val json = JSONArray()
-            cachedTracks.values.forEach { json.put(it.toJson()) }
+            snapshot.forEach { json.put(it.toJson()) }
             indexFile.writeText(json.toString())
         }
     }
@@ -114,13 +123,13 @@ object PlaybackCacheStore {
     fun isCached(trackId: String): Boolean {
         if (trackId.isBlank()) return false
         ensureInit()
-        val t = cachedTracks[trackId] ?: return false
+        val t = synchronized(lock) { cachedTracks[trackId] } ?: return false
         return File(cacheDir, t.fileName).isFile
     }
 
     fun getAudioFile(trackId: String): File? {
         ensureInit()
-        val t = cachedTracks[trackId] ?: return null
+        val t = synchronized(lock) { cachedTracks[trackId] } ?: return null
         val f = File(cacheDir, t.fileName)
         return if (f.isFile) f else null
     }
@@ -147,17 +156,17 @@ object PlaybackCacheStore {
         ensureInit()
         // Cancel any pending purge if track is re-added
         pendingPurges.remove(t.trackId)?.cancel()
-        cachedTracks[t.trackId] = t
+        withStateMutation { cachedTracks[t.trackId] = t }
         saveIndex()
     }
 
-    fun totalBytes(): Long = cachedTracks.values.sumOf { it.bytes }
+    fun totalBytes(): Long = synchronized(lock) { cachedTracks.values.sumOf { it.bytes } }
 
     /**
      * Schedules track removal after a 15-second cooldown period once playback of [trackId] completes.
      */
     fun scheduleTrackPurge(trackId: String, delayMs: Long = COOLDOWN_MS) {
-        if (!cachedTracks.containsKey(trackId)) return
+        if (synchronized(lock) { !cachedTracks.containsKey(trackId) }) return
         pendingPurges.remove(trackId)?.cancel()
         val job = scope.launch {
             delay(delayMs)
@@ -173,7 +182,7 @@ object PlaybackCacheStore {
 
     fun removeTrack(trackId: String) {
         ensureInit()
-        val t = cachedTracks.remove(trackId) ?: return
+        val t = withStateMutation { cachedTracks.remove(trackId) } ?: return
         File(cacheDir, t.fileName).delete()
         saveIndex()
     }
@@ -184,7 +193,7 @@ object PlaybackCacheStore {
         if (currentSize <= maxCapBytes) return
 
         // Purge oldest cached tracks (LRU based on lastPlayedAt / cachedAt)
-        val sorted = cachedTracks.values.sortedBy { it.lastPlayedAt }
+        val sorted = synchronized(lock) { cachedTracks.values.sortedBy { it.lastPlayedAt } }
         for (t in sorted) {
             if (currentSize <= maxCapBytes) break
             removeTrack(t.trackId)
@@ -196,7 +205,7 @@ object PlaybackCacheStore {
         ensureInit()
         pendingPurges.values.forEach { it.cancel() }
         pendingPurges.clear()
-        cachedTracks.clear()
+        withStateMutation { cachedTracks.clear() }
         cacheDir.listFiles()?.forEach { it.delete() }
         saveIndex()
     }

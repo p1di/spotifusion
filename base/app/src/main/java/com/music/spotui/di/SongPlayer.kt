@@ -607,7 +607,7 @@ object SongPlayer {
                 val ctx = contextUri ?: contextRegistry[song] ?: ""
                 val ctxName = knownContextName(ctx).ifBlank { context?.let { "Cache / Local" } }
                 currentTrackId = trackId
-                LocalPlayer.play(localQueue, 0, context = ctxName, contextUri = ctx, fallback = true)
+                if (Looper.myLooper() == Looper.getMainLooper()) LocalPlayer.play(localQueue, 0, context = ctxName, contextUri = ctx, fallback = true) else main.post { LocalPlayer.play(localQueue, 0, context = ctxName, contextUri = ctx, fallback = true) }
                 return
             } else if (isOffline) {
                 main.post {
@@ -617,7 +617,7 @@ object SongPlayer {
             }
         }
 
-        LocalPlayer.stop()
+        if (Looper.myLooper() == Looper.getMainLooper()) LocalPlayer.stop() else main.post { LocalPlayer.stop() }
         val ctx = contextUri ?: contextRegistry[song]
         lastRequestedSongKey = song
         lastRequestedContextUri = ctx.orEmpty()

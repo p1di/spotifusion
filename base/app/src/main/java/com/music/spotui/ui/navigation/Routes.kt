@@ -38,11 +38,11 @@ sealed class Routes(
 
 /** A Spotify user's profile, by user id (the part after spotify:user:). */
 fun profileRoute(userId: String, name: String = ""): String =
-    "${Routes.Profile.route}/${android.net.Uri.encode(userId)}?name=${android.net.Uri.encode(name)}"
+    "${Routes.Profile.route}/${android.net.Uri.encode(userId.ifBlank { "user" })}?name=${android.net.Uri.encode(name)}"
 
 /** Builds a Browse-category route carrying the search genre and a display title. */
 fun categoryRoute(genre: String, title: String): String =
-    "${Routes.Category.route}/${android.net.Uri.encode(genre)}?title=${android.net.Uri.encode(title)}"
+    "${Routes.Category.route}/${android.net.Uri.encode(genre.ifBlank { "category" })}?title=${android.net.Uri.encode(title)}"
 
 /** An artist's liked songs, their own page (see Api.getLikedByArtistPage). */
 const val LIKED_BY_ARTIST_ROUTE = "liked_by_artist"
@@ -51,22 +51,22 @@ fun likedByArtistRoute(artistId: String, artistName: String): String =
 
 /** Builds a playlist route carrying the Spotify playlist id (and a display name). */
 fun playlistRoute(id: String, name: String = ""): String =
-    "${Routes.Playlist.route}/${android.net.Uri.encode(id)}?name=${android.net.Uri.encode(name)}"
+    "${Routes.Playlist.route}/${android.net.Uri.encode(id.ifBlank { "playlist" })}?name=${android.net.Uri.encode(name)}"
 
 /** A Spotify library folder, by its full uri (and name for the header). */
 fun folderRoute(uri: String, name: String): String =
-    "${Routes.Folder.route}/${android.net.Uri.encode(uri)}?name=${android.net.Uri.encode(name)}"
+    "${Routes.Folder.route}/${android.net.Uri.encode(uri.ifBlank { "folder" })}?name=${android.net.Uri.encode(name)}"
 
 /** A playlist kept on this phone (LocalPlaylists id). */
-fun localPlaylistRoute(id: String): String = "${Routes.LocalPlaylist.route}/${android.net.Uri.encode(id)}"
+fun localPlaylistRoute(id: String): String = "${Routes.LocalPlaylist.route}/${android.net.Uri.encode(id.ifBlank { "local" })}"
 
 /** Builds a podcast-show route carrying the Spotify show id (and a display name). */
 fun showRoute(id: String, name: String = ""): String =
-    "${Routes.Show.route}/${android.net.Uri.encode(id)}?name=${android.net.Uri.encode(name)}"
+    "${Routes.Show.route}/${android.net.Uri.encode(id.ifBlank { "show" })}?name=${android.net.Uri.encode(name)}"
 
 /** A podcast episode (or a book chapter), by raw Spotify id. */
 fun episodeRoute(id: String, name: String = ""): String =
-    "${Routes.Episode.route}/${android.net.Uri.encode(id)}?name=${android.net.Uri.encode(name)}"
+    "${Routes.Episode.route}/${android.net.Uri.encode(id.ifBlank { "episode" })}?name=${android.net.Uri.encode(name)}"
 
 /**
  * Builds an artist route. When the exact Spotify artist id is known it is
@@ -74,7 +74,8 @@ fun episodeRoute(id: String, name: String = ""): String =
  * re-resolving the name via a fuzzy search ("RAM" must not open "Rammstein").
  */
 fun artistRoute(name: String, id: String = ""): String {
-    val base = "${Routes.Artist.route}/${android.net.Uri.encode(name)}"
+    val safeName = name.ifBlank { id.ifBlank { "artist" } }
+    val base = "${Routes.Artist.route}/${android.net.Uri.encode(safeName)}"
     return if (id.isBlank()) base
     else "$base?id=${android.net.Uri.encode(id)}"
 }

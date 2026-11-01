@@ -13,7 +13,7 @@ import kotlinx.coroutines.launch
  * Monitors active playback queue and triggers proactive caching for the current and upcoming tracks.
  */
 object QueuePreloader {
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private var lastTrackId: String? = null
     private var started = false
 
