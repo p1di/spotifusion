@@ -565,6 +565,7 @@ object MusicVideoController {
     }
 
     private fun ensurePlayer(): ExoPlayer = player ?: ExoPlayer.Builder(app)
+        .setAudioAttributes(androidx.media3.common.AudioAttributes.DEFAULT, false)
         .setLoadControl(
             androidx.media3.exoplayer.DefaultLoadControl.Builder()
                 // Start fast: half a second of video is enough to show frames.

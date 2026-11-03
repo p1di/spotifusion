@@ -20,6 +20,8 @@ fun cacheLibraryEntries(context: Context, entries: List<LibraryEntry>) {
                 put("artists", e.artists)
                 put("folderUri", e.folderUri)
                 put("childCount", e.childCount)
+                put("uri", e.uri)
+                put("isShow", e.isShow)
             })
         }
     }.toString()
@@ -42,6 +44,8 @@ fun getCachedLibraryEntries(context: Context): List<LibraryEntry> = runCatching 
                 artists = o.optString("artists", ""),
                 folderUri = o.optString("folderUri", ""),
                 childCount = o.optInt("childCount", 0),
+                uri = o.optString("uri", ""),
+                isShow = o.optBoolean("isShow", false),
             )
         }
     }

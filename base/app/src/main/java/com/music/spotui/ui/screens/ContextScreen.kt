@@ -623,7 +623,7 @@ private fun ContextContent(navController: NavController, vm: ContextViewModel, p
                         .fillMaxWidth()
                         .padding(start = 16.dp, end = 16.dp, top = 15.dp, bottom = 12.dp)
                 ) {
-                    if (p.type == "album") {
+                    if (p.type == "album" || p.type == "playlist") {
                         LikeButton(liked = SongPlayer.library[p.uri] ?: contextSaved, size = 26.dp) { vm.toggleContextSaved(p) }
                         Spacer(Modifier.width(24.dp))
                     }

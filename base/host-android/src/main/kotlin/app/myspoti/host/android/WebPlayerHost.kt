@@ -524,9 +524,13 @@ class WebPlayerHost(private val context: Context) : BridgeHost {
         lastVisible = visible
         // Re-added each time: addView converts the params to the container's own type
         // (assigning plain ViewGroup.LayoutParams to a FrameLayout child crashes on measure).
-        (view.parent as? ViewGroup)?.removeView(view)
         val size = if (visible) ViewGroup.LayoutParams.MATCH_PARENT else 1
-        container.addView(view, ViewGroup.LayoutParams(size, size))
+        if (view.parent !== container) {
+            (view.parent as? ViewGroup)?.removeView(view)
+            container.addView(view, ViewGroup.LayoutParams(size, size))
+        } else {
+            view.layoutParams = view.layoutParams?.apply { width = size; height = size } ?: ViewGroup.LayoutParams(size, size)
+        }
         keepClearOfSystemBars(visible)
         view.alpha = 1f
         view.visibility = if (visible) View.VISIBLE else View.INVISIBLE
@@ -616,7 +620,11 @@ class WebPlayerHost(private val context: Context) : BridgeHost {
 private class AwakeWebView(context: Context) : WebView(context) {
     override fun getVisibility(): Int = View.VISIBLE
     override fun getWindowVisibility(): Int = View.VISIBLE
+    override fun isShown(): Boolean = true
+    override fun hasWindowFocus(): Boolean = true
     override fun onWindowVisibilityChanged(visibility: Int) = super.onWindowVisibilityChanged(View.VISIBLE)
+    override fun onVisibilityChanged(changedView: View, visibility: Int) = super.onVisibilityChanged(changedView, View.VISIBLE)
+    override fun onWindowFocusChanged(hasWindowFocus: Boolean) = super.onWindowFocusChanged(true)
 
     /**
      * Closing the app (swiped from recents, back) destroys the activity and its window, and the

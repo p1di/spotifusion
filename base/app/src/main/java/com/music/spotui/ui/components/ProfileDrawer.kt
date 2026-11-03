@@ -276,7 +276,7 @@ fun ProfileDrawerContent(
                             context.startActivity(
                                 android.content.Intent(
                                     android.content.Intent.ACTION_VIEW,
-                                    android.net.Uri.parse("https://forms.gle/CLNqCznseJwVqg1Q7"),
+                                    android.net.Uri.parse("https://github.com/p1di/spotifusion/issues"),
                                 ).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
                             )
                         }

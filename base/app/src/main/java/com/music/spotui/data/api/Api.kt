@@ -884,6 +884,7 @@ class Api constructor(
         MediaKind.ALBUM -> LibraryEntry(item.uri.substringAfterLast(':'), item.name,
             context.getString(R.string.album_type_album) + (item.subtitle?.let { " • $it" } ?: ""), cover(item.images), isPlaylist = false, artists = item.subtitle.orEmpty(),
             uri = item.uri, pinned = item.pinned, addedAt = item.addedAt.orEmpty())
+        MediaKind.SHOW, MediaKind.AUDIOBOOK -> LibraryEntry(item.uri.substringAfterLast(':'), item.name, context.getString(R.string.ad_category_title_podcasts) + (item.subtitle?.let { " • $it" } ?: ""), cover(item.images), isPlaylist = false, isShow = true, uri = item.uri, pinned = item.pinned, addedAt = item.addedAt.orEmpty())
         MediaKind.COLLECTION -> if (item.uri == "spotify:collection:tracks") null
             else LibraryEntry(EPISODES_ID, item.name, "Podcast", cover(item.images), isPlaylist = true)
         else -> null

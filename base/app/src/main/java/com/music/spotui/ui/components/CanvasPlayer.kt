@@ -31,6 +31,7 @@ object CanvasPlayer {
                 .setCache(SongPlayer.mediaCache(context.applicationContext))
                 .setUpstreamDataSourceFactory(androidx.media3.datasource.DefaultHttpDataSource.Factory())
             androidx.media3.exoplayer.ExoPlayer.Builder(context.applicationContext)
+                .setAudioAttributes(androidx.media3.common.AudioAttributes.DEFAULT, false)
                 .setMediaSourceFactory(androidx.media3.exoplayer.source.DefaultMediaSourceFactory(cached))
                 .build().apply {
                     repeatMode = androidx.media3.common.Player.REPEAT_MODE_ALL

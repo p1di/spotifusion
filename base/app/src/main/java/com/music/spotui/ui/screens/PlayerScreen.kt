@@ -1280,7 +1280,7 @@ fun PlayerConnectRow(
             ) { onDevices() },
         ) {
             Icon(
-                painter = painterResource(id = R.drawable.ic_devices),
+                painter = painterResource(id = R.drawable.ic_spot_connect),
                 tint = com.music.spotui.ui.theme.AppAccent,
                 modifier = Modifier.size(19.dp),
                 contentDescription = stringResource(R.string.mr_user_route_category_name),

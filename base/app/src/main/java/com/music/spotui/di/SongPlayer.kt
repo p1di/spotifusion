@@ -38,6 +38,7 @@ object SongPlayer {
     private const val END_OF_TRACK_MARGIN_MS = 600L
     /** How often the state is read again while another device plays. */
     private const val REMOTE_REFRESH_MS = 3_000L
+    private const val SONG_END_GRACE_MS = 1_500L
     /** A transport command that has not answered by then is given up (the next one runs). */
     private const val TRANSPORT_TIMEOUT_MS = 15_000L
     /** How long a play has to show up in the page's state before it is sent again. */
@@ -69,6 +70,8 @@ object SongPlayer {
     @Volatile private var durationMs = 0L
     @Volatile private var positionMs = 0L
     @Volatile private var positionAt = 0L
+    @Volatile private var soundStalled = false
+    private fun waiting(s: PlayerState) = s.isBuffering || soundStalled || (playing && s.isPaused)
     @Volatile var currentTrackId: String = ""
         private set
     @Volatile var currentContextUri: String = ""
@@ -154,11 +157,16 @@ object SongPlayer {
         scope.launch {
             while (true) {
                 kotlinx.coroutines.delay(REMOTE_REFRESH_MS)
-                if (_activeDevice.value == null && !PlaybackService.isRunning) continue
+                val remote = _activeDevice.value != null || MyspotiRuntime.spotify.player.playsElsewhere.value
+                val now = SystemClock.elapsedRealtime()
+                val overdue = playing && !isBuffering && durationMs > 0 && positionMs + (now - positionAt) > durationMs + SONG_END_GRACE_MS
+                if (!remote && !overdue && !PlaybackService.isRunning) continue
                 runCatching { MyspotiRuntime.spotify.player.refresh() }
+                if (remote || overdue) refreshDevice()
             }
         }
         scope.launch { api.player.queue.collect { q -> if (acceptsSessionUpdates()) applyQueue(q) } }
+        scope.launch { MyspotiRuntime.spotify.player.stalled.collect { on -> onSoundStalled(on) } }
         scope.launch { api.library.changes.collect { refreshCurrentLiked() } }
         // T4: the player keeps the ad out of [api.player.state] on purpose (the last song stays
         // there, buffering); its own flag is collected here so the UI can say an ad is on.
@@ -283,6 +291,18 @@ object SongPlayer {
         )
     }
 
+    private fun onSoundStalled(on: Boolean) {
+        if (on == soundStalled) return
+        positionMs = getCurrentPosition()
+        positionAt = SystemClock.elapsedRealtime()
+        soundStalled = on
+        if (LocalPlayer.active.value || pendingTrackId != null) return
+        val s = api.player.state.value ?: return
+        bufferingState.value = waiting(s)
+        pushNotification(null, boundState?.likeState?.value ?: false)
+        com.music.spotui.video.MusicVideoController.onAudioBuffering(isBuffering, currentTrackId)
+    }
+
     /** An ad break starts or ends: the notification, the widget and the screens follow (T4). */
     private fun onAdPlaying(on: Boolean) {
         if (adState.value == on) return
@@ -337,7 +357,7 @@ object SongPlayer {
         val pending = pendingTrackId
         if (pending != null) {
             // Rapid A -> B -> C picks can report B while C is pending: keep C until it shows up.
-            if (id == pending || pendingItemUri == uri || SystemClock.elapsedRealtime() > pendingUntil) {
+            if ((!s.isPaused && (id == pending || pendingItemUri == uri)) || SystemClock.elapsedRealtime() > pendingUntil) {
                 pendingTrackId = null
                 pendingItemUri = null
             } else return
@@ -345,7 +365,8 @@ object SongPlayer {
         val wasPlaying = playing
         val wasBuffering = isBuffering
         val predicted = getCurrentPosition()
-        bufferingState.value = s.isBuffering
+        playing = resolvePlaying(s.isPaused)
+        bufferingState.value = waiting(s)
         playing = resolvePlaying(s.isPaused)
         SpeakerKeepAlive.set(playing && _activeDevice.value == null)
         durationMs = item?.durationMs ?: 0L
@@ -529,7 +550,7 @@ object SongPlayer {
         play()
         repeat(2) { attempt ->
             val moved = kotlinx.coroutines.withTimeoutOrNull(PLAY_CHECK_MS) {
-                api.player.state.first { it?.item?.uri == itemUri || !isLatest() }
+                api.player.state.first { it?.item?.uri == itemUri || (it?.item != null && !it.isPaused && !it.isBuffering) || !isLatest() }
             }
             if (moved != null || !isLatest()) return
             if (attempt == 0) { Log.w(TAG, "play of $itemUri not taken: sent again"); play() }
@@ -760,6 +781,7 @@ object SongPlayer {
     fun play() {
         if (LocalPlayer.active.value) { Haptics.click(); LocalPlayer.resume(); return }
         Haptics.click(); intendPlaying(); playing = true; positionAt = SystemClock.elapsedRealtime()
+        if (api.player.state.value?.isPaused != false) bufferingState.value = true
         // Tapped on the restored mini player while the Web Player is still loading.
         if (!stateSeen) resumeWhenReady = true
         val uri = _nowPlaying.value.uri
@@ -1087,6 +1109,10 @@ object SongPlayer {
                     }
                 }.onSuccess {
                     if (track) likedChanges.value++
+                    else {
+                        com.music.spotui.data.api.Api.HomeCache.libraryRoot = null
+                        com.music.spotui.data.api.Api.HomeCache.library = null
+                    }
                 }.onFailure {
                     Log.w(TAG, "library change failed: ${it.message}")
                     if (write == libraryWrites.get()) {

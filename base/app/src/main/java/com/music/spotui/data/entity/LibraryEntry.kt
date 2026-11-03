@@ -23,6 +23,8 @@ data class LibraryEntry(
     val pinned: Boolean = false,
     /** When it was added to the library (ISO 8601), for "Recently added". */
     val addedAt: String = "",
+    /** A followed podcast / show or audiobook. */
+    val isShow: Boolean = false,
 ) {
     val isFolder: Boolean get() = folderUri.isNotBlank()
 }
