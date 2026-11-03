@@ -22,7 +22,7 @@ android {
     // signed with the first key, as "Spotifusion Beta"; releases are "app.myspoti.stable",
     // signed with their own key, as "Spotifusion".
     // Local builds (no version given) are on the beta side, like the phone test builds.
-    val version = (findProperty("appVersionName") as String?) ?: "1.1.1"
+    val version = (findProperty("appVersionName") as String?) ?: "1.1.2"
     val beta = findProperty("appVersionName") == null || version.contains("-")
     defaultConfig {
         applicationId = "com.spotifusion.app"
@@ -30,7 +30,7 @@ android {
         minSdk = 29
         targetSdk = 36
         // CI release builds pass the tag's version (-PappVersionName / -PappVersionCode).
-        versionCode = (findProperty("appVersionCode") as String?)?.toIntOrNull() ?: 2003
+        versionCode = (findProperty("appVersionCode") as String?)?.toIntOrNull() ?: 2004
         versionName = version
         // GitHub "owner/repo" whose releases the app checks for updates; empty = off
         // (local builds). CI sets it to the repository it builds.
