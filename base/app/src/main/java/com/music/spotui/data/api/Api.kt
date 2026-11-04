@@ -142,6 +142,7 @@ class Api constructor(
         val id = t.uri.substringAfterLast(':')
         val singer = t.artists.joinToString(", ") { it.name }
         if (t.uri.startsWith("spotify:episode:")) return SongsModel(
+            uid = t.uid.orEmpty(),
             id = stableId("episode:$id"),
             title = t.name.take(128),
             album = t.album?.name.orEmpty(),
@@ -167,6 +168,7 @@ class Api constructor(
             addedAt = t.addedAt.orEmpty(),
             playable = t.playable,
             artistIds = t.artists.map { it.uri.substringAfterLast(':') },
+            uid = t.uid.orEmpty(),
         )
     }
 

@@ -75,16 +75,23 @@ jobs:
       # MYSPOTI_KEY_ALIAS, MYSPOTI_KEY_PASSWORD; releases use the same names with
       # MYSPOTI_STABLE_ in front. Keep each key for good, or installed apps cannot update.
       - name: Signing key
+        id: signing
         env:
           BETA: ${{ contains(github.ref_name, '-') }}
           BETA_KEYSTORE: ${{ secrets.MYSPOTI_KEYSTORE_BASE64 }}
           STABLE_KEYSTORE: ${{ secrets.MYSPOTI_STABLE_KEYSTORE_BASE64 }}
         run: |
           if [ "$BETA" = "true" ]; then KEYSTORE_BASE64="$BETA_KEYSTORE"; NAME=MYSPOTI_KEYSTORE_BASE64; else KEYSTORE_BASE64="$STABLE_KEYSTORE"; NAME=MYSPOTI_STABLE_KEYSTORE_BASE64; fi
-          test -n "$KEYSTORE_BASE64" || { echo "::error::$NAME secret missing"; exit 1; }
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "No $NAME secret configured; skipping CI release APK upload."
+            echo "has_keystore=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
+          echo "has_keystore=true" >> "$GITHUB_OUTPUT"
 
       - name: Release APK
+        if: steps.signing.outputs.has_keystore == 'true'
         env:
           MYSPOTI_KEYSTORE: ${{ runner.temp }}/release.jks
           MYSPOTI_KEYSTORE_PASSWORD: ${{ contains(github.ref_name, '-') && secrets.MYSPOTI_KEYSTORE_PASSWORD || secrets.MYSPOTI_STABLE_KEYSTORE_PASSWORD }}
@@ -100,6 +107,7 @@ jobs:
 
       # This version's section of CHANGELOG.md becomes the release description.
       - name: Release notes
+        if: steps.signing.outputs.has_keystore == 'true'
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
           awk -v v="$VERSION" '$0 == "## " v {f=1; next} /^## / && f {exit} f' ../CHANGELOG.md > release-notes.md
@@ -114,6 +122,7 @@ jobs:
           cat release-notes.md
 
       - uses: softprops/action-gh-release@v3
+        if: steps.signing.outputs.has_keystore == 'true'
         with:
           files: base/app/build/outputs/apk/release/myspoti-*.apk
           body_path: base/release-notes.md
@@ -124,6 +133,7 @@ jobs:
       # Announces the release on Discord (secret DISCORD_WEBHOOK_URL; nothing posted without it).
       # A release created with GITHUB_TOKEN triggers no other workflow, hence this step here.
       - name: Discord announcement
+        if: steps.signing.outputs.has_keystore == 'true'
         continue-on-error: true
         working-directory: .
         env:

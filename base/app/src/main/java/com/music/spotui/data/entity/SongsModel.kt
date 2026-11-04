@@ -37,6 +37,7 @@ data class SongsModel(
     val playedPositionMs : Long = 0L,
     /** Raw Spotify id of the show the episode belongs to. */
     val showId : String = "",
+    val uid : String = "",
 ){
     constructor() : this(-1 ,"" ,"" ,"" ,"" ,"", "")
 

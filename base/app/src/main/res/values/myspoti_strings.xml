@@ -435,4 +435,10 @@
     <string name="settings_cache_cap_detail">Maximum local storage allocated for playback caching.</string>
     <string name="settings_clear_cache_title">Clear Playback Cache</string>
     <string name="settings_clear_cache_detail">Currently using %1$s</string>
+    <string name="playlist_edit_playlist">Edit playlist</string>
+    <string name="playlist_discard_title">Discard changes?</string>
+    <string name="playlist_discard_body">If you go back now, you\'ll lose your changes.</string>
+    <string name="playlist_keep_editing">Keep editing</string>
+    <string name="playlist_discard">Discard</string>
+    <string name="playlist_drag_to_reorder">Hold and drag ≡ to reorder</string>
 </resources>

@@ -258,7 +258,7 @@ class ContextViewModel(
     fun dropTrack(song: SongsModel) {
         val k = key ?: return
         val current = (_page.value as? Response.Success)?.data ?: return
-        val updated = Response.Success(current.copy(tracks = current.tracks.filterNot { it.id == song.id }))
+        val updated = Response.Success(current.copy(tracks = current.tracks.filterNot { if (song.uid.isNotBlank()) it.uid == song.uid else it.id == song.id }))
         _page.value = updated
         recent[k] = updated
     }
@@ -267,6 +267,14 @@ class ContextViewModel(
      * Smart shuffle (Spotify keeps its own for Premium): the playlist shuffled, with one of
      * Spotify's recommendations for it after every [SmartShuffle.EVERY] songs.
      */
+    fun applyPlaylistEdits(name: String, description: String, tracks: List<SongsModel>) {
+        val k = key ?: return
+        val current = (_page.value as? Response.Success)?.data ?: return
+        val updated = Response.Success(current.copy(name = name, description = description, tracks = tracks))
+        _page.value = updated
+        recent[k] = updated
+    }
+
     fun playSmart(p: ContextPageModel, first: SongsModel?) {
         viewModelScope.launch { SmartShuffle.start(p, first) }
     }
@@ -363,7 +371,7 @@ private fun ContextContent(navController: NavController, vm: ContextViewModel, p
     fun removeFromThisPlaylist(song: SongsModel) {
         val playlistId = p.uri.substringAfterLast(':')
         vm.dropTrack(song)
-        com.music.spotui.data.api.SpotifySync.removeTrackFromPlaylist(context, playlistId, song.spotifyTrackId) { ok ->
+        com.music.spotui.data.api.SpotifySync.removeTrackFromPlaylist(context, playlistId, song.spotifyTrackId, uid = song.uid) { ok ->
             if (!ok) {
                 vm.reload()
                 android.widget.Toast.makeText(context, context.getString(R.string.playlist_change_refused), android.widget.Toast.LENGTH_SHORT).show()
@@ -389,6 +397,14 @@ private fun ContextContent(navController: NavController, vm: ContextViewModel, p
         page = p,
         onDismiss = { playlistMenu = false },
         onChanged = { vm.reload() },
+        editable = vm.editableContext.value,
+        onEdited = { newName, newDesc, newTracks ->
+            if (!sort.isCustom && newTracks.map { it.uid.ifBlank { it.id.toString() } } != p.tracks.map { it.uid.ifBlank { it.id.toString() } }) {
+                sort = TrackOrder()
+                TrackOrder.save(ctx, p.uri, TrackOrder())
+            }
+            vm.applyPlaylistEdits(newName, newDesc, newTracks)
+        },
         onDeleted = { navController.navigateUp() },
         onProfile = { navController.navigate(com.music.spotui.ui.navigation.profileRoute(it, p.ownerName)) },
     )
