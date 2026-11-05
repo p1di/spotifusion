@@ -31,6 +31,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -69,7 +72,8 @@ fun DownloadsScreen(navController: NavController) {
     val context = LocalContext.current
     val title = stringResource(R.string.collection_downloaded)
     // Snapshot reads: the list follows downloads as they finish.
-    val tracks = OfflineStore.tracks.values.sortedByDescending { it.addedAt }
+    // Derived: sorted when a download is added or removed, not at every recomposition.
+    val tracks by remember { androidx.compose.runtime.derivedStateOf { OfflineStore.tracks.values.sortedByDescending { it.addedAt } } }
     val waiting = OfflineDownloader.requests.values.filter { !OfflineStore.isDownloaded(it.trackId) }
     // A25: only queued or running songs can be stopped; a failed one has nothing left to cancel.
     val stoppable = waiting.count {
@@ -82,9 +86,16 @@ fun DownloadsScreen(navController: NavController) {
     menuSong?.let { sel ->
         com.music.spotui.ui.components.SongOptionsSheet(song = sel, navController = navController, context = context, onDismiss = { menuSong = null })
     }
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
     fun play(index: Int, shuffle: Boolean = false) {
-        if (tracks.isEmpty()) return
-        LocalPlayer.play(tracks.map(OfflineStore::toLocalTrack), index, shuffle = shuffle, context = title)
+        val songs = tracks
+        if (songs.isEmpty()) return
+        // Looking up the files of thousands of songs is disk work: off the main thread. The player is
+        // handed the list back on it.
+        scope.launch {
+            val list = withContext(Dispatchers.Default) { songs.map(OfflineStore::toLocalTrack) }
+            LocalPlayer.play(list, index, shuffle = shuffle, context = title)
+        }
     }
 
     Box(Modifier.fillMaxSize().background(AppBackground)) {
