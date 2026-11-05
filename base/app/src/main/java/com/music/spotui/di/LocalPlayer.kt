@@ -39,7 +39,11 @@ object LocalPlayer {
             com.music.spotui.data.offline.OfflineCrypto.Factory(Graph.app)))
         .build().also { p ->
             p.addListener(object : Player.Listener {
-                override fun onEvents(player: Player, events: Player.Events) = publish()
+                override fun onEvents(player: Player, events: Player.Events) = publish(
+                    queue = events.containsAny(
+                        Player.EVENT_TIMELINE_CHANGED, Player.EVENT_MEDIA_ITEM_TRANSITION, Player.EVENT_POSITION_DISCONTINUITY,
+                    ),
+                )
                 override fun onPlaybackStateChanged(playbackState: Int) {
                     if (playbackState == Player.STATE_ENDED && fallbackMode && !p.hasNextMediaItem() && p.repeatMode == Player.REPEAT_MODE_OFF) {
                         SongPlayer.advanceFallbackQueue(1)
@@ -52,16 +56,19 @@ object LocalPlayer {
     fun play(list: List<LocalTrack>, index: Int, shuffle: Boolean = false, context: String? = null, contextUri: String = "", fallback: Boolean = false) {
         if (list.isEmpty()) return
         SongPlayer.pauseEngineForLocal()
-        tracks.clear(); tracks.addAll(list); unshuffled = null
+        // Shuffling is done on the list before the player gets it: reordering thousands of
+        // items inside the player one move at a time rebuilt its timeline at each move.
+        val start = index.coerceIn(0, list.lastIndex)
+        val order = if (shuffle) QueueOrder.shuffledFrom(list, start) else list
+        tracks.clear(); tracks.addAll(order); unshuffled = if (shuffle) list.toList() else null
         contextName = context ?: Graph.app.getString(app.myspoti.engine.R.string.local_files_title)
         this.contextUri = contextUri
         fallbackMode = fallback
         active.value = true
         val p = player()
         p.shuffleModeEnabled = false
-        p.setMediaItems(list.map(::item), index.coerceIn(0, list.lastIndex), 0L)
+        p.setMediaItems(order.map(::item), if (shuffle) 0 else start, 0L)
         p.prepare()
-        if (shuffle) setShuffle(true)
         p.play()
     }
 
@@ -106,17 +113,23 @@ object LocalPlayer {
         } else {
             val before = unshuffled.orEmpty()
             unshuffled = null
-            arrange(before.filter { b -> tracks.any { it === b } } + tracks.filter { t -> before.none { it === t } })
+            arrange(QueueOrder.restored(before, tracks))
         }
     }
 
     val shuffled get() = unshuffled != null
 
-    /** The songs after the current one, in play order, with their index in the list. */
+    /**
+     * The songs after the current one, in play order, with their index in the list: the next
+     * [UPCOMING_MAX] only. The queue screen cannot show thousands of rows, and building them at each
+     * change of the player (a copy of the whole list each time) is what ran a big list out of memory.
+     */
     fun upcoming(): List<Pair<Int, LocalTrack>> {
         val i = exo?.currentMediaItemIndex ?: return emptyList()
-        return (i + 1 until tracks.size).map { it to tracks[it] }
+        return (i + 1 until minOf(tracks.size, i + 1 + UPCOMING_MAX)).map { it to tracks[it] }
     }
+
+    private const val UPCOMING_MAX = 500
 
     fun skipTo(index: Int) { exo?.let { if (index in tracks.indices) { it.seekTo(index, 0L); it.play() } } }
 
@@ -141,15 +154,32 @@ object LocalPlayer {
         publish()
     }
 
-    /** Puts the player's items in [target]'s order with moves only, so the current song keeps playing. */
+    /**
+     * Puts the player's items in [target]'s order (the same songs, current one included) while the
+     * current song keeps playing: the items around it are replaced, which is three changes of the
+     * player's timeline whatever the size of the list, not one per song.
+     */
     private fun arrange(target: List<LocalTrack>) {
         val p = exo ?: return
-        for (k in target.indices) {
-            val j = (k until tracks.size).firstOrNull { tracks[it] === target[k] } ?: continue
-            if (j != k) { p.moveMediaItem(j, k); tracks.add(k, tracks.removeAt(j)) }
+        if (tracks.isEmpty()) return
+        val cur = p.currentMediaItemIndex.coerceIn(0, tracks.lastIndex)
+        val at = target.indexOfFirst { it === tracks[cur] }
+        if (at < 0) return
+        reordering = true
+        try {
+            if (cur + 1 < tracks.size) p.removeMediaItems(cur + 1, tracks.size)
+            if (cur > 0) p.removeMediaItems(0, cur)
+            if (at > 0) p.addMediaItems(0, target.subList(0, at).map(::item))
+            if (at + 1 < target.size) p.addMediaItems(target.subList(at + 1, target.size).map(::item))
+            tracks.clear(); tracks.addAll(target)
+        } finally {
+            reordering = false
         }
         publish()
     }
+
+    /** The player's items and [tracks] differ while [arrange] works: nothing is published then. */
+    private var reordering = false
 
     private fun item(t: LocalTrack) = MediaItem.Builder().setUri(t.uri).setMediaId(t.id.toString())
         .setMediaMetadata(MediaMetadata.Builder().setTitle(t.title).setArtist(t.artist).build()).build()
@@ -161,10 +191,10 @@ object LocalPlayer {
     fun duration() = exo?.duration?.takeIf { it > 0 } ?: current()?.durationMs ?: 0L
     fun current(): LocalTrack? = exo?.currentMediaItemIndex?.let { tracks.getOrNull(it) }
 
-    private fun publish() {
-        if (!active.value) return
+    private fun publish(queue: Boolean = true) {
+        if (!active.value || reordering) return
         val t = current() ?: return
         SongPlayer.onLocalState(t, exo?.playWhenReady == true, position(), duration())
-        SongPlayer.onLocalQueue(t, upcoming())
+        if (queue) SongPlayer.onLocalQueue(t, upcoming())
     }
 }
