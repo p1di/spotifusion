@@ -91,6 +91,8 @@ fun LocalFilesScreen(navController: NavController) {
         onDismiss = { choosingFolders = false },
     )
 
+    val shown = com.music.spotui.ui.components.rememberFound(tracks.orEmpty(), find) { "${it.title} ${it.artist} ${it.album}" }
+
     Box(Modifier.fillMaxSize().background(AppBackground)) {
         when {
             !granted -> EmptyState(
@@ -153,7 +155,6 @@ fun LocalFilesScreen(navController: NavController) {
                     com.music.spotui.ui.components.FindInListField(find, { find = it }, stringResource(R.string.local_files_find_hint),
                         Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
                 }
-                val shown = tracks.orEmpty().filter { com.music.spotui.ui.components.matchesFind(find, it.title, it.artist, it.album) }
                 if (shown.isEmpty() && find.isNotBlank()) item(key = "find-empty") {
                     com.music.spotui.ui.components.FindInListEmpty(stringResource(R.string.assisted_curation_search_empty_view_no_result_title, find.trim()))
                 }
