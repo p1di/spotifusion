@@ -15,6 +15,10 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -24,21 +28,64 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
 import java.text.Normalizer
 import java.util.Locale
 
-private fun fold(s: String) = Normalizer.normalize(s, Normalizer.Form.NFD)
-    .replace(Regex("""\p{M}+"""), "").lowercase(Locale.ROOT)
+private val MARKS = Regex("""\p{M}+""")
+private val SPACES = Regex("""\s+""")
+
+/** Lower case without accents. Plain ASCII (most titles) skips the Unicode normalisation. */
+private fun fold(s: String): String {
+    for (c in s) if (c.code >= 128) {
+        return MARKS.replace(Normalizer.normalize(s, Normalizer.Form.NFD), "").lowercase(Locale.ROOT)
+    }
+    return s.lowercase(Locale.ROOT)
+}
+
+/** The words of a "Find in…" query, folded once; empty for a blank query. */
+internal fun findWords(query: String): List<String> = fold(query).split(SPACES).filter { it.isNotEmpty() }
 
 /**
  * "Find in…" match: every word of [query] appears in one of [fields], ignoring case and
  * accents ("beyonce hal" finds "Halo" by Beyoncé). A blank query matches everything.
  */
 fun matchesFind(query: String, vararg fields: String): Boolean {
-    val words = fold(query).split(Regex("""\s+""")).filter { it.isNotEmpty() }
+    val words = findWords(query)
     if (words.isEmpty()) return true
     val text = fields.joinToString(" ") { fold(it) }
     return words.all { it in text }
+}
+
+/** An item's searchable text, folded once, so that a keystroke is only a substring test. */
+private class FindIndex<T>(val source: List<T>, val keys: List<String>)
+
+/**
+ * [items] that match [query] (same rules as [matchesFind], on the [text] of each item), in
+ * their order. The search text of a list is built once, off the main thread; each query is
+ * matched in the background after [debounceMs] without a new keystroke, and the previous
+ * result stays on screen meanwhile, so typing in a list of thousands of songs never stalls
+ * a frame. A blank query returns [items] itself.
+ */
+@Composable
+fun <T> rememberFound(items: List<T>, query: String, debounceMs: Long = 150L, text: (T) -> String): List<T> {
+    val textOf by rememberUpdatedState(text)
+    val index by produceState<FindIndex<T>?>(null, items) {
+        value = withContext(Dispatchers.Default) { FindIndex(items, items.map { fold(textOf(it)) }) }
+    }
+    val words = remember(query) { findWords(query) }
+    val found by produceState(items, items, index, words) {
+        if (words.isEmpty()) { value = items; return@produceState }
+        // Not built yet (or for the previous list): the next run, keyed on the index, filters.
+        val ix = index?.takeIf { it.source === items } ?: return@produceState
+        delay(debounceMs)
+        value = withContext(Dispatchers.Default) {
+            ArrayList<T>().also { out -> for (i in items.indices) if (words.all { it in ix.keys[i] }) out += items[i] }
+        }
+    }
+    return if (words.isEmpty()) items else found
 }
 
 /** The "Find in…" field at the top of a list of songs. */

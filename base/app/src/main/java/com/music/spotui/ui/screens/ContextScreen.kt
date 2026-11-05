@@ -450,12 +450,10 @@ private fun ContextContent(navController: NavController, vm: ContextViewModel, p
             if (p.type == "liked" || p.type == "liked-artist") p.tracks.filter { SongPlayer.library["spotify:track:${it.spotifyTrackId}"] != false } else p.tracks
         }
     }
-    val rows by remember(p, find, sort) {
-        derivedStateOf {
-            val found = if (findable) all.filter { com.music.spotui.ui.components.matchesFind(find, it.title, it.singer, it.album) } else all
-            if (findable) sort.apply(found) else found
-        }
-    }
+    // Sorted once per sort change; filtering keeps that order, so typing never re-sorts. The match
+    // runs in the background (see rememberFound): a 4,000-track list is real work per keystroke.
+    val sorted = remember(all, sort, findable) { if (findable) sort.apply(all) else all }
+    val rows = com.music.spotui.ui.components.rememberFound(sorted, if (findable) find else "") { "${it.title} ${it.singer} ${it.album}" }
     // Unique and stable for a given list: a playlist can hold the same song twice (the id alone
     // is not unique) and the index changes at every sort (which would lose every item).
     val keys = remember(rows) {
