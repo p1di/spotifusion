@@ -52,6 +52,7 @@ import com.music.spotui.data.api.EditablePlaylists
 import com.music.spotui.data.api.SpotifySync
 import com.music.spotui.data.entity.SongsModel
 import com.music.spotui.ui.theme.AppAccent
+import kotlinx.coroutines.delay
 
 /**
  * "Add to another playlist": one tap copies the track into a playlist the user picks.
@@ -72,6 +73,7 @@ fun AddToPlaylistSheet(
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var playlists by remember { mutableStateOf<List<EditablePlaylist>?>(null) }
     var reloadNonce by remember { mutableIntStateOf(0) }
+    var loadStuck by remember { mutableStateOf(false) }
     var query by remember { mutableStateOf("") }
     var resolvedTrackId by remember(song.spotifyTrackId, song.title, song.singer) {
         mutableStateOf(song.spotifyTrackId)
@@ -84,12 +86,26 @@ fun AddToPlaylistSheet(
     LaunchedEffect(reloadNonce) {
         // Folders flattened: adding to a playlist does not need the folder tree.
         playlists = null
-        val loaded = EditablePlaylists.load()
-        playlists = loaded
-        if (EditablePlaylists.lastLoadTimedOut || (loaded.isEmpty() && !app.myspoti.host.android.MyspotiRuntime.api.ready.value)) {
-            PlayerRecoveryModal.promptPlaylistsStuck {
-                reloadNonce++
+        loadStuck = false
+        playlists = EditablePlaylists.load()
+    }
+    // Only prompt the recovery modal if still stuck on "Loading playlists..." after 7 seconds.
+    LaunchedEffect(playlists == null, reloadNonce) {
+        if (playlists == null) {
+            delay(7_000L)
+            if (playlists == null) {
+                loadStuck = true
+                val cached = EditablePlaylists.fallbackFromCache()
+                if (cached.isNotEmpty()) {
+                    playlists = cached
+                } else {
+                    PlayerRecoveryModal.promptPlaylistsStuck {
+                        reloadNonce++
+                    }
+                }
             }
+        } else {
+            loadStuck = false
         }
     }
     // Filtered in one pass; accent-insensitive like the other "find" fields of the app.
@@ -141,29 +157,9 @@ fun AddToPlaylistSheet(
                             color = androidx.compose.ui.graphics.Color.Gray,
                             fontSize = 14.sp,
                         )
-                        Text(
-                            text = "Taking too long? Tap to restart player",
-                            color = AppAccent,
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            modifier = Modifier
-                                .padding(top = 8.dp)
-                                .clickable {
-                                    PlayerRecoveryModal.promptPlaylistsStuck { reloadNonce++ }
-                                },
-                        )
-                    }
-                }
-                shown.isEmpty() -> {
-                    Column(modifier = Modifier.padding(20.dp, 12.dp)) {
-                        Text(
-                            stringResource(if (list.isEmpty()) R.string.add_to_playlist_empty else R.string.add_to_playlist_no_match, query.trim()),
-                            color = androidx.compose.ui.graphics.Color.Gray,
-                            fontSize = 14.sp,
-                        )
-                        if (list.isEmpty()) {
+                        if (loadStuck) {
                             Text(
-                                text = "Playlists missing? Tap to restart player & reload",
+                                text = "Taking too long? Tap to restart player",
                                 color = AppAccent,
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.SemiBold,
@@ -176,6 +172,12 @@ fun AddToPlaylistSheet(
                         }
                     }
                 }
+                shown.isEmpty() -> Text(
+                    stringResource(if (list.isEmpty()) R.string.add_to_playlist_empty else R.string.add_to_playlist_no_match, query.trim()),
+                    color = androidx.compose.ui.graphics.Color.Gray,
+                    fontSize = 14.sp,
+                    modifier = Modifier.padding(20.dp, 12.dp),
+                )
                 else -> LazyColumn(modifier = Modifier.heightIn(max = 420.dp).padding(top = 4.dp)) {
                     items(shown.size) { i ->
                         val pl = shown[i]

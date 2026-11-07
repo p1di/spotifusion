@@ -63,10 +63,8 @@ import app.myspoti.engine.R
 import androidx.compose.ui.res.pluralStringResource
 import com.music.spotui.data.api.SpotifySync
 import com.music.spotui.data.entity.SongsModel
-import com.music.spotui.data.preferences.addLikedSongId
-import com.music.spotui.data.preferences.isSongLiked
-import com.music.spotui.data.preferences.removeLikedSongId
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 
 private val SpotifyGreen: Color get() = com.music.spotui.ui.theme.AppAccent
@@ -79,6 +77,8 @@ internal suspend fun resolveTrackIdForSong(song: SongsModel): String {
     song.spotifyTrackId.takeIf { it.isNotBlank() && !it.startsWith("local:") && !it.startsWith("episode:") }?.let { return it }
     song.url.takeIf { it.isNotBlank() && !it.startsWith("local:") && !it.startsWith("episode:") }
         ?.removePrefix("spotify:track:")
+        ?.substringBefore('|')
+        ?.takeIf { it.isNotBlank() }
         ?.let { return it }
     com.music.spotui.di.SongPlayer.currentTrackId
         .takeIf { it.isNotBlank() && !it.startsWith("local:") && !it.startsWith("episode:") }
@@ -132,6 +132,7 @@ fun SavedInSheet(
     val liked = com.music.spotui.di.rememberTrackSaved(resolvedTrackId)
     var playlists by remember { mutableStateOf<List<com.music.spotui.data.api.EditablePlaylist>?>(null) }
     var reloadNonce by remember { mutableIntStateOf(0) }
+    var loadStuck by remember { mutableStateOf(false) }
     // playlistId → does it contain this track (filled lazily per row).
     val membership = remember { mutableStateMapOf<String, Boolean>() }
     var creating by remember { mutableStateOf(false) }
@@ -143,12 +144,27 @@ fun SavedInSheet(
     LaunchedEffect(folder?.first, reloadNonce) {
         // Only playlists the user can change (theirs and collaborative ones), level by level.
         playlists = null
-        val loaded = com.music.spotui.data.api.EditablePlaylists.level(folder?.first)
-        playlists = loaded
-        if (com.music.spotui.data.api.EditablePlaylists.lastLoadTimedOut || (loaded.isEmpty() && !app.myspoti.host.android.MyspotiRuntime.api.ready.value)) {
-            PlayerRecoveryModal.promptPlaylistsStuck {
-                reloadNonce++
+        loadStuck = false
+        playlists = com.music.spotui.data.api.EditablePlaylists.level(folder?.first)
+    }
+
+    // Only prompt the recovery modal if still stuck on "Loading playlists..." after 7 seconds.
+    LaunchedEffect(playlists == null, reloadNonce) {
+        if (playlists == null) {
+            delay(7_000L)
+            if (playlists == null) {
+                loadStuck = true
+                val cached = com.music.spotui.data.api.EditablePlaylists.fallbackFromCache()
+                if (cached.isNotEmpty() && folder == null) {
+                    playlists = cached
+                } else {
+                    PlayerRecoveryModal.promptPlaylistsStuck {
+                        reloadNonce++
+                    }
+                }
             }
+        } else {
+            loadStuck = false
         }
     }
     androidx.activity.compose.BackHandler(enabled = folders.isNotEmpty()) { folders.removeAt(folders.lastIndex) }
@@ -269,25 +285,9 @@ fun SavedInSheet(
                 null -> {
                     Column(modifier = Modifier.padding(20.dp, 12.dp)) {
                         Text(stringResource(R.string.loading_playlists), color = Color.Gray, fontSize = 14.sp)
-                        Text(
-                            text = "Taking too long? Tap to restart player",
-                            color = SpotifyGreen,
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            modifier = Modifier
-                                .padding(top = 8.dp)
-                                .clickable {
-                                    PlayerRecoveryModal.promptPlaylistsStuck { reloadNonce++ }
-                                },
-                        )
-                    }
-                }
-                else -> {
-                    if (list.isEmpty()) {
-                        Column(modifier = Modifier.padding(20.dp, 12.dp)) {
-                            Text(stringResource(R.string.add_to_playlist_empty), color = Color.Gray, fontSize = 14.sp)
+                        if (loadStuck) {
                             Text(
-                                text = "Playlists missing? Tap to restart player & reload",
+                                text = "Taking too long? Tap to restart player",
                                 color = SpotifyGreen,
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.SemiBold,
@@ -298,60 +298,59 @@ fun SavedInSheet(
                                     },
                             )
                         }
-                    } else {
-                        LazyColumn(modifier = Modifier.heightIn(max = 420.dp)) {
-                            items(list.size) { i ->
-                                val pl = list[i]
-                                if (pl.isFolder) {
-                                    FolderRow(pl.name, pluralStringResource(R.plurals.add_to_playlist_folder_subtitle_playlists_count, pl.trackCount, pl.trackCount.toString())) {
-                                        folders.add(pl.folderUri!! to pl.name)
-                                    }
-                                    return@items
-                                }
-                                // Resolve membership lazily (cached per session in SpotifySync).
-                                LaunchedEffect(pl.id, resolvedTrackId) {
-                                    if (membership[pl.id] == null && resolvedTrackId.isNotBlank()) {
-                                        membership[pl.id] = withContext(Dispatchers.IO) {
-                                            SpotifySync.playlistTrackIds(context, pl.id).contains(resolvedTrackId)
-                                        }
-                                    }
-                                }
-                                val saved = membership[pl.id] == true
-                                SavedInRow(
-                                    name = pl.name,
-                                    subtitle = pluralStringResource(R.plurals.liked_songs_header_metadata_text, pl.trackCount, pl.trackCount),
-                                    saved = saved,
-                                    cover = {
-                                        GlideImage(
-                                            transition = CrossFade,
-                                            modifier = Modifier
-                                                .size(48.dp)
-                                                .clip(RoundedCornerShape(4.dp)),
-                                            model = pl.imageUrl,
-                                            contentScale = ContentScale.Crop,
-                                            failure = placeholder(R.drawable.placeholder),
-                                            loading = placeholder(R.drawable.placeholder),
-                                            contentDescription = "",
-                                        )
-                                    },
-                                ) {
-                                    if (resolvedTrackId.isBlank()) return@SavedInRow
-                                    membership[pl.id] = !saved
-                                    val done: (Boolean) -> Unit = { ok ->
-                                        android.os.Handler(android.os.Looper.getMainLooper()).post {
-                                            if (!ok) membership[pl.id] = saved
-                                            val text = when {
-                                                !ok -> context.getString(R.string.playlist_change_refused)
-                                                saved -> context.getString(R.string.removed_from, pl.name)
-                                                else -> context.getString(R.string.local_added_to, pl.name)
-                                            }
-                                            android.widget.Toast.makeText(context, text, android.widget.Toast.LENGTH_SHORT).show()
-                                        }
-                                    }
-                                    if (saved) SpotifySync.removeTrackFromPlaylist(context, pl.id, resolvedTrackId, done)
-                                    else SpotifySync.addTrackToPlaylist(context, pl.id, resolvedTrackId, done)
+                    }
+                }
+                else -> LazyColumn(modifier = Modifier.heightIn(max = 420.dp)) {
+                    items(list.size) { i ->
+                        val pl = list[i]
+                        if (pl.isFolder) {
+                            FolderRow(pl.name, pluralStringResource(R.plurals.add_to_playlist_folder_subtitle_playlists_count, pl.trackCount, pl.trackCount.toString())) {
+                                folders.add(pl.folderUri!! to pl.name)
+                            }
+                            return@items
+                        }
+                        // Resolve membership lazily (cached per session in SpotifySync).
+                        LaunchedEffect(pl.id, resolvedTrackId) {
+                            if (membership[pl.id] == null && resolvedTrackId.isNotBlank()) {
+                                membership[pl.id] = withContext(Dispatchers.IO) {
+                                    SpotifySync.playlistTrackIds(context, pl.id).contains(resolvedTrackId)
                                 }
                             }
+                        }
+                        val saved = membership[pl.id] == true
+                        SavedInRow(
+                            name = pl.name,
+                            subtitle = pluralStringResource(R.plurals.liked_songs_header_metadata_text, pl.trackCount, pl.trackCount),
+                            saved = saved,
+                            cover = {
+                                GlideImage(
+                                    transition = CrossFade,
+                                    modifier = Modifier
+                                        .size(48.dp)
+                                        .clip(RoundedCornerShape(4.dp)),
+                                    model = pl.imageUrl,
+                                    contentScale = ContentScale.Crop,
+                                    failure = placeholder(R.drawable.placeholder),
+                                    loading = placeholder(R.drawable.placeholder),
+                                    contentDescription = "",
+                                )
+                            },
+                        ) {
+                            if (resolvedTrackId.isBlank()) return@SavedInRow
+                            membership[pl.id] = !saved
+                            val done: (Boolean) -> Unit = { ok ->
+                                android.os.Handler(android.os.Looper.getMainLooper()).post {
+                                    if (!ok) membership[pl.id] = saved
+                                    val text = when {
+                                        !ok -> context.getString(R.string.playlist_change_refused)
+                                        saved -> context.getString(R.string.removed_from, pl.name)
+                                        else -> context.getString(R.string.local_added_to, pl.name)
+                                    }
+                                    android.widget.Toast.makeText(context, text, android.widget.Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                            if (saved) SpotifySync.removeTrackFromPlaylist(context, pl.id, resolvedTrackId, done)
+                            else SpotifySync.addTrackToPlaylist(context, pl.id, resolvedTrackId, done)
                         }
                     }
                 }
@@ -383,7 +382,7 @@ private fun FolderRow(name: String, subtitle: String, onOpen: () -> Unit) {
         }
         Column(Modifier.padding(start = 12.dp).weight(1f)) {
             Text(name, color = Color.White, fontSize = 15.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Text(subtitle, color = Color(0xFFB3B3B3), fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(subtitle, color = Color.Gray, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
         Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = Color(0xFFB3B3B3))
     }

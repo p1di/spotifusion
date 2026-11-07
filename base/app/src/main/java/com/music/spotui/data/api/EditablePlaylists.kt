@@ -4,8 +4,8 @@ import app.myspoti.api.LibraryFilter
 import app.myspoti.api.MediaKind
 import app.myspoti.api.best
 import app.myspoti.host.android.MyspotiRuntime
-import com.music.spotui.data.local.DeveloperLogStore
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 
@@ -24,14 +24,8 @@ data class EditablePlaylist(
 }
 
 object EditablePlaylists {
-    private const val BRIDGE_TIMEOUT_MS = 4_500L
-
     @Volatile
     var cachedList: List<EditablePlaylist>? = null
-
-    /** True when the most recent [load] or [level] timed out or failed on the live bridge. */
-    @Volatile
-    var lastLoadTimedOut: Boolean = false
 
     private val PinnedIds = setOf(
         Api.LIKED_SONGS_ID,
@@ -41,8 +35,8 @@ object EditablePlaylists {
         Api.RECENT_ID,
     )
 
-    /** Fallback from cached library entries when the WebView bridge is slow or stalled. */
-    private suspend fun fallbackFromCache(): List<EditablePlaylist> = withContext(Dispatchers.IO) {
+    /** Fallback from cached library entries when the live bridge is offline or unavailable. */
+    suspend fun fallbackFromCache(): List<EditablePlaylist> = withContext(Dispatchers.IO) {
         cachedList?.takeIf { it.isNotEmpty() }?.let { return@withContext it }
         val entries = Api.HomeCache.library
             ?: Api.HomeCache.libraryRoot
@@ -62,29 +56,25 @@ object EditablePlaylists {
             }
     }
 
+    private suspend fun awaitBridgeOrCache(): Boolean {
+        if (MyspotiRuntime.api.ready.value) return true
+        // Wait up to 8s for the Web Player bridge to finish initializing before giving up.
+        return withTimeoutOrNull(8_000L) {
+            MyspotiRuntime.api.ready.first { it }
+        } != null
+    }
+
     /** The user's own and collaborative playlists, in library order, folders flattened. */
-    suspend fun load(): List<EditablePlaylist> {
-        lastLoadTimedOut = false
-        val live = withTimeoutOrNull(BRIDGE_TIMEOUT_MS) {
-            runCatching { MyspotiRuntime.api.playlists.editable() }.getOrNull()
-        }
-        if (live == null) {
-            lastLoadTimedOut = true
-            DeveloperLogStore.warn("EditablePlaylists", "Timed out loading editable playlists after ${BRIDGE_TIMEOUT_MS}ms; using cache fallback")
-            return fallbackFromCache()
-        }
-        val mapped = live.map {
+    suspend fun load(): List<EditablePlaylist> = withContext(Dispatchers.IO) {
+        awaitBridgeOrCache()
+        val live = runCatching { MyspotiRuntime.api.playlists.editable() }.getOrDefault(emptyList()).map {
             EditablePlaylist(it.uri.substringAfterLast(':'), it.name, it.trackCount, it.images.best(160)?.url)
         }
-        if (mapped.isNotEmpty()) {
-            cachedList = mapped
-            return mapped
+        if (live.isNotEmpty()) {
+            cachedList = live
+            return@withContext live
         }
-        val fallback = fallbackFromCache()
-        if (fallback.isEmpty() && !MyspotiRuntime.api.ready.value) {
-            lastLoadTimedOut = true
-        }
-        return fallback
+        fallbackFromCache()
     }
 
     /**
@@ -92,40 +82,19 @@ object EditablePlaylists {
      * can change, with their covers (Spotify's playlist list has none for mosaic covers;
      * the library has them). Falls back to [load] when the library cannot be read.
      */
-    suspend fun level(folderUri: String?): List<EditablePlaylist> {
-        lastLoadTimedOut = false
+    suspend fun level(folderUri: String?): List<EditablePlaylist> = withContext(Dispatchers.IO) {
+        awaitBridgeOrCache()
         val api = MyspotiRuntime.api
-        val editable = withTimeoutOrNull(BRIDGE_TIMEOUT_MS) {
-            runCatching { api.playlists.editable() }.getOrNull()
-        }?.associateBy { it.uri }
-        if (editable == null) {
-            lastLoadTimedOut = true
-            DeveloperLogStore.warn("EditablePlaylists", "Timed out loading playlist level ($folderUri) after ${BRIDGE_TIMEOUT_MS}ms")
-            return if (folderUri == null) fallbackFromCache() else emptyList()
-        }
+        val editable = runCatching { api.playlists.editable() }.getOrNull()?.associateBy { it.uri } ?: return@withContext load()
         val items = ArrayList<app.myspoti.api.LibraryItem>()
-        val ok = withTimeoutOrNull(BRIDGE_TIMEOUT_MS) {
-            runCatching {
-                var offset = 0
-                repeat(40) {
-                    val page = api.library.items(filter = LibraryFilter.ALL, folderUri = folderUri, offset = offset, limit = 50)
-                    items += page.items
-                    offset = page.nextOffset ?: return@runCatching true
-                }
-                true
-            }.getOrDefault(false)
-        } ?: false
-        if (!ok && items.isEmpty()) {
-            return if (folderUri == null) {
-                val mapped = editable.values.map {
-                    EditablePlaylist(it.uri.substringAfterLast(':'), it.name, it.trackCount, it.images.best(160)?.url)
-                }
-                if (mapped.isNotEmpty()) {
-                    cachedList = mapped
-                    mapped
-                } else fallbackFromCache()
-            } else emptyList()
-        }
+        runCatching {
+            var offset = 0
+            repeat(40) {
+                val page = api.library.items(filter = LibraryFilter.ALL, folderUri = folderUri, offset = offset, limit = 50)
+                items += page.items
+                offset = page.nextOffset ?: return@runCatching
+            }
+        }.onFailure { if (items.isEmpty()) return@withContext if (folderUri == null) load() else emptyList() }
         val result = items.mapNotNull { item ->
             when (item.kind) {
                 MediaKind.FOLDER -> EditablePlaylist(item.uri, item.name, item.count ?: 0, null, folderUri = item.uri)
@@ -143,6 +112,6 @@ object EditablePlaylists {
         if (folderUri == null && result.isNotEmpty()) {
             cachedList = result.filter { !it.isFolder }
         }
-        return if (result.isEmpty() && folderUri == null) fallbackFromCache() else result
+        if (result.isEmpty() && folderUri == null) load() else result
     }
 }
