@@ -55,6 +55,7 @@ fun App() {
 
     UpdatePrompt()
     OfflineStatsWarningDialog()
+    com.music.spotui.ui.components.PlayerRecoveryDialog()
 
     val drawerOpen by com.music.spotui.ui.components.ProfileDrawerState.isOpen
     val drawerFraction by androidx.compose.animation.core.animateFloatAsState(

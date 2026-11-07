@@ -593,12 +593,32 @@ private fun ArtistOverviewContent(
                                 modifier = Modifier.padding(14.dp, 12.dp, 14.dp, 4.dp),
                             )
                         }
+                        val fullBio = overview.biography.orEmpty().trim()
+                        var bioExpanded by remember(overview.id, fullBio) { mutableStateOf(false) }
+                        val isLongBio = remember(fullBio) { fullBio.length > 200 || fullBio.count { it == '\n' } >= 4 }
+                        val shownBio = remember(fullBio, bioExpanded, isLongBio) {
+                            if (!isLongBio || bioExpanded) fullBio
+                            else fullBio.lineSequence().take(4).joinToString("\n").let {
+                                if (it.length > 200) it.take(200).trimEnd() + "…" else if (it.length < fullBio.length) "$it…" else it
+                            }
+                        }
                         com.music.spotui.ui.components.ClickableDescriptionText(
-                            text = overview.biography.orEmpty(),
+                            text = shownBio,
                             color = Color.Gray,
                             fontSize = 13.sp,
-                            modifier = Modifier.padding(14.dp, 4.dp, 14.dp, 16.dp),
+                            modifier = Modifier.padding(14.dp, 4.dp, 14.dp, if (isLongBio) 4.dp else 16.dp),
                         )
+                        if (isLongBio) {
+                            Text(
+                                text = if (bioExpanded) "Show less" else "Read more",
+                                color = Color.White,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier
+                                    .padding(start = 14.dp, end = 14.dp, bottom = 14.dp)
+                                    .clickable { bioExpanded = !bioExpanded },
+                            )
+                        }
                     }
                 }
             }

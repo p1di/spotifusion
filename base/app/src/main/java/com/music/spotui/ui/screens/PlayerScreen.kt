@@ -383,7 +383,7 @@ fun PlayerScreen(navController: NavController) {
         // the content in a capped column and the cover fits both the width and the height.
         androidx.compose.foundation.layout.BoxWithConstraints(
             modifier = Modifier
-                .fillParentMaxHeight(if (immersive) 1f else 0.91f)
+                .fillParentMaxHeight(if (immersive) 1f else 0.94f)
                 .fillMaxWidth(),
             contentAlignment = Alignment.TopCenter,
         ) {
@@ -392,7 +392,7 @@ fun PlayerScreen(navController: NavController) {
         // Height budget from the screen or multi-window/pop-up container: adapts cleanly in small window mode.
         val screenHeight = minOf(androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp.dp, maxHeight)
         val compactWindow = screenHeight < 580.dp
-        val controlsBudget = if (compactWindow) 310.dp else PLAYER_CONTROLS_DP.dp
+        val controlsBudget = if (compactWindow) 280.dp else PLAYER_CONTROLS_DP.dp
         val minArtSide = if (compactWindow) 96.dp else 160.dp
         // Immersive: the artwork smoothly expands to take the whole height instead of snapping.
         val baseArtSide = minOf(contentWidth, screenHeight - controlsBudget).coerceAtLeast(minArtSide)
@@ -416,11 +416,9 @@ fun PlayerScreen(navController: NavController) {
             }
             // Media area: artwork (swipe to change track) or the music video, with
             // Spotify's "Passer à la vidéo" pill over it (black, like the official app).
-            // Square, but never taller than what the controls leave (foldables, landscape-ish
-            // screens): otherwise play / pause ends up under the lyrics card.
-            // A clear upward drag on the artwork opens the lyrics (observed on the initial pass,
-            // never consumed, so the pager and the pull-to-close keep working).
-            val normalArtHeight = (baseArtSide - if (compactWindow) 24.dp else 72.dp).coerceAtLeast(minArtSide)
+            // True 1:1 square matching the 24.dp horizontal inset (baseArtSide - 48.dp),
+            // matching Screenshot 2 of the official Spotify layout.
+            val normalArtHeight = (baseArtSide - if (compactWindow) 24.dp else 48.dp).coerceAtLeast(minArtSide)
             val artBoxHeight = androidx.compose.ui.unit.lerp(normalArtHeight, screenHeight, immersiveProgress)
             Box(modifier = Modifier.width(artSide).height(artBoxHeight).pointerInput(immersive, videoOn) {
                 detectTapGestures(onTap = {
@@ -467,7 +465,7 @@ fun PlayerScreen(navController: NavController) {
                     2 -> np.next?.coverUri
                     else -> null
                 } ?: songCoverUri
-                val artHorizPad = 36.dp * (1f - immersiveProgress)
+                val artHorizPad = 24.dp * (1f - immersiveProgress)
                 val artCorner = 8.dp * (1f - immersiveProgress)
                 Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                     GlideImage(
@@ -1026,7 +1024,7 @@ fun PlayerInfo(
         }
         // No like for a local file (not in the Spotify library), and none during an ad break:
         // the + would save the song from before the break.
-        if (!adPlaying && !com.music.spotui.di.LocalPlayer.active.value) {
+        if (!adPlaying) {
             if (likeSong != null) AddButton(song = likeSong, liked = liked, onLike = onLikeClick)
             else LikeButton(liked = liked, onClick = onLikeClick)
         }
@@ -1403,15 +1401,27 @@ fun PlayerOptionsSheet(
 fun nowPlayingSong(playerViewModel: PlayerViewModel): SongsModel {
     val np = SongPlayer.nowPlaying.value
     val songId = playerViewModel.currentSongId.value
+    val title = playerViewModel.currentSongTitle.value
+    val singer = playerViewModel.currentSongSinger.value
     val known = playerViewModel.queue.value.firstOrNull { it.id == songId }
+    val resolvedTrackId = SongPlayer.currentTrackId.takeIf { it.isNotBlank() && !it.startsWith("local:") }
+        ?: np.uri.removePrefix("spotify:track:").takeIf { np.uri.startsWith("spotify:track:") }
+        ?: known?.spotifyTrackId?.takeIf { it.isNotBlank() }
+        ?: com.music.spotui.data.offline.OfflineStore.tracks.values.firstOrNull {
+            it.title.equals(title, ignoreCase = true) && (singer.isBlank() || it.artist.equals(singer, ignoreCase = true))
+        }?.trackId
+        ?: com.music.spotui.data.cache.PlaybackCacheStore.cachedTracks.values.firstOrNull {
+            it.title.equals(title, ignoreCase = true) && (singer.isBlank() || it.artist.equals(singer, ignoreCase = true))
+        }?.trackId
+        ?: ""
     return SongsModel(
         id = songId,
-        title = playerViewModel.currentSongTitle.value,
+        title = title,
         album = known?.album?.ifBlank { null } ?: playerViewModel.currentSongAlbum.value,
-        singer = playerViewModel.currentSongSinger.value,
+        singer = singer,
         coverUri = playerViewModel.currentSongCoverUri.value,
-        url = known?.url.orEmpty(),
-        spotifyTrackId = SongPlayer.currentTrackId,
+        url = known?.url?.takeIf { it.isNotBlank() } ?: SongPlayer.buildSpotifyPlayQuery(resolvedTrackId, title, singer),
+        spotifyTrackId = resolvedTrackId,
         explicit = np.explicit,
         albumId = np.albumUri.substringAfterLast(":", "").ifBlank { known?.albumId.orEmpty() },
     )
@@ -1531,7 +1541,7 @@ private fun CanvasVideo(url: String, playing: Boolean, onFirstFrame: () -> Unit,
 private const val CANVAS_FADE_MS = 550
 
 /** Height the player needs under the artwork: top bar, title, seek bar, controls, Connect row. */
-private const val PLAYER_CONTROLS_DP = 450
+private const val PLAYER_CONTROLS_DP = 360
 
 /**
  * Real Spotify below-the-fold sections in the Now Playing scroll:
@@ -1700,17 +1710,33 @@ private fun NowPlayingArtistAndCreditsSection(
                         }
                     }
                 }
-                val bio = artistData?.biography.orEmpty()
+                val bio = artistData?.biography.orEmpty().trim()
                 if (bio.isNotBlank()) {
+                    var bioExpanded by remember(artistId, bio) { mutableStateOf(false) }
+                    val isLongBio = remember(bio) { bio.length > 160 || bio.count { it == '\n' } >= 3 }
                     Spacer(Modifier.height(12.dp))
                     Text(
                         text = bio,
                         color = Color(0xFFB3B3B3),
                         fontSize = 14.sp,
                         lineHeight = 20.sp,
-                        maxLines = 4,
+                        maxLines = if (bioExpanded) Int.MAX_VALUE else 4,
                         overflow = TextOverflow.Ellipsis,
                     )
+                    if (isLongBio) {
+                        Text(
+                            text = if (bioExpanded) "Show less" else "Read more",
+                            color = Color.White,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier
+                                .padding(top = 6.dp)
+                                .clickable(
+                                    interactionSource = remember { MutableInteractionSource() },
+                                    indication = null,
+                                ) { bioExpanded = !bioExpanded },
+                        )
+                    }
                 }
             }
         }

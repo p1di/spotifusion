@@ -31,6 +31,36 @@ object SolidNavBar {
     }
 }
 
+/**
+ * Show the current synced lyric line right below the album cover on the Now Playing screen.
+ * Enabled by default, can be deactivated in Settings.
+ */
+object LyricsUnderCoverPref {
+    private const val KEY = "lyrics_under_cover"
+    var on by androidx.compose.runtime.mutableStateOf(prefs(com.music.spotui.di.Graph.app).getBoolean(KEY, true))
+        private set
+
+    fun set(c: Context, value: Boolean) {
+        on = value
+        prefs(c).edit().putBoolean(KEY, value).apply()
+    }
+}
+
+/**
+ * Developer Mode in Settings: enables runtime error inspection, live player/bridge diagnostics,
+ * and quick debug controls.
+ */
+object DeveloperModePref {
+    private const val KEY = "developer_mode_enabled"
+    var on by androidx.compose.runtime.mutableStateOf(prefs(com.music.spotui.di.Graph.app).getBoolean(KEY, false))
+        private set
+
+    fun set(c: Context, value: Boolean) {
+        on = value
+        prefs(c).edit().putBoolean(KEY, value).apply()
+    }
+}
+
 /** "When your music ends, keep playing similar songs" (on by default). Read by the player. */
 object AutoplayPref {
     private const val KEY = "autoplay_similar"

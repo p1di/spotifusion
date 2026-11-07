@@ -28,6 +28,7 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -50,6 +51,7 @@ import com.music.spotui.data.api.EditablePlaylist
 import com.music.spotui.data.api.EditablePlaylists
 import com.music.spotui.data.api.SpotifySync
 import com.music.spotui.data.entity.SongsModel
+import com.music.spotui.ui.theme.AppAccent
 
 /**
  * "Add to another playlist": one tap copies the track into a playlist the user picks.
@@ -69,10 +71,26 @@ fun AddToPlaylistSheet(
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var playlists by remember { mutableStateOf<List<EditablePlaylist>?>(null) }
+    var reloadNonce by remember { mutableIntStateOf(0) }
     var query by remember { mutableStateOf("") }
-    LaunchedEffect(Unit) {
+    var resolvedTrackId by remember(song.spotifyTrackId, song.title, song.singer) {
+        mutableStateOf(song.spotifyTrackId)
+    }
+    LaunchedEffect(song.spotifyTrackId, song.title, song.singer) {
+        if (resolvedTrackId.isBlank()) {
+            resolvedTrackId = resolveTrackIdForSong(song)
+        }
+    }
+    LaunchedEffect(reloadNonce) {
         // Folders flattened: adding to a playlist does not need the folder tree.
-        playlists = EditablePlaylists.load()
+        playlists = null
+        val loaded = EditablePlaylists.load()
+        playlists = loaded
+        if (EditablePlaylists.lastLoadTimedOut || (loaded.isEmpty() && !app.myspoti.host.android.MyspotiRuntime.api.ready.value)) {
+            PlayerRecoveryModal.promptPlaylistsStuck {
+                reloadNonce++
+            }
+        }
     }
     // Filtered in one pass; accent-insensitive like the other "find" fields of the app.
     val shown = remember(playlists, query) {
@@ -81,7 +99,8 @@ fun AddToPlaylistSheet(
 
     fun addTo(playlist: EditablePlaylist) {
         onDismiss()
-        SpotifySync.addTrackToPlaylist(context, playlist.id, song.spotifyTrackId) { ok ->
+        if (resolvedTrackId.isBlank()) return
+        SpotifySync.addTrackToPlaylist(context, playlist.id, resolvedTrackId) { ok ->
             // The write runs on the main dispatcher already; posted anyway so the toast
             // survives the sheet's teardown.
             Handler(Looper.getMainLooper()).post {
@@ -115,16 +134,48 @@ fun AddToPlaylistSheet(
             )
             val list = playlists
             when {
-                list == null -> Text(
-                    stringResource(R.string.loading_playlists),
-                    color = androidx.compose.ui.graphics.Color.Gray, fontSize = 14.sp,
-                    modifier = Modifier.padding(20.dp, 12.dp),
-                )
-                shown.isEmpty() -> Text(
-                    stringResource(if (list.isEmpty()) R.string.add_to_playlist_empty else R.string.add_to_playlist_no_match, query.trim()),
-                    color = androidx.compose.ui.graphics.Color.Gray, fontSize = 14.sp,
-                    modifier = Modifier.padding(20.dp, 12.dp),
-                )
+                list == null -> {
+                    Column(modifier = Modifier.padding(20.dp, 12.dp)) {
+                        Text(
+                            stringResource(R.string.loading_playlists),
+                            color = androidx.compose.ui.graphics.Color.Gray,
+                            fontSize = 14.sp,
+                        )
+                        Text(
+                            text = "Taking too long? Tap to restart player",
+                            color = AppAccent,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier
+                                .padding(top = 8.dp)
+                                .clickable {
+                                    PlayerRecoveryModal.promptPlaylistsStuck { reloadNonce++ }
+                                },
+                        )
+                    }
+                }
+                shown.isEmpty() -> {
+                    Column(modifier = Modifier.padding(20.dp, 12.dp)) {
+                        Text(
+                            stringResource(if (list.isEmpty()) R.string.add_to_playlist_empty else R.string.add_to_playlist_no_match, query.trim()),
+                            color = androidx.compose.ui.graphics.Color.Gray,
+                            fontSize = 14.sp,
+                        )
+                        if (list.isEmpty()) {
+                            Text(
+                                text = "Playlists missing? Tap to restart player & reload",
+                                color = AppAccent,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                modifier = Modifier
+                                    .padding(top = 8.dp)
+                                    .clickable {
+                                        PlayerRecoveryModal.promptPlaylistsStuck { reloadNonce++ }
+                                    },
+                            )
+                        }
+                    }
+                }
                 else -> LazyColumn(modifier = Modifier.heightIn(max = 420.dp).padding(top = 4.dp)) {
                     items(shown.size) { i ->
                         val pl = shown[i]

@@ -145,6 +145,8 @@ object SongPlayer {
     /** Wires the API's flows into the UI's now-playing state. Call once, on the main thread. */
     fun attachEngine(state: CurrentSongState) {
         boundState = state
+        com.music.spotui.data.local.DeveloperLogStore.installUncaughtExceptionMonitor()
+        com.music.spotui.data.local.DeveloperLogStore.info("SongPlayer", "Engine attached")
         com.music.spotui.data.api.LyricsApi.extraSources =
             com.music.spotui.data.preferences.isLyricsExtraSources(Graph.app)
         restoreLastTrack(state)
@@ -157,7 +159,10 @@ object SongPlayer {
         scope.launch {
             while (true) {
                 kotlinx.coroutines.delay(REMOTE_REFRESH_MS)
-                if (isPlaying()) saveLastPosition()
+                if (isPlaying()) {
+                    saveLastPosition()
+                    main.post { tickActiveListen() }
+                }
                 val remote = _activeDevice.value != null || MyspotiRuntime.spotify.player.playsElsewhere.value
                 val now = SystemClock.elapsedRealtime()
                 val overdue = playing && !isBuffering && durationMs > 0 && positionMs + (now - positionAt) > durationMs + SONG_END_GRACE_MS
@@ -406,9 +411,13 @@ object SongPlayer {
         val pending = pendingTrackId
         if (pending != null) {
             // Rapid A -> B -> C picks can report B while C is pending: keep C until it shows up.
-            if ((!s.isPaused && (id == pending || pendingItemUri == uri)) || SystemClock.elapsedRealtime() > pendingUntil) {
+            val matchedPending = (pending.isNotBlank() && id == pending) || (!pendingItemUri.isNullOrBlank() && pendingItemUri == uri)
+            if ((!s.isPaused && matchedPending) || SystemClock.elapsedRealtime() > pendingUntil) {
                 pendingTrackId = null
                 pendingItemUri = null
+                if (!s.isPaused && !s.isBuffering && matchedPending) {
+                    playbackWatchdogJob?.cancel()
+                }
             } else return
         }
         val wasPlaying = playing
@@ -534,21 +543,45 @@ object SongPlayer {
     private var listenPlayedMs = 0L
     private var listenTickAt = 0L
     private var listenWasPlaying = false
+    private var listenStartedAtMs = 0L
+    private var listenLastFlushedMs = 0L
 
     /** Adds the time played since the last call; a new [key] closes the previous listen. */
     private fun trackListen(key: String, song: SongsModel?, source: com.music.spotui.data.local.ListenHistory.Source, isPlaying: Boolean) {
         val now = SystemClock.elapsedRealtime()
-        if (listenWasPlaying && listenTickAt > 0) listenPlayedMs += now - listenTickAt
+        if (listenWasPlaying && listenTickAt > 0) listenPlayedMs += (now - listenTickAt).coerceAtLeast(0L)
         if (key != listenKey) {
-            listenSong?.let { s ->
-                com.music.spotui.data.local.ListenHistory.record(com.music.spotui.data.local.ListenHistory.Listen(
-                    System.currentTimeMillis(), listenKey, s.title, s.singer, s.album, s.coverUri, listenPlayedMs, listenSource,
-                ))
-            }
-            listenKey = key; listenSong = song; listenSource = source; listenPlayedMs = 0
+            flushActiveListen()
+            listenKey = key
+            listenSong = song
+            listenSource = source
+            listenPlayedMs = 0L
+            listenStartedAtMs = System.currentTimeMillis()
+            listenLastFlushedMs = 0L
+        } else if (song != null) {
+            listenSong = song
         }
         listenTickAt = now
         listenWasPlaying = isPlaying
+        if (listenPlayedMs >= com.music.spotui.data.local.ListenHistory.MIN_PLAYED_MS &&
+            (!isPlaying || listenPlayedMs - listenLastFlushedMs >= 15_000L || listenLastFlushedMs == 0L)) {
+            flushActiveListen()
+        }
+    }
+
+    private fun tickActiveListen() {
+        if (listenKey.isBlank() || listenSong == null) return
+        trackListen(listenKey, listenSong, listenSource, isPlaying())
+    }
+
+    private fun flushActiveListen() {
+        val s = listenSong ?: return
+        if (listenPlayedMs < com.music.spotui.data.local.ListenHistory.MIN_PLAYED_MS || s.title.isBlank()) return
+        val sessionAt = listenStartedAtMs.takeIf { it > 0L } ?: System.currentTimeMillis().also { listenStartedAtMs = it }
+        listenLastFlushedMs = listenPlayedMs
+        com.music.spotui.data.local.ListenHistory.record(com.music.spotui.data.local.ListenHistory.Listen(
+            sessionAt, listenKey, s.title, s.singer, s.album, s.coverUri, listenPlayedMs, listenSource,
+        ))
     }
 
     // ── Commands ──
@@ -556,7 +589,10 @@ object SongPlayer {
     /** Runs an API call off the caller, logging failures instead of crashing the UI. */
     private fun command(block: suspend () -> Unit) {
         scope.launch {
-            runCatching { block() }.onFailure { Log.w(TAG, "command failed: ${it.message}") }
+            runCatching { block() }.onFailure {
+                Log.w(TAG, "command failed: ${it.message}")
+                com.music.spotui.data.local.DeveloperLogStore.error("SongPlayer", "Command failed: ${it.message}", it)
+            }
         }
     }
 
@@ -582,6 +618,7 @@ object SongPlayer {
                 // instead of failing at once with "not ready".
                 if (waitReady && !api.ready.value && kotlinx.coroutines.withTimeoutOrNull(READY_WAIT_MS) { api.ready.first { it } } == null) {
                     Log.w(TAG, "transport dropped: the player page is not ready")
+                    com.music.spotui.data.local.DeveloperLogStore.warn("Transport", "Transport dropped: Web Player page not ready")
                     return@withLock
                 }
                 if (gen != transportGen.get()) return@withLock
@@ -592,10 +629,12 @@ object SongPlayer {
                     kotlinx.coroutines.withTimeout(TRANSPORT_TIMEOUT_MS) { block { gen == transportGen.get() } }
                 } catch (e: kotlinx.coroutines.TimeoutCancellationException) {
                     Log.w(TAG, "transport timed out after ${TRANSPORT_TIMEOUT_MS} ms")
+                    com.music.spotui.data.local.DeveloperLogStore.warn("Transport", "Transport timed out after ${TRANSPORT_TIMEOUT_MS} ms")
                 } catch (e: kotlinx.coroutines.CancellationException) {
                     throw e
                 } catch (e: Exception) {
                     Log.w(TAG, "transport failed: ${e.message}")
+                    com.music.spotui.data.local.DeveloperLogStore.error("Transport", "Transport failed: ${e.message}", e)
                 }
             }
         }
@@ -603,16 +642,37 @@ object SongPlayer {
 
     /**
      * Plays [itemUri], then checks that the page really moved to it; a play the page lost
-     * (busy, reloading) is sent once more instead of leaving the old song playing.
+     * (busy, reloading, or transitioning from a podcast episode to a music track) is sent once
+     * more instead of leaving the old item playing.
      */
     private suspend fun playChecked(itemUri: String, isLatest: () -> Boolean, play: suspend () -> Unit) {
+        val beforeUri = api.player.state.value?.item?.uri
+        val specificItem = itemUri.startsWith(SPOTIFY_TRACK_PREFIX) || itemUri.startsWith("spotify:episode:")
         play()
         repeat(2) { attempt ->
             val moved = kotlinx.coroutines.withTimeoutOrNull(PLAY_CHECK_MS) {
-                api.player.state.first { it?.item?.uri == itemUri || (it?.item != null && !it.isPaused && !it.isBuffering) || !isLatest() }
+                api.player.state.first { s ->
+                    if (!isLatest()) return@first true
+                    val curUri = s?.item?.uri
+                    if (specificItem) {
+                        curUri == itemUri
+                    } else {
+                        curUri != null && (curUri != beforeUri || (!s.isPaused && !s.isBuffering))
+                    }
+                }
             }
             if (moved != null || !isLatest()) return
-            if (attempt == 0) { Log.w(TAG, "play of $itemUri not taken: sent again"); play() }
+            if (attempt == 0) {
+                Log.w(TAG, "play of $itemUri not taken: sent again")
+                com.music.spotui.data.local.DeveloperLogStore.warn("SongPlayer", "Play of $itemUri did not transition from $beforeUri; retrying")
+                runCatching {
+                    if (specificItem && beforeUri?.startsWith("spotify:episode:") == true) {
+                        api.player.play(itemUri)
+                    } else {
+                        play()
+                    }
+                }
+            }
         }
     }
 
@@ -642,6 +702,17 @@ object SongPlayer {
         pendingItemUri = itemUri
         bufferingState.value = true
         itemUri?.let { boundState?.likeState?.value = library[it] ?: false }
+        if (!itemUri.isNullOrBlank()) {
+            val wasEp = _nowPlaying.value.uri.startsWith("spotify:episode:")
+            val isEp = itemUri.startsWith("spotify:episode:")
+            if (wasEp && !isEp) {
+                _speed.value = 1.0
+            }
+            _nowPlaying.value = _nowPlaying.value.copy(uri = itemUri)
+        }
+        if (trackId.isNotBlank()) {
+            currentTrackId = trackId
+        }
         intendPlaying()
         pendingTrackId = trackId
         pendingUntil = SystemClock.elapsedRealtime() + PENDING_MS
@@ -653,6 +724,46 @@ object SongPlayer {
     @Volatile private var lastRequestedSongKey: String = ""
     @Volatile private var lastRequestedContextUri: String = ""
     @Volatile private var fallbackInFlightTrackId: String = ""
+    private var playbackWatchdogJob: kotlinx.coroutines.Job? = null
+    private const val PLAYBACK_STALL_MODAL_MS = 6_500L
+
+    private fun schedulePlaybackWatchdog(expectedUri: String) {
+        playbackWatchdogJob?.cancel()
+        playbackWatchdogJob = scope.launch {
+            kotlinx.coroutines.delay(PLAYBACK_STALL_MODAL_MS)
+            if (!playing || LocalPlayer.active.value || _activeDevice.value != null) return@launch
+            val state = api.player.state.value
+            val curUri = state?.item?.uri.orEmpty()
+            val stillStuck = pendingItemUri == expectedUri ||
+                (curUri != expectedUri && state?.isPaused != false) ||
+                (curUri == expectedUri && (state?.isBuffering == true || state?.isPaused == true) && getCurrentPosition() < 600L)
+            if (stillStuck) {
+                val title = boundState?.title?.value.orEmpty()
+                com.music.spotui.ui.components.PlayerRecoveryModal.promptPlaybackStuck(title)
+            }
+        }
+    }
+
+    /**
+     * Rebuilds the WebView player engine and automatically retries the last requested song if one
+     * was waiting to play.
+     */
+    suspend fun restartPlayerEngine() {
+        com.music.spotui.data.local.DeveloperLogStore.info("SongPlayer", "Restarting Web Player engine")
+        playbackWatchdogJob?.cancel()
+        val retrySong = lastRequestedSongKey.takeIf { it.isNotBlank() && (pendingItemUri != null || playing) }
+        val retryCtx = lastRequestedContextUri.takeIf { it.isNotBlank() }
+        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+            runCatching { MyspotiRuntime.host.reload() }
+        }
+        kotlinx.coroutines.withTimeoutOrNull(12_000L) {
+            api.ready.first { it }
+        }
+        if (!retrySong.isNullOrBlank()) {
+            kotlinx.coroutines.delay(350L)
+            playSong(retrySong, contextUri = retryCtx)
+        }
+    }
 
     /**
      * Play [song] (a play key "spotify:track:<id>|<text>" or "episode:<id>"). [contextUri] is
@@ -665,28 +776,39 @@ object SongPlayer {
         val trackId = episodeId ?: spotifyTrackIdForPlayback(song) ?: return
         val itemUri = if (episodeId != null) "spotify:episode:$episodeId" else SPOTIFY_TRACK_PREFIX + trackId
 
-        val isOffline = !com.music.spotui.data.offline.OfflineStore.isOnline(appCtx) || com.music.spotui.data.DataSaver.active
-        val offlineTrack = com.music.spotui.data.offline.OfflineStore.tracks[trackId]
-            ?: com.music.spotui.data.offline.OfflineStore.tracks[song]
-        val cachedTrack = if (episodeId == null) com.music.spotui.data.cache.PlaybackCacheStore.cachedTracks[trackId] else null
+        // Switching from a podcast list to a music track: clear any stale episode queue in the UI state
+        // so episode items never mix into the music queue or candidate IDs.
+        if (episodeId == null && boundState?.queue?.value?.any { it.isEpisode } == true) {
+            boundState?.updateQueue(emptyList())
+        }
 
-        if (isOffline || offlineTrack != null || cachedTrack != null) {
-            val candidateIds = order?.map { it.removePrefix("spotify:track:") }
-                ?: boundState?.queue?.value?.map { it.spotifyTrackId.ifBlank { it.url } }
-                ?: emptyList()
+        val isOffline = !com.music.spotui.data.offline.OfflineStore.isOnline(appCtx) || com.music.spotui.data.DataSaver.active
+        val offlineTrack = if (episodeId == null) {
+            com.music.spotui.data.offline.OfflineStore.tracks[trackId]
+                ?: com.music.spotui.data.offline.OfflineStore.tracks[song]
+        } else null
+        val cachedTrack = if (episodeId == null && isOffline) {
+            com.music.spotui.data.cache.PlaybackCacheStore.cachedTracks[trackId]
+        } else null
+
+        if (episodeId == null && (isOffline || offlineTrack != null)) {
+            val candidateIds = (order?.map { it.removePrefix("spotify:track:") }
+                ?: boundState?.queue?.value?.filter { !it.isEpisode }?.map { it.spotifyTrackId.ifBlank { it.url } }
+                ?: emptyList()).filter { !it.startsWith("episode:") && !it.startsWith("spotify:episode:") }
             val primaryLocal = offlineTrack?.let(com.music.spotui.data.offline.OfflineStore::toLocalTrack)
                 ?: cachedTrack?.let(com.music.spotui.data.cache.PlaybackCacheStore::toLocalTrack)
                 ?: if (isOffline) {
                     candidateIds.firstNotNullOfOrNull { id ->
-                        com.music.spotui.data.offline.OfflineStore.tracks[id]?.let(com.music.spotui.data.offline.OfflineStore::toLocalTrack)
-                            ?: com.music.spotui.data.cache.PlaybackCacheStore.cachedTracks[id]?.let(com.music.spotui.data.cache.PlaybackCacheStore::toLocalTrack)
+                        val cleanId = id.removePrefix("spotify:track:").substringBefore('|')
+                        com.music.spotui.data.offline.OfflineStore.tracks[cleanId]?.let(com.music.spotui.data.offline.OfflineStore::toLocalTrack)
+                            ?: com.music.spotui.data.cache.PlaybackCacheStore.cachedTracks[cleanId]?.let(com.music.spotui.data.cache.PlaybackCacheStore::toLocalTrack)
                     }
                 } else null
 
             if (primaryLocal != null) {
                 val localQueue = mutableListOf(primaryLocal)
                 candidateIds.forEach { rawId ->
-                    val id = rawId.removePrefix("spotify:track:")
+                    val id = rawId.removePrefix("spotify:track:").substringBefore('|')
                     if (id != trackId) {
                         val off = com.music.spotui.data.offline.OfflineStore.tracks[id]?.let(com.music.spotui.data.offline.OfflineStore::toLocalTrack)
                         val cac = com.music.spotui.data.cache.PlaybackCacheStore.cachedTracks[id]?.let(com.music.spotui.data.cache.PlaybackCacheStore::toLocalTrack)
@@ -712,7 +834,7 @@ object SongPlayer {
         }
 
         if (Looper.myLooper() == Looper.getMainLooper()) LocalPlayer.stop() else main.post { LocalPlayer.stop() }
-        val ctx = contextUri ?: contextRegistry[song]
+        val ctx = (contextUri ?: contextRegistry[song])?.takeUnless { episodeId == null && (it.startsWith("spotify:show:") || it.startsWith("spotify:episode:")) }
         lastRequestedSongKey = song
         lastRequestedContextUri = ctx.orEmpty()
         markPending(if (episodeId != null) "" else trackId, itemUri)
@@ -720,10 +842,11 @@ object SongPlayer {
             playFallbackWithBitChord(app.myspoti.engine.R.string.drm_missing, explicitTrackId = trackId)
             return
         }
+        schedulePlaybackWatchdog(itemUri)
         transport { isLatest ->
             playChecked(itemUri, isLatest) {
                 if (ctx != null) api.player.play(ctx, trackUri = itemUri, positionMs = positionMs, order = order?.takeIf { ctx == contextUri })
-                else api.player.play(itemUri)
+                else api.player.play(itemUri, positionMs = positionMs)
             }
         }
     }
@@ -911,6 +1034,9 @@ object SongPlayer {
     fun pause() { Haptics.click(); pauseSilently() }
 
     private fun pauseSilently() {
+        playbackWatchdogJob?.cancel()
+        tickActiveListen()
+        flushActiveListen()
         if (LocalPlayer.active.value) { LocalPlayer.pause(); saveLastPosition(LocalPlayer.position(), LocalPlayer.duration()); return }
         intendPaused()
         positionMs = getCurrentPosition(); positionAt = SystemClock.elapsedRealtime(); playing = false
@@ -1536,28 +1662,55 @@ object SongPlayer {
     /** The local player's track / state, shown like any other (player, mini player, notification). */
     fun onLocalState(t: com.music.spotui.data.local.LocalTrack, isPlaying: Boolean, pos: Long, dur: Long) {
         main.post {
-            if (!LocalPlayer.fallbackMode) currentTrackId = ""
+            playbackWatchdogJob?.cancel()
+            val resolvedTrackId = resolveSpotifyTrackIdForLocal(t)
+            if (resolvedTrackId.isNotBlank()) {
+                currentTrackId = resolvedTrackId
+            } else if (!LocalPlayer.fallbackMode) {
+                currentTrackId = ""
+            }
             playing = isPlaying; positionMs = pos; positionAt = SystemClock.elapsedRealtime(); durationMs = dur
             bufferingState.value = false
-            val uri = "local:${t.id}"
+            val uri = if (currentTrackId.isNotBlank()) SPOTIFY_TRACK_PREFIX + currentTrackId else "local:${t.id}"
             if (_nowPlaying.value.uri != uri) _nowPlaying.value = NowPlaying(uri = uri, contextName = LocalPlayer.contextName)
-            val song = localSong(t, dur)
+            val song = localSong(t, dur, currentTrackId)
+            val liked = if (currentTrackId.isNotBlank()) {
+                likedFor(SPOTIFY_TRACK_PREFIX + currentTrackId, library[SPOTIFY_TRACK_PREFIX + currentTrackId] ?: false)
+            } else false
             boundState?.let { st ->
-                st.likeState.value = false
+                st.likeState.value = liked
                 st.updateSongState(song.coverUri, song.title, song.singer, isPlaying, song.id, 0, song.album)
             }
-            pushNotification(song, false)
+            pushNotification(song, liked)
             val saveUri = currentTrackId.takeIf { it.isNotBlank() }?.let { SPOTIFY_TRACK_PREFIX + it } ?: uri
-            saveLastTrack(song, saveUri, boundState?.likeState?.value == true)
+            saveLastTrack(song, saveUri, liked)
             val source = if (t.uri.scheme == "file") com.music.spotui.data.local.ListenHistory.Source.DOWNLOAD
                 else com.music.spotui.data.local.ListenHistory.Source.LOCAL
-            trackListen(uri, song, source, isPlaying)
+            trackListen("local:${t.id}", song, source, isPlaying)
         }
     }
 
-    private fun localSong(t: com.music.spotui.data.local.LocalTrack, dur: Long = t.durationMs) =
-        SongsModel(id = ("local:" + t.id).hashCode() and 0x7fffffff, title = t.title, album = t.album,
-            singer = t.artist, coverUri = t.artUri.toString(), url = "local:${t.uri}", durationMs = dur.toInt())
+    private fun resolveSpotifyTrackIdForLocal(t: com.music.spotui.data.local.LocalTrack): String {
+        com.music.spotui.data.offline.OfflineStore.tracks.values.firstOrNull {
+            com.music.spotui.data.offline.OfflineStore.localIdOf(it.trackId) == t.id
+        }?.trackId?.let { return it }
+        com.music.spotui.data.cache.PlaybackCacheStore.cachedTracks.values.firstOrNull {
+            com.music.spotui.data.offline.OfflineStore.localIdOf(it.trackId) == t.id
+        }?.trackId?.let { return it }
+        return ""
+    }
+
+    private fun localSong(t: com.music.spotui.data.local.LocalTrack, dur: Long = t.durationMs, spotifyTrackId: String = resolveSpotifyTrackIdForLocal(t)) =
+        SongsModel(
+            id = ("local:" + t.id).hashCode() and 0x7fffffff,
+            title = t.title,
+            album = t.album,
+            singer = t.artist,
+            coverUri = t.artUri.toString(),
+            url = if (spotifyTrackId.isNotBlank()) buildSpotifyPlayQuery(spotifyTrackId, t.title, t.artist) else "local:${t.uri}",
+            spotifyTrackId = spotifyTrackId,
+            durationMs = dur.toInt(),
+        )
 
     /** The local player's queue: [upcoming] are the songs after [current], with their list index as uid. */
     fun onLocalQueue(current: com.music.spotui.data.local.LocalTrack, upcoming: List<Pair<Int, com.music.spotui.data.local.LocalTrack>>) {

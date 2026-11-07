@@ -384,7 +384,16 @@
     'player.state': () => mapState(need().player.getState()),
     'player.queue': () => mapQueue(need().player.getQueue()),
     // {contextUri, trackUri?, trackUid?, index?, positionMs?}
-    'player.play': a => {
+    'player.play': async a => {
+      const p = need().player;
+      const curState = p.getState && p.getState();
+      const curUri = curState && curState.item && curState.item.uri || '';
+      const targetUri = a.trackUri || a.contextUri || '';
+      const wasEpisode = /^spotify:episode:/.test(curUri);
+      const isTrackTarget = /^spotify:track:/.test(targetUri) || (!/^spotify:(episode|show):/.test(a.contextUri || '') && !/^spotify:episode:/.test(targetUri));
+      if (wasEpisode && isTrackTarget) {
+        try { await p.setSpeed(1); } catch (_) {}
+      }
       const skipTo = {};
       if (a.trackUri) skipTo.uri = a.trackUri;
       if (a.trackUid) skipTo.uid = a.trackUid;
@@ -392,11 +401,15 @@
       const extra = {};
       if (Object.keys(skipTo).length) extra.skipTo = skipTo;
       if (a.positionMs) extra.seekTo = a.positionMs;
-      // A given order (sorted playlist): the context plays as one page of those songs.
+      // Single track or episode URI without a list context: wrap in pages so Harmony's context
+      // resolver always transitions cleanly (especially when switching from podcast to song).
+      const isSingleItemContext = /^spotify:(track|episode):/.test(a.contextUri || '') && !a.trackUri && (!Array.isArray(a.order) || !a.order.length);
       const context = Array.isArray(a.order) && a.order.length
         ? { uri: a.contextUri, url: 'context://' + a.contextUri + '?order=' + Date.now(), pages: [{ items: a.order.map(uri => ({ uri })) }] }
-        : { uri: a.contextUri };
-      return need().player.play(context, {}, extra);
+        : isSingleItemContext
+          ? { uri: a.contextUri, url: 'context://' + a.contextUri, pages: [{ items: [{ uri: a.contextUri }] }] }
+          : { uri: a.contextUri };
+      return p.play(context, {}, extra);
     },
     'player.pause': () => need().player.pause(),
     'player.resume': () => need().player.resume(),

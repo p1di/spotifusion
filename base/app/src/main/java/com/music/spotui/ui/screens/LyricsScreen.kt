@@ -630,7 +630,7 @@ private fun CardIconButton(palette: LyricsPalette, description: String, icon: @C
 
 /**
  * Current synced lyric line displayed right below the artwork on the Now Playing screen,
- * matching the official Spotify player layout.
+ * matching the official Spotify player layout, with a fly-out-to-the-top transition.
  */
 @Composable
 fun ArtworkCurrentLyricLine(
@@ -639,6 +639,7 @@ fun ArtworkCurrentLyricLine(
     onClick: () -> Unit,
     vm: LyricsViewModel = viewModel(),
 ) {
+    if (!com.music.spotui.data.preferences.LyricsUnderCoverPref.on) return
     val state = rememberLyricsState(vm, title, artist)
     val loaded = state as? LyricsViewModel.State.Loaded ?: return
     val l = loaded.lyrics
@@ -651,14 +652,26 @@ fun ArtworkCurrentLyricLine(
         else -> l.lines.firstOrNull { it.text.isNotBlank() && it.text != "♪" }
     } ?: return
 
-    Text(
-        text = currentLine.text,
-        color = Color.White,
-        fontSize = 16.sp,
-        lineHeight = 20.sp,
-        fontWeight = FontWeight.Bold,
-        maxLines = 2,
-        overflow = TextOverflow.Ellipsis,
+    androidx.compose.animation.AnimatedContent(
+        targetState = currentLine.text,
+        transitionSpec = {
+            androidx.compose.animation.ContentTransform(
+                targetContentEnter = androidx.compose.animation.slideInVertically(
+                    animationSpec = androidx.compose.animation.core.tween(300),
+                    initialOffsetY = { fullHeight -> fullHeight },
+                ) + androidx.compose.animation.fadeIn(
+                    animationSpec = androidx.compose.animation.core.tween(300),
+                ),
+                initialContentExit = androidx.compose.animation.slideOutVertically(
+                    animationSpec = androidx.compose.animation.core.tween(280),
+                    targetOffsetY = { fullHeight -> -fullHeight },
+                ) + androidx.compose.animation.fadeOut(
+                    animationSpec = androidx.compose.animation.core.tween(220),
+                ),
+                sizeTransform = androidx.compose.animation.SizeTransform(clip = true),
+            )
+        },
+        label = "lyricUnderCoverFlyUp",
         modifier = Modifier
             .fillMaxWidth()
             .clickable(
@@ -667,5 +680,16 @@ fun ArtworkCurrentLyricLine(
                 onClick = onClick,
             )
             .padding(horizontal = 24.dp, vertical = 6.dp),
-    )
+    ) { lineText ->
+        Text(
+            text = lineText,
+            color = Color.White,
+            fontSize = 16.sp,
+            lineHeight = 20.sp,
+            fontWeight = FontWeight.Bold,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.fillMaxWidth(),
+        )
+    }
 }

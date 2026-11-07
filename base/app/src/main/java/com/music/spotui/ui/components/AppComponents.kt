@@ -284,7 +284,22 @@ fun MiniPlayer(navController: NavHostController) {
                 contentDescription = stringResource(R.string.mr_user_route_category_name),
             )
             Spacer(modifier = Modifier.width(18.dp))
-            if (!com.music.spotui.di.LocalPlayer.active.value) com.music.spotui.ui.screens.AddButton(song = { com.music.spotui.ui.screens.nowPlayingSong(vm) }, liked = liked, size = 22.dp) { vm.updateLikeState(true) }
+            if (!com.music.spotui.di.SongPlayer.adPlaying) {
+                com.music.spotui.ui.screens.AddButton(
+                    song = { com.music.spotui.ui.screens.nowPlayingSong(vm) },
+                    liked = liked,
+                    size = 22.dp,
+                ) {
+                    val s = com.music.spotui.ui.screens.nowPlayingSong(vm)
+                    if (s.spotifyTrackId.isNotBlank()) {
+                        SongPlayer.setTrackSaved(s.spotifyTrackId, true)
+                    } else {
+                        SongPlayer.setLiked(true)
+                    }
+                    addLikedSongId(context, songId.toString())
+                    vm.updateLikeState(true)
+                }
+            }
             Spacer(modifier = Modifier.width(18.dp))
             com.music.spotui.ui.components.PlayPauseIcon(
                 playing = songPlayingState,
