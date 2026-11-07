@@ -737,7 +737,7 @@ private fun PopularTrackRow(
             }
         }
         if (saved) {
-            LikeButton(liked = true, size = 20.dp) { onToggleSaved(false) }
+            AddButton(song = { song }, liked = true, size = 20.dp) { onToggleSaved(true) }
             Spacer(Modifier.width(16.dp))
         }
         Icon(

@@ -1,11 +1,12 @@
 package com.music.spotui.data.entity
 
 /** Everything the album / playlist page shows, loaded by Spotify id. */
+@kotlinx.serialization.Serializable
 data class ContextPageModel(
     val uri: String,
     val type: String, // "album" | "playlist"
     val name: String,
-    val coverUri: String,
+    val coverUri: String = "",
     val description: String = "",
     val ownerName: String = "",
     val ownerAvatar: String = "",

@@ -227,8 +227,9 @@ fun MiniPlayer(navController: NavHostController) {
                         contentDescription = ""
                     )
                     val remote = SongPlayer.activeDevice.value
+                    val activeOutputName = remote?.name ?: routeLabel
                     Column(modifier = Modifier.padding(start = 10.dp, end = 8.dp)) {
-                        if (remote == null) {
+                        if (activeOutputName == null) {
                             Text(
                                 text = if (adPlaying) stringResource(R.string.ad_playing) else (s?.title ?: songTitle),
                                 color = Color.White,
@@ -250,30 +251,34 @@ fun MiniPlayer(navController: NavHostController) {
                                 )
                             }
                         } else {
-                            // Playing on another device: "Title • Artist", then the device in green.
+                            // Playing on another device / audio route: "Title • Artist", then the device in green.
                             Text(
                                 text = androidx.compose.ui.text.buildAnnotatedString {
                                     pushStyle(androidx.compose.ui.text.SpanStyle(fontWeight = FontWeight.Bold, color = Color.White))
-                                    append(s?.title ?: songTitle)
+                                    append(if (adPlaying) stringResource(R.string.ad_playing) else (s?.title ?: songTitle))
                                     pop()
-                                    pushStyle(androidx.compose.ui.text.SpanStyle(color = Color.White.copy(alpha = 0.7f)))
-                                    append(" • " + (s?.singer ?: songSinger))
-                                    pop()
+                                    val artistText = s?.singer ?: songSinger
+                                    if (!adPlaying && artistText.isNotBlank()) {
+                                        pushStyle(androidx.compose.ui.text.SpanStyle(color = Color.White.copy(alpha = 0.7f)))
+                                        append(" • $artistText")
+                                        pop()
+                                    }
                                 },
                                 fontSize = 13.sp, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, softWrap = false,
                                 modifier = Modifier.basicMarquee(iterations = 1, initialDelayMillis = 2_000),
                             )
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(Icons.AutoMirrored.Filled.VolumeUp, contentDescription = null, tint = com.music.spotui.ui.theme.AppAccent, modifier = Modifier.size(14.dp))
-                                Text(remote.name, color = com.music.spotui.ui.theme.AppAccent, fontSize = 12.sp, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, modifier = Modifier.padding(start = 4.dp))
+                                Text(activeOutputName, color = com.music.spotui.ui.theme.AppAccent, fontSize = 12.sp, fontWeight = FontWeight.Medium, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, modifier = Modifier.padding(start = 4.dp))
                             }
                         }
                     }
                 }
             }
+            val hasActiveOutput = SongPlayer.activeDevice.value != null || routeLabel != null
             Icon(
                 painter = painterResource(id = R.drawable.ic_spot_connect),
-                tint = if (SongPlayer.activeDevice.value != null) com.music.spotui.ui.theme.AppAccent else Color.White,
+                tint = if (hasActiveOutput) com.music.spotui.ui.theme.AppAccent else Color.White,
                 modifier = Modifier.pressable(0.96f) { showDevices = true }
                     .size(24.dp),
                 contentDescription = stringResource(R.string.mr_user_route_category_name),

@@ -27,6 +27,7 @@
         android:icon="@mipmap/ic_launcher"
         android:label="${appLabel}"
         android:roundIcon="@mipmap/ic_launcher_round"
+        android:resizeableActivity="true"
         android:supportsRtl="true"
         android:theme="@style/Theme.Myspoti"
         android:usesCleartextTraffic="false">
@@ -68,8 +69,9 @@
             android:exported="true"
             android:launchMode="singleTask"
             android:screenOrientation="unspecified"
+            android:resizeableActivity="true"
             android:supportsPictureInPicture="true"
-            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden"
+            android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|density|keyboardHidden"
             android:windowSoftInputMode="adjustResize"
             android:theme="@style/Theme.Myspoti">
             <intent-filter>

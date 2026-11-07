@@ -3,9 +3,11 @@ package com.music.spotui.ui.screens
 import android.text.format.Formatter
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,6 +18,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
@@ -48,19 +51,48 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import app.myspoti.engine.R
-import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.CrossFade
+import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
 import com.bumptech.glide.integration.compose.placeholder
 import com.music.spotui.data.entity.SongsModel
+import com.music.spotui.data.offline.OfflineCollections
 import com.music.spotui.data.offline.OfflineDownloader
 import com.music.spotui.data.offline.OfflineStatus
 import com.music.spotui.data.offline.OfflineStore
+import com.music.spotui.data.offline.OfflineTrack
 import com.music.spotui.di.LocalPlayer
 import com.music.spotui.di.SongPlayer
+import com.music.spotui.di.rememberTrackSaved
 import com.music.spotui.ui.components.DownloadBadge
+import com.music.spotui.ui.components.FindInListField
+import com.music.spotui.ui.components.matchesFind
 import com.music.spotui.ui.components.pressable
+import com.music.spotui.ui.theme.AppAccent
 import com.music.spotui.ui.theme.AppBackground
+import java.text.Collator
+
+private val downloadsSortUri = "spotify:collection:downloads"
+
+private val downloadsTextCollator = ThreadLocal.withInitial {
+    Collator.getInstance().apply { strength = Collator.PRIMARY }
+}
+
+private fun sortOfflineTracks(tracks: List<OfflineTrack>, order: TrackOrder): List<OfflineTrack> {
+    val collator = downloadsTextCollator.get()
+    val sorted = when (order.sort) {
+        TrackSort.CUSTOM, TrackSort.ADDED -> tracks.sortedByDescending { it.addedAt }
+        TrackSort.TITLE -> tracks.sortedWith { a, b -> collator.compare(a.title, b.title) }
+        TrackSort.ARTIST -> tracks.sortedWith { a, b ->
+            collator.compare(a.artist, b.artist).takeIf { it != 0 } ?: collator.compare(a.album, b.album)
+        }
+        TrackSort.ALBUM -> tracks.sortedWith { a, b ->
+            collator.compare(a.album, b.album).takeIf { it != 0 } ?: collator.compare(a.title, b.title)
+        }
+        TrackSort.DURATION -> tracks.sortedBy { it.durationMs }
+    }
+    return if (order.reversed) sorted.asReversed() else sorted
+}
 
 /** "Downloaded": songs kept for offline listening, played from the phone by [LocalPlayer]. */
 @OptIn(ExperimentalGlideComposeApi::class)
@@ -68,8 +100,39 @@ import com.music.spotui.ui.theme.AppBackground
 fun DownloadsScreen(navController: NavController) {
     val context = LocalContext.current
     val title = stringResource(R.string.collection_downloaded)
+    var find by remember { mutableStateOf("") }
+    var selectedCollectionUri by remember { mutableStateOf<String?>(null) }
+    var sort by remember { mutableStateOf(TrackOrder.load(context, downloadsSortUri)) }
+
     // Snapshot reads: the list follows downloads as they finish.
-    val tracks = OfflineStore.tracks.values.sortedByDescending { it.addedAt }
+    val allTracks = OfflineStore.tracks.values.sortedByDescending { it.addedAt }
+    val collections = OfflineCollections.collections.values
+        .filter { c -> c.trackIds.any { OfflineStore.isDownloaded(it) } }
+        .sortedBy { it.name.lowercase() }
+    val activeCollection = selectedCollectionUri?.let { OfflineCollections.collections[it] }
+    if (selectedCollectionUri != null && activeCollection == null) {
+        selectedCollectionUri = null
+    }
+
+    val tracks = remember(allTracks, activeCollection, find, sort) {
+        val inCollection = if (activeCollection != null) {
+            val byId = allTracks.associateBy { it.trackId }
+            activeCollection.trackIds.mapNotNull { byId[it] }
+        } else {
+            allTracks
+        }
+        val matching = if (find.isBlank()) {
+            inCollection
+        } else {
+            inCollection.filter { matchesFind(find, it.title, it.artist, it.album) }
+        }
+        if (activeCollection != null && sort.isCustom) {
+            matching
+        } else {
+            sortOfflineTracks(matching, sort)
+        }
+    }
+
     val waiting = OfflineDownloader.requests.values.filter { !OfflineStore.isDownloaded(it.trackId) }
     // A25: only queued or running songs can be stopped; a failed one has nothing left to cancel.
     val stoppable = waiting.count {
@@ -77,18 +140,30 @@ fun DownloadsScreen(navController: NavController) {
         s == OfflineStatus.Queued || s is OfflineStatus.Downloading
     }
     val np by SongPlayer.nowPlaying
-    val playingHere = LocalPlayer.active.value && LocalPlayer.contextName == title
+    val activeContextLabel = activeCollection?.name ?: title
+    val playingHere = LocalPlayer.active.value &&
+        (LocalPlayer.contextName == activeContextLabel || LocalPlayer.contextName == title)
     var menuSong by remember { mutableStateOf<SongsModel?>(null) }
     menuSong?.let { sel ->
-        com.music.spotui.ui.components.SongOptionsSheet(song = sel, navController = navController, context = context, onDismiss = { menuSong = null })
+        com.music.spotui.ui.components.SongOptionsSheet(
+            song = sel,
+            navController = navController,
+            context = context,
+            onDismiss = { menuSong = null },
+        )
     }
     fun play(index: Int, shuffle: Boolean = false) {
         if (tracks.isEmpty()) return
-        LocalPlayer.play(tracks.map(OfflineStore::toLocalTrack), index, shuffle = shuffle, context = title)
+        LocalPlayer.play(
+            tracks.map(OfflineStore::toLocalTrack),
+            index,
+            shuffle = shuffle,
+            context = activeContextLabel,
+        )
     }
 
     Box(Modifier.fillMaxSize().background(AppBackground)) {
-        if (tracks.isEmpty() && waiting.isEmpty()) Column(
+        if (allTracks.isEmpty() && waiting.isEmpty()) Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
             modifier = Modifier.fillMaxSize().padding(horizontal = 32.dp),
@@ -105,6 +180,23 @@ fun DownloadsScreen(navController: NavController) {
                         .statusBarsPadding().padding(horizontal = 16.dp),
                 ) {
                     Spacer(Modifier.height(56.dp))
+                    if (allTracks.isNotEmpty()) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+                        ) {
+                            FindInListField(
+                                query = find,
+                                onQuery = { find = it },
+                                hint = stringResource(R.string.find_in_context_edit_text_playlist_hint),
+                                modifier = Modifier.weight(1f),
+                            )
+                            TrackSortButton(sort) {
+                                sort = it
+                                TrackOrder.save(context, downloadsSortUri, it)
+                            }
+                        }
+                    }
                     Image(
                         painterResource(R.drawable.downloads_cover), null,
                         modifier = Modifier.align(Alignment.CenterHorizontally).size(200.dp).clip(RoundedCornerShape(6.dp)),
@@ -115,6 +207,32 @@ fun DownloadsScreen(navController: NavController) {
                     Text(pluralStringResource(R.plurals.local_files_count, n, n) + " · " + stringResource(R.string.downloads_size, size),
                         color = Color(0xFFB3B3B3), fontSize = 14.sp, modifier = Modifier.padding(top = 4.dp))
                     Text(stringResource(R.string.downloads_source), color = Color(0xFFB3B3B3), fontSize = 12.sp, modifier = Modifier.padding(top = 4.dp))
+
+                    if (collections.isNotEmpty()) {
+                        LazyRow(
+                            contentPadding = PaddingValues(vertical = 10.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            item(key = "chip_all") {
+                                DownloadFilterChip(
+                                    label = "All",
+                                    selected = selectedCollectionUri == null,
+                                    onClick = { selectedCollectionUri = null },
+                                )
+                            }
+                            items(collections, key = { "chip_${it.uri}" }) { col ->
+                                DownloadFilterChip(
+                                    label = col.name,
+                                    selected = selectedCollectionUri == col.uri,
+                                    onClick = {
+                                        selectedCollectionUri = if (selectedCollectionUri == col.uri) null else col.uri
+                                    },
+                                )
+                            }
+                        }
+                    }
+
                     Row(Modifier.fillMaxWidth().padding(vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
                         Spacer(Modifier.weight(1f))
                         Icon(painterResource(R.drawable.ic_player_shuffle), stringResource(R.string.play_mode_item_shuffle_title), tint = Color.White,
@@ -130,7 +248,7 @@ fun DownloadsScreen(navController: NavController) {
                                         else -> play(0)
                                     }
                                 }
-                                .clip(CircleShape).background(com.music.spotui.ui.theme.AppAccent),
+                                .clip(CircleShape).background(AppAccent),
                         ) {
                             Icon(painterResource(if (playingHere && SongPlayer.isPlaying()) R.drawable.ic_playing else R.drawable.play_svgrepo_com),
                                 stringResource(R.string.content_description_play_button), tint = Color.Black, modifier = Modifier.size(26.dp))
@@ -189,8 +307,10 @@ fun DownloadsScreen(navController: NavController) {
             }
             itemsIndexed(tracks, key = { _, t -> t.trackId }) { i, t ->
                 val current = LocalPlayer.active.value && np.uri == "local:${OfflineStore.localIdOf(t.trackId)}"
+                val saved = rememberTrackSaved(t.trackId)
+                val songModel = remember(t) { OfflineStore.toSong(t) }
                 com.music.spotui.ui.components.SwipeToRemove(t.trackId, onRemove = {
-                    val gone = com.music.spotui.data.offline.OfflineCollections.removeSong(t.trackId)
+                    val gone = OfflineCollections.removeSong(t.trackId)
                     android.widget.Toast.makeText(context, context.getString(if (gone) R.string.toast_undownload else R.string.download_kept_by_list), android.widget.Toast.LENGTH_SHORT).show()
                 }) { Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -203,15 +323,21 @@ fun DownloadsScreen(navController: NavController) {
                         modifier = Modifier.size(48.dp).clip(RoundedCornerShape(4.dp)),
                     )
                     Column(Modifier.padding(start = 12.dp).weight(1f)) {
-                        Text(t.title, color = if (current) com.music.spotui.ui.theme.AppAccent else Color.White, fontSize = 15.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text(t.title, color = if (current) AppAccent else Color.White, fontSize = 15.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             DownloadBadge(OfflineStatus.Done, size = 14.dp)
                             Spacer(Modifier.width(6.dp))
                             Text(t.artist, color = Color(0xFFB3B3B3), fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         }
                     }
+                    if (saved) {
+                        AddButton(song = { songModel }, liked = true, size = 18.dp) {
+                            SongPlayer.setTrackSaved(t.trackId, true)
+                        }
+                        Spacer(Modifier.width(16.dp))
+                    }
                     Icon(Icons.Default.MoreVert, stringResource(R.string.content_description_context_menu), tint = Color.White.copy(alpha = 0.7f),
-                        modifier = Modifier.size(24.dp).pressable(0.96f) { menuSong = OfflineStore.toSong(t) })
+                        modifier = Modifier.size(24.dp).pressable(0.96f) { menuSong = songModel })
                 } }
             }
             item { Spacer(Modifier.height(com.music.spotui.ui.components.bottomBarsSpace())) }
@@ -223,5 +349,35 @@ fun DownloadsScreen(navController: NavController) {
         ) {
             Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.accessibility_navigate_back), tint = Color.White)
         }
+    }
+}
+
+@Composable
+private fun DownloadFilterChip(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier
+            .clip(RoundedCornerShape(16.dp))
+            .background(if (selected) AppAccent else Color(0xFF282828))
+            .border(
+                width = 1.dp,
+                color = if (selected) AppAccent else Color(0x33FFFFFF),
+                shape = RoundedCornerShape(16.dp),
+            )
+            .pressable(0.95f) { onClick() }
+            .padding(horizontal = 14.dp, vertical = 6.dp),
+    ) {
+        Text(
+            text = label,
+            color = if (selected) Color.Black else Color.White,
+            fontSize = 13.sp,
+            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
     }
 }

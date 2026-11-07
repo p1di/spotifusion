@@ -469,10 +469,10 @@ private fun ContextContent(navController: NavController, vm: ContextViewModel, p
     }
 
     val listState = androidx.compose.foundation.lazy.rememberLazyListState()
-    var showFindBar by remember(p.uri) { mutableStateOf(false) }
+    var showFindBar by remember(p.uri) { mutableStateOf(true) }
     LaunchedEffect(listState.firstVisibleItemIndex) {
         if (listState.firstVisibleItemIndex > 1 && find.isBlank()) {
-            showFindBar = false
+            showFindBar = true
         }
     }
     val pullToFindConnection = remember(p.uri, findable) {
@@ -991,11 +991,8 @@ private fun TrackRow(
             }
         }
         if (saved) {
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier.size(18.dp).clip(CircleShape).background(SpotifyGreen),
-            ) {
-                Icon(Icons.Default.Check, contentDescription = stringResource(R.string.liked_song), tint = com.music.spotui.ui.theme.ScPrimary, modifier = Modifier.size(12.dp))
+            AddButton(song = { song }, liked = true, size = 18.dp) {
+                SongPlayer.setTrackSaved(song.spotifyTrackId, true)
             }
             Spacer(Modifier.width(20.dp))
         }
@@ -1141,7 +1138,7 @@ data class TrackOrder(val sort: TrackSort = TrackSort.CUSTOM, val reversed: Bool
 
 /** Spotify's sort menu: picking the sort already chosen flips its direction (the arrow shows it). */
 @Composable
-private fun TrackSortButton(sort: TrackOrder, onSort: (TrackOrder) -> Unit) {
+internal fun TrackSortButton(sort: TrackOrder, onSort: (TrackOrder) -> Unit) {
     var open by remember { mutableStateOf(false) }
     Box {
         androidx.compose.material3.IconButton(onClick = { open = true }) {

@@ -77,11 +77,13 @@ class Api constructor(
         @Volatile var libraryRoot: List<LibraryEntry>? = null
         /** Contents of the library folders opened so far, by folder uri. */
         val folders = java.util.concurrent.ConcurrentHashMap<String, List<LibraryEntry>>()
+        /** Cached playlist and album pages for instant cold-start and offline access. */
+        val contextPages = java.util.concurrent.ConcurrentHashMap<String, ContextPageModel>()
 
         /** Drop all cached feeds (e.g. on logout / account switch). */
         fun clear() {
             albums = null; artists = null; home = null; library = null
-            libraryRoot = null; folders.clear()
+            libraryRoot = null; folders.clear(); contextPages.clear()
             facets.clear()
             LikedCache.tracks = null
             ArtistCache.map.clear()
@@ -124,9 +126,103 @@ class Api constructor(
         }
     }
 
-    /** True once the Web Player is signed in and ready (waits up to 30 s at startup). */
-    private suspend fun ready(): Boolean =
-        withTimeoutOrNull(30_000) { api.ready.first { it } } != null
+    /** True once the Web Player is signed in and ready (waits up to 30 s at startup, or returns false immediately when offline). */
+    private suspend fun ready(): Boolean {
+        if (api.ready.value) return true
+        if (!com.music.spotui.data.offline.OfflineStore.isOnline(context)) return false
+        return withTimeoutOrNull(30_000) { api.ready.first { it } } != null
+    }
+
+    private suspend fun diskContextPage(uri: String): ContextPageModel? =
+        HomeCache.contextPages[uri] ?: withContext(Dispatchers.IO) { ScreenCache.contextPage(uri).read() }?.also {
+            HomeCache.contextPages[uri] = it
+        }
+
+    private fun saveContextPage(page: ContextPageModel) {
+        if (page.uri.isBlank() || page.tracks.isEmpty()) return
+        HomeCache.contextPages[page.uri] = page
+        ScreenCache.contextPage(page.uri).write(page)
+    }
+
+    private fun offlineContextPage(uri: String, type: String): ContextPageModel? {
+        val col = com.music.spotui.data.offline.OfflineCollections.collections[uri] ?: return null
+        val songs = col.trackIds.mapNotNull { id ->
+            com.music.spotui.data.offline.OfflineStore.tracks[id]?.let(com.music.spotui.data.offline.OfflineStore::toSong)
+                ?: com.music.spotui.data.cache.PlaybackCacheStore.cachedTracks[id]?.let(com.music.spotui.data.cache.PlaybackCacheStore::toSong)
+        }
+        val coverUrl = songs.firstOrNull { it.coverUri.isNotBlank() }?.coverUri.orEmpty()
+        return ContextPageModel(
+            uri = uri,
+            type = type,
+            name = col.name,
+            coverUri = coverUrl,
+            metaLine = "${songs.size} songs",
+            tracks = songs,
+            complete = true,
+        )
+    }
+
+    private fun offlineLibraryEntries(): List<LibraryEntry> {
+        val fromCollections = com.music.spotui.data.offline.OfflineCollections.collections.values
+            .filter { it.uri != "spotify:collection:tracks" }
+            .map { col ->
+                val isAlbum = col.uri.startsWith("spotify:album:")
+                val id = col.uri.substringAfterLast(':')
+                val firstTrack = col.trackIds.firstOrNull()?.let { com.music.spotui.data.offline.OfflineStore.tracks[it] }
+                LibraryEntry(
+                    spotifyId = id,
+                    name = col.name,
+                    subtitle = if (isAlbum) context.getString(R.string.album_type_album) else context.getString(R.string.assisted_curation_search_playlist),
+                    coverUri = firstTrack?.coverUrl.orEmpty(),
+                    isPlaylist = !isAlbum,
+                    artists = firstTrack?.artist.orEmpty(),
+                    uri = col.uri,
+                )
+            }
+        return listOf(likedEntry()) + fromCollections
+    }
+
+    private fun offlineHomeFeed(): HomeFeedModel? {
+        val items = ArrayList<HomeItem>()
+        com.music.spotui.data.offline.OfflineCollections.collections.values.forEach { col ->
+            val id = col.uri.substringAfterLast(':')
+            val coverUrl = col.trackIds.firstOrNull()?.let { com.music.spotui.data.offline.OfflineStore.tracks[it]?.coverUrl }.orEmpty()
+            when {
+                col.uri == "spotify:collection:tracks" -> items += HomeItem.Playlist(
+                    name = context.getString(R.string.collection_liked_songs_title),
+                    imageUrl = LIKED_COVER,
+                    subtitle = "Playlist",
+                    id = LIKED_SONGS_ID,
+                )
+                col.uri.startsWith("spotify:album:") -> items += HomeItem.Album(
+                    id = id,
+                    name = col.name,
+                    imageUrl = coverUrl,
+                    subtitle = "Album",
+                    artists = "",
+                )
+                col.uri.startsWith("spotify:playlist:") -> items += HomeItem.Playlist(
+                    name = col.name,
+                    imageUrl = coverUrl,
+                    subtitle = "Playlist",
+                    id = id,
+                )
+            }
+        }
+        if (items.isEmpty() && com.music.spotui.data.offline.OfflineStore.tracks.isEmpty()) return null
+        if (items.isEmpty()) {
+            items += HomeItem.Playlist(
+                name = context.getString(R.string.collection_liked_songs_title),
+                imageUrl = LIKED_COVER,
+                subtitle = "Playlist",
+                id = LIKED_SONGS_ID,
+            )
+        }
+        return HomeFeedModel(
+            greeting = context.getString(R.string.collection_downloaded),
+            sections = listOf(HomeSection(title = context.getString(R.string.collection_downloaded), items = items)),
+        )
+    }
 
     private suspend fun diskHome(): HomeFeedModel? =
         withContext(Dispatchers.IO) { ScreenCache.home.read() }?.also { HomeCache.home = it }
@@ -300,7 +396,12 @@ class Api constructor(
     suspend fun getHomeFeed(facet: String = ""): Flow<Response<HomeFeedModel>> = flow {
         val cached = if (facet.isEmpty()) HomeCache.home ?: diskHome() else HomeCache.facets[facet]
         cached?.let { emit(Response.Success(it)) } ?: emit(Response.Loading())
-        if (!ready()) { if (cached == null) emit(Response.Error(notSignedIn())); return@flow }
+        if (!ready()) {
+            if (cached == null) {
+                offlineHomeFeed()?.let { emit(Response.Success(it)) } ?: emit(Response.Error(notSignedIn()))
+            }
+            return@flow
+        }
         val filter = app.myspoti.api.HomeFilter.entries.firstOrNull { it.facet == facet } ?: app.myspoti.api.HomeFilter.ALL
         runCatching { api.home.feed(filter, itemsPerShelf = 20) }.fold(
             onSuccess = { feed ->
@@ -712,8 +813,23 @@ class Api constructor(
             complete = complete,
         )
         if (LikedCache.tracks == null) LikedCache.tracks = withContext(Dispatchers.IO) { ScreenCache.liked.read() }
-        LikedCache.tracks?.let { emit(Response.Success(page(it, true))) } ?: emit(Response.Loading())
-        if (!ready()) { if (LikedCache.tracks == null) emit(Response.Error(notSignedIn())); return@flow }
+        LikedCache.tracks?.let {
+            SongPlayer.registerLikedSongs(it.map { s -> s.url })
+            emit(Response.Success(page(it, true)))
+        } ?: emit(Response.Loading())
+        if (!ready()) {
+            if (LikedCache.tracks == null) {
+                val offlineLiked = offlineContextPage("spotify:collection:tracks", "liked")?.tracks
+                    ?: com.music.spotui.data.offline.OfflineStore.tracks.values.map(com.music.spotui.data.offline.OfflineStore::toSong)
+                if (offlineLiked.isNotEmpty()) {
+                    SongPlayer.registerLikedSongs(offlineLiked.map { it.url })
+                    emit(Response.Success(page(offlineLiked, true)))
+                } else {
+                    emit(Response.Error(notSignedIn()))
+                }
+            }
+            return@flow
+        }
         val first = LikedCache.tracks == null
         // Cancellation must escape: emit() throws AbortFlowException (a CancellationException)
         // when the collector stops early (first { … }); catching it and emitting again
@@ -757,9 +873,18 @@ class Api constructor(
     }
 
     suspend fun getAlbumPage(albumId: String): Flow<Response<ContextPageModel>> = flow {
-        emit(Response.Loading())
-        if (!ready()) { emit(Response.Error(notSignedIn())); return@flow }
         val uri = "spotify:album:$albumId"
+        val cached = diskContextPage(uri) ?: offlineContextPage(uri, "album")
+        if (cached != null) {
+            SongPlayer.registerContext(cached.tracks.map { it.url }, uri)
+            emit(Response.Success(cached))
+        } else {
+            emit(Response.Loading())
+        }
+        if (!ready()) {
+            if (cached == null) emit(Response.Error(notSignedIn()))
+            return@flow
+        }
         val (album, tracks) = runCatching {
             coroutineScope {
                 val a = async { api.catalog.album(uri) }
@@ -775,7 +900,10 @@ class Api constructor(
                 }
                 a.await() to t.await()
             }
-        }.getOrElse { emit(Response.Error(context.getString(R.string.album_not_found))); return@flow }
+        }.getOrElse {
+            if (cached == null) emit(Response.Error(context.getString(R.string.album_not_found)))
+            return@flow
+        }
         val songs = tracks.map { songOf(it).copy(album = album.name, coverUri = cover(album.images), albumId = albumId) }
         SongPlayer.registerContext(songs.map { it.url }, uri)
         val type = context.getString(when (album.type) {
@@ -784,7 +912,7 @@ class Api constructor(
         })
         val firstArtist = album.artists.firstOrNull()
         val avatar = firstArtist?.let { runCatching { api.catalog.artist(it.uri) }.getOrNull() }?.images?.let(::cover).orEmpty()
-        emit(Response.Success(ContextPageModel(
+        val model = ContextPageModel(
             uri = uri,
             type = "album",
             name = album.name,
@@ -795,20 +923,32 @@ class Api constructor(
             metaLine = listOf(type, dateLabel(album.releaseDate)).filter { it.isNotBlank() }.joinToString(" • "),
             explicit = songs.any { it.explicit },
             tracks = songs,
-        )))
+        )
+        saveContextPage(model)
+        emit(Response.Success(model))
     }
 
     suspend fun getPlaylistPage(playlistId: String): Flow<Response<ContextPageModel>> = flow {
-        emit(Response.Loading())
-        if (!ready()) { emit(Response.Error(notSignedIn())); return@flow }
         val uri = "spotify:playlist:$playlistId"
+        val cached = diskContextPage(uri) ?: offlineContextPage(uri, "playlist")
+        if (cached != null) {
+            SongPlayer.registerContext(cached.tracks.map { it.url }, uri)
+            emit(Response.Success(cached))
+        } else {
+            emit(Response.Loading())
+        }
+        if (!ready()) {
+            if (cached == null) emit(Response.Error(notSignedIn()))
+            return@flow
+        }
         // The first songs are asked for together with the playlist's details, not after them.
         val firstPage = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.currentCoroutineContext()).async(Dispatchers.IO) {
             runCatching { api.playlists.tracks(uri, 0, 100) }
         }
         val pl = runCatching { api.playlists.playlist(uri) }.getOrElse {
             firstPage.cancel()
-            emit(Response.Error(context.getString(R.string.playlist_not_found))); return@flow
+            if (cached == null) emit(Response.Error(context.getString(R.string.playlist_not_found)))
+            return@flow
         }
         val saves = pl.followers?.takeIf { it > 0 }?.let {
             context.resources.getQuantityString(R.plurals.profile_list_item_saves_count, it.coerceAtMost(Int.MAX_VALUE.toLong()).toInt(), it)
@@ -835,10 +975,15 @@ class Api constructor(
             val total = songs.sumOf { it.durationMs.toLong() }
             val meta = listOf(saves, if (total > 0) durationLabel(total) else "").filter { it.isNotBlank() }.joinToString(" • ")
             val done = page.nextOffset == null
-            emit(Response.Success(header.copy(metaLine = meta, tracks = songs.toList(), complete = done)))
+            val currentModel = header.copy(metaLine = meta, tracks = songs.toList(), complete = done)
+            if (done) saveContextPage(currentModel)
+            // When a complete cached playlist is already on screen, avoid flashing a partial 100-item first page over it.
+            if (cached == null || done || songs.size >= cached.tracks.size) {
+                emit(Response.Success(currentModel))
+            }
             offset = page.nextOffset ?: break
         }
-        if (failed && songs.isEmpty()) emit(Response.Error(context.getString(R.string.couldnt_load, pl.name)))
+        if (failed && songs.isEmpty() && cached == null) emit(Response.Error(context.getString(R.string.couldnt_load, pl.name)))
     }
 
     suspend fun getAlbumSongs(albumName: String, artist: String = ""): Flow<Response<List<SongsModel>>> = flow {
@@ -906,15 +1051,19 @@ class Api constructor(
 
     /** Flat library (Android Auto, pickers): Liked Songs, playlists, then albums. */
     suspend fun getLibrary(): Flow<Response<List<LibraryEntry>>> = flow {
+        if (HomeCache.library == null) HomeCache.library = withContext(Dispatchers.IO) { ScreenCache.libraryRoot.read() }
         HomeCache.library?.let { emit(Response.Success(it)) } ?: emit(Response.Loading())
-        if (!ready()) { if (HomeCache.library == null) emit(Response.Error(notSignedIn())); return@flow }
+        if (!ready()) {
+            if (HomeCache.library == null) emit(Response.Success(offlineLibraryEntries()))
+            return@flow
+        }
         runCatching {
             val playlists = api.playlists.mine().map(::playlistEntry)
             val albums = libraryLevel(null, LibraryFilter.ALBUMS).mapNotNull(::entryOf).filter { !it.isPlaylist }
             listOf(likedEntry()) + playlists + albums
         }.fold(
             onSuccess = { HomeCache.library = it; emit(Response.Success(it)) },
-            onFailure = { Log.e("Api", "getLibrary failed", it); if (HomeCache.library == null) emit(Response.Error(it.message ?: "error")) },
+            onFailure = { Log.e("Api", "getLibrary failed", it); if (HomeCache.library == null) emit(Response.Success(offlineLibraryEntries())) },
         )
     }
 
@@ -922,7 +1071,10 @@ class Api constructor(
     suspend fun getLibraryRoot(): Flow<Response<List<LibraryEntry>>> = flow {
         if (HomeCache.libraryRoot == null) HomeCache.libraryRoot = withContext(Dispatchers.IO) { ScreenCache.libraryRoot.read() }
         HomeCache.libraryRoot?.let { emit(Response.Success(it)) } ?: emit(Response.Loading())
-        if (!ready()) { if (HomeCache.libraryRoot == null) emit(Response.Error(notSignedIn())); return@flow }
+        if (!ready()) {
+            if (HomeCache.libraryRoot == null) emit(Response.Success(offlineLibraryEntries()))
+            return@flow
+        }
         runCatching {
             val rootItems = libraryLevel(null).mapNotNull(::entryOf)
             val folderPlaylistIds = rootItems.filter { it.isFolder }.flatMap { folder ->

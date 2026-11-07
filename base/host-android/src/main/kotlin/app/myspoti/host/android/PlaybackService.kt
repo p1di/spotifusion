@@ -562,9 +562,9 @@ class PlaybackService : MediaBrowserServiceCompat() {
         private const val LOCK_TIMEOUT_MS = 6 * 60 * 60 * 1000L
         private const val KEEP_PLAYING_KEY = "keep_playing_on_close"
 
-        /** The music goes on when the app is closed from the recent apps (off: it stops). */
+        /** The music goes on when the app is closed from the recent apps (on by default so backgrounding/quitting does not pause playback). */
         fun keepsPlayingOnClose(context: Context): Boolean =
-            context.getSharedPreferences(CLOSE_PREFS, Context.MODE_PRIVATE).getBoolean(KEEP_PLAYING_KEY, false)
+            context.getSharedPreferences(CLOSE_PREFS, Context.MODE_PRIVATE).getBoolean(KEEP_PLAYING_KEY, true)
 
         fun setKeepsPlayingOnClose(context: Context, on: Boolean) =
             context.getSharedPreferences(CLOSE_PREFS, Context.MODE_PRIVATE).edit().putBoolean(KEEP_PLAYING_KEY, on).apply()

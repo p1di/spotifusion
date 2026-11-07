@@ -24,7 +24,9 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.aspectRatio
@@ -387,11 +389,13 @@ fun PlayerScreen(navController: NavController) {
         ) {
         val wide = maxWidth > 600.dp && maxWidth > maxHeight
         val contentWidth = if (wide) maxWidth.coerceAtMost(520.dp) else maxWidth
-        // Height budget from the screen, as before (the list item is shorter than the screen and
-        // gave a smaller cover); the width cap only matters on wide windows.
-        val screenHeight = androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp.dp
+        // Height budget from the screen or multi-window/pop-up container: adapts cleanly in small window mode.
+        val screenHeight = minOf(androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp.dp, maxHeight)
+        val compactWindow = screenHeight < 580.dp
+        val controlsBudget = if (compactWindow) 310.dp else PLAYER_CONTROLS_DP.dp
+        val minArtSide = if (compactWindow) 96.dp else 160.dp
         // Immersive: the artwork smoothly expands to take the whole height instead of snapping.
-        val baseArtSide = minOf(contentWidth, screenHeight - PLAYER_CONTROLS_DP.dp).coerceAtLeast(160.dp)
+        val baseArtSide = minOf(contentWidth, screenHeight - controlsBudget).coerceAtLeast(minArtSide)
         val artSide = androidx.compose.ui.unit.lerp(baseArtSide, contentWidth, immersiveProgress)
         Column(
             modifier = Modifier
@@ -408,7 +412,7 @@ fun PlayerScreen(navController: NavController) {
                     np = np,
                     fallbackName = playerViewModel.currentSongAlbum.value,
                 )
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(if (compactWindow) 2.dp else 8.dp))
             }
             // Media area: artwork (swipe to change track) or the music video, with
             // Spotify's "Passer à la vidéo" pill over it (black, like the official app).
@@ -416,7 +420,7 @@ fun PlayerScreen(navController: NavController) {
             // screens): otherwise play / pause ends up under the lyrics card.
             // A clear upward drag on the artwork opens the lyrics (observed on the initial pass,
             // never consumed, so the pager and the pull-to-close keep working).
-            val normalArtHeight = (baseArtSide - 72.dp).coerceAtLeast(160.dp)
+            val normalArtHeight = (baseArtSide - if (compactWindow) 24.dp else 72.dp).coerceAtLeast(minArtSide)
             val artBoxHeight = androidx.compose.ui.unit.lerp(normalArtHeight, screenHeight, immersiveProgress)
             Box(modifier = Modifier.width(artSide).height(artBoxHeight).pointerInput(immersive, videoOn) {
                 detectTapGestures(onTap = {
@@ -495,11 +499,18 @@ fun PlayerScreen(navController: NavController) {
                 )
             }
             }
+            if (!immersive && !adPlaying && !audioBuffering && !compactWindow) {
+                ArtworkCurrentLyricLine(
+                    title = songTitle,
+                    artist = songSinger,
+                    onClick = { showLyrics = true },
+                )
+            }
             Spacer(modifier = Modifier.weight(1f))
             if (!immersive && (videoReady || videoOn) && pillAboveTitle) {
                 com.music.spotui.ui.components.VideoSwitchPill(
                     on = videoOn,
-                    modifier = Modifier.padding(bottom = 20.dp),
+                    modifier = Modifier.padding(bottom = if (compactWindow) 6.dp else 20.dp),
                 )
             }
 
@@ -583,13 +594,23 @@ fun PlayerScreen(navController: NavController) {
         // artwork only, so a swipe there cannot pull a card up under the compact strip.
         if (!immersive) item {
             // T4: no lyrics card during an ad break — the song it belongs to is not what plays.
-            if (!audioBuffering && !adPlaying) InlineLyrics(
-                title = songTitle,
-                artist = songSinger,
-                album = playerViewModel.currentSongAlbum.value,
-                accentColor = dominentColor,
-                onExpand = { showLyrics = true },
-            )
+            if (!audioBuffering && !adPlaying) {
+                InlineLyrics(
+                    title = songTitle,
+                    artist = songSinger,
+                    album = playerViewModel.currentSongAlbum.value,
+                    accentColor = dominentColor,
+                    onExpand = { showLyrics = true },
+                )
+                NowPlayingArtistAndCreditsSection(
+                    navController = navController,
+                    playerViewModel = playerViewModel,
+                    songTitle = songTitle,
+                    songSinger = songSinger,
+                    songAlbum = playerViewModel.currentSongAlbum.value,
+                    np = np,
+                )
+            }
         }
         }
         // Immersive: one compact strip at the bottom of the full-bleed artwork, the official
@@ -1412,10 +1433,11 @@ fun AddButton(song: () -> SongsModel, liked: Boolean, size: androidx.compose.ui.
     LikeButton(liked = liked, size = size) {
         keyboardController?.hide()
         focusManager.clearFocus()
-        if (liked) savedIn = song() else {
+        if (!liked) {
             onLike()
             android.widget.Toast.makeText(context, context.getString(R.string.snackbar_added_to_liked_songs), android.widget.Toast.LENGTH_SHORT).show()
         }
+        savedIn = song()
     }
 }
 
@@ -1510,3 +1532,433 @@ private const val CANVAS_FADE_MS = 550
 
 /** Height the player needs under the artwork: top bar, title, seek bar, controls, Connect row. */
 private const val PLAYER_CONTROLS_DP = 450
+
+/**
+ * Real Spotify below-the-fold sections in the Now Playing scroll:
+ * 1. "About the artist" hero card (artist photo, monthly listeners, Follow/Following toggle, biography, tap to open full Artist page)
+ * 2. "Popular from <Artist>" top tracks card
+ * 3. Artist Popular Releases & Related Artists preview card
+ * 4. Song "Credits" card
+ */
+@OptIn(ExperimentalGlideComposeApi::class)
+@Composable
+private fun NowPlayingArtistAndCreditsSection(
+    navController: NavController,
+    playerViewModel: PlayerViewModel,
+    songTitle: String,
+    songSinger: String,
+    songAlbum: String,
+    np: SongPlayer.NowPlaying,
+) {
+    val primaryArtist = remember(songSinger) {
+        songSinger.split(",").firstOrNull()?.trim().orEmpty()
+    }
+    if (primaryArtist.isBlank()) return
+
+    var overview by remember(primaryArtist) {
+        mutableStateOf<com.music.spotui.data.entity.ArtistOverviewModel?>(null)
+    }
+    LaunchedEffect(primaryArtist, SongPlayer.currentTrackId) {
+        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            runCatching {
+                com.music.spotui.di.Graph.api.getArtistOverview(primaryArtist).collect { res ->
+                    if (res is com.music.spotui.data.api.Response.Success) {
+                        overview = res.data
+                    }
+                }
+            }
+        }
+    }
+
+    val artistData = overview
+    val artistName = artistData?.name?.ifBlank { primaryArtist } ?: primaryArtist
+    val artistId = artistData?.id.orEmpty()
+    val artistUri = if (artistId.isNotBlank()) "spotify:artist:$artistId" else ""
+    val isFollowing = if (artistUri.isNotBlank()) com.music.spotui.di.rememberSaved(artistUri) else false
+
+    fun openArtistPage(name: String = artistName, id: String = artistId) {
+        if (id.isNotBlank()) {
+            navController.navigate(com.music.spotui.ui.navigation.artistRoute(name, id))
+        } else {
+            playerViewModel.goToArtist(SongPlayer.currentTrackId, name, 0) { route ->
+                navController.navigate(route)
+            }
+        }
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        // 1. "About the artist" Card
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(16.dp))
+                .background(Color(0xFF1F1F1F))
+                .clickable { openArtistPage() }
+        ) {
+            val heroImg = artistData?.headerImage?.ifBlank { artistData.avatarImage }.orEmpty()
+            if (heroImg.isNotBlank()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(220.dp)
+                ) {
+                    GlideImage(
+                        transition = CrossFade,
+                        model = heroImg,
+                        contentDescription = artistName,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                Brush.verticalGradient(
+                                    listOf(
+                                        Color.Black.copy(alpha = 0.55f),
+                                        Color.Transparent,
+                                        Color(0xFF1F1F1F),
+                                    )
+                                )
+                            )
+                    )
+                    Text(
+                        text = stringResource(R.string.creator_biography_section_title),
+                        color = Color.White,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier
+                            .align(Alignment.TopStart)
+                            .padding(16.dp),
+                    )
+                }
+            } else {
+                Text(
+                    text = stringResource(R.string.creator_biography_section_title),
+                    color = Color.White,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(start = 16.dp, top = 16.dp, end = 16.dp),
+                )
+            }
+
+            Column(modifier = Modifier.padding(16.dp)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
+                        Text(
+                            text = artistName,
+                            color = Color.White,
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        val listeners = artistData?.monthlyListeners ?: 0L
+                        if (listeners > 0L) {
+                            val formattedListeners = java.text.NumberFormat.getIntegerInstance().format(listeners)
+                            Text(
+                                text = stringResource(R.string.monthly_listeners_text, formattedListeners),
+                                color = Color(0xFFB3B3B3),
+                                fontSize = 13.sp,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.padding(top = 2.dp),
+                            )
+                        }
+                    }
+                    if (artistUri.isNotBlank()) {
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(50))
+                                .border(
+                                    width = 1.dp,
+                                    color = if (isFollowing) Color.White else Color.White.copy(alpha = 0.5f),
+                                    shape = RoundedCornerShape(50),
+                                )
+                                .clickable { SongPlayer.setSaved(artistUri, !isFollowing) }
+                                .padding(horizontal = 16.dp, vertical = 7.dp),
+                        ) {
+                            Text(
+                                text = stringResource(
+                                    if (isFollowing) R.string.curation_button_following_state_text
+                                    else R.string.curation_button_follow_state_text
+                                ),
+                                color = Color.White,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                            )
+                        }
+                    }
+                }
+                val bio = artistData?.biography.orEmpty()
+                if (bio.isNotBlank()) {
+                    Spacer(Modifier.height(12.dp))
+                    Text(
+                        text = bio,
+                        color = Color(0xFFB3B3B3),
+                        fontSize = 14.sp,
+                        lineHeight = 20.sp,
+                        maxLines = 4,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+        }
+
+        // 2. Artist Popular Tracks & Releases Card (full artist page preview inside Now Playing)
+        if (artistData != null && (artistData.topTracks.isNotEmpty() || artistData.popularReleases.isNotEmpty())) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(Color(0xFF1F1F1F))
+                    .padding(vertical = 16.dp),
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                ) {
+                    Text(
+                        text = stringResource(R.string.artist_popular_tracks) + " • " + artistName,
+                        color = Color.White,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f),
+                    )
+                    Text(
+                        text = stringResource(R.string.audiobook_series_see_more_button),
+                        color = com.music.spotui.ui.theme.AppAccent,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.clickable { openArtistPage() },
+                    )
+                }
+                Spacer(Modifier.height(8.dp))
+                artistData.topTracks.take(5).forEachIndexed { idx, item ->
+                    val s = item.song
+                    val saved = com.music.spotui.di.rememberTrackSaved(s.spotifyTrackId)
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                SongPlayer.playSong(s.url, contextUri = artistUri.ifBlank { null })
+                                playerViewModel.updateSongState(s.coverUri, s.title, s.singer, true, s.id, idx, s.album)
+                            }
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                    ) {
+                        Text(
+                            text = "${idx + 1}",
+                            color = Color(0xFFB3B3B3),
+                            fontSize = 14.sp,
+                            modifier = Modifier.width(24.dp),
+                        )
+                        GlideImage(
+                            transition = CrossFade,
+                            model = s.coverUri,
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier
+                                .size(44.dp)
+                                .clip(RoundedCornerShape(4.dp)),
+                        )
+                        Column(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(horizontal = 12.dp),
+                        ) {
+                            Text(
+                                text = s.title,
+                                color = if (s.spotifyTrackId == SongPlayer.currentTrackId) com.music.spotui.ui.theme.AppAccent else Color.White,
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Medium,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                            Text(
+                                text = s.album.ifBlank { s.singer },
+                                color = Color(0xFFB3B3B3),
+                                fontSize = 12.sp,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
+                        AddButton(song = { s }, liked = saved, size = 20.dp) {
+                            SongPlayer.setTrackSaved(s.spotifyTrackId, true)
+                        }
+                    }
+                }
+
+                if (artistData.popularReleases.isNotEmpty()) {
+                    Spacer(Modifier.height(12.dp))
+                    Text(
+                        text = stringResource(R.string.popular_releases_section_title),
+                        color = Color.White,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
+                    )
+                    androidx.compose.foundation.lazy.LazyRow(
+                        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        items(artistData.popularReleases.take(8).size) { i ->
+                            val rel = artistData.popularReleases[i]
+                            Column(
+                                modifier = Modifier
+                                    .width(120.dp)
+                                    .clickable {
+                                        if (rel.spotifyId.isNotBlank()) {
+                                            navController.navigate(com.music.spotui.ui.navigation.albumRoute(rel.name, artistName, rel.spotifyId))
+                                        }
+                                    }
+                            ) {
+                                GlideImage(
+                                    transition = CrossFade,
+                                    model = rel.coverUri,
+                                    contentDescription = rel.name,
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier
+                                        .size(120.dp)
+                                        .clip(RoundedCornerShape(6.dp)),
+                                )
+                                Text(
+                                    text = rel.name,
+                                    color = Color.White,
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier.padding(top = 6.dp),
+                                )
+                                if (rel.time.isNotBlank()) {
+                                    Text(
+                                        text = rel.time,
+                                        color = Color(0xFFB3B3B3),
+                                        fontSize = 12.sp,
+                                        maxLines = 1,
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // 3. Credits Card
+        val artistsList = remember(songSinger) {
+            songSinger.split(",").map { it.trim() }.filter { it.isNotBlank() }
+        }
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(16.dp))
+                .background(Color(0xFF1F1F1F))
+                .padding(16.dp),
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(
+                    text = "Credits",
+                    color = Color.White,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                )
+                Text(
+                    text = artistName,
+                    color = com.music.spotui.ui.theme.AppAccent,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.clickable { openArtistPage() },
+                )
+            }
+            Spacer(Modifier.height(12.dp))
+            artistsList.forEachIndexed { index, artName ->
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 6.dp),
+                ) {
+                    Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
+                        Text(
+                            text = artName,
+                            color = Color.White,
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        Text(
+                            text = stringResource(R.string.artist_subtitle),
+                            color = Color(0xFFB3B3B3),
+                            fontSize = 13.sp,
+                        )
+                    }
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(50))
+                            .border(1.dp, Color.White.copy(alpha = 0.5f), RoundedCornerShape(50))
+                            .clickable {
+                                playerViewModel.goToArtist(SongPlayer.currentTrackId, artName, index) { route ->
+                                    navController.navigate(route)
+                                }
+                            }
+                            .padding(horizontal = 14.dp, vertical = 6.dp),
+                    ) {
+                        Text(
+                            text = stringResource(R.string.artist_subtitle),
+                            color = Color.White,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                        )
+                    }
+                }
+            }
+            if (songAlbum.isNotBlank()) {
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    text = stringResource(R.string.album),
+                    color = Color(0xFFB3B3B3),
+                    fontSize = 12.sp,
+                )
+                Text(
+                    text = songAlbum,
+                    color = Color.White,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier
+                        .padding(top = 2.dp)
+                        .clickable {
+                            val albumId = np.albumUri.substringAfterLast(":")
+                            if (albumId.isNotBlank()) {
+                                navController.navigate(com.music.spotui.ui.navigation.albumRoute(songAlbum, songSinger, albumId))
+                            }
+                        },
+                )
+            }
+        }
+        Spacer(Modifier.height(32.dp))
+    }
+}

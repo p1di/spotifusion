@@ -2,6 +2,7 @@ package com.music.spotui.data.api
 
 import android.util.AtomicFile
 import android.util.Log
+import com.music.spotui.data.entity.ContextPageModel
 import com.music.spotui.data.entity.HomeFeedModel
 import com.music.spotui.data.entity.LibraryEntry
 import com.music.spotui.data.entity.SongsModel
@@ -33,6 +34,11 @@ object ScreenCache {
     val home = Entry("home", HomeFeedModel.serializer())
     val libraryRoot = Entry("library_root", ListSerializer(LibraryEntry.serializer()))
     val liked = Entry("liked", ListSerializer(SongsModel.serializer()))
+
+    fun contextPage(uri: String): Entry<ContextPageModel> {
+        val safeKey = uri.replace(Regex("[^A-Za-z0-9_-]"), "_")
+        return Entry("ctx_$safeKey", ContextPageModel.serializer())
+    }
 
     class Entry<T>(private val name: String, private val serializer: KSerializer<T>) {
         private val file get() = AtomicFile(File(dir, "$name.json"))

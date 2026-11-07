@@ -152,6 +152,18 @@ object PlaybackCacheStore {
         )
     }
 
+    fun toSong(c: CachedTrack): com.music.spotui.data.entity.SongsModel =
+        com.music.spotui.data.entity.SongsModel(
+            id = ("track:" + c.trackId).hashCode() and 0x7fffffff,
+            title = c.title.ifBlank { "Cached Track" },
+            album = c.album,
+            singer = c.artist,
+            coverUri = c.coverUrl,
+            url = com.music.spotui.di.SongPlayer.buildSpotifyPlayQuery(c.trackId, c.title, c.artist),
+            spotifyTrackId = c.trackId,
+            durationMs = c.durationMs.toInt(),
+        )
+
     fun addTrack(t: CachedTrack) {
         ensureInit()
         // Cancel any pending purge if track is re-added

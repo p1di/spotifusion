@@ -111,6 +111,48 @@ object AutoBrowser {
             parentId == "artists" -> Graph.api.getFollowedArtists().filter { it.id.isNotBlank() }.take(MAX_ITEMS).map { a ->
                 browsable("ar:${a.id}|${a.name}", a.name, art(a.coverUri))
             }
+            parentId == "podcasts" -> {
+                val shows = (firstResult { Graph.api.getLibraryRoot() } ?: emptyList())
+                    .filter { it.isShow && it.spotifyId.isNotBlank() }
+                val yourEpisodes = browsable(
+                    "episodes",
+                    "Your Episodes",
+                    resource(context, "aa_ic_liked"),
+                    grid = false,
+                )
+                listOf(yourEpisodes) + shows.take(MAX_ITEMS).map { s ->
+                    browsable("sh:${s.spotifyId}", s.name, art(s.coverUri), subtitle = s.subtitle)
+                }
+            }
+            parentId == "episodes" -> {
+                val episodes = runCatching { Graph.api.getSavedEpisodes() }.getOrDefault(emptyList())
+                val ctxUri = "spotify:collection:your-episodes"
+                val page = ContextPageModel(
+                    uri = ctxUri,
+                    type = "episodes",
+                    name = "Your Episodes",
+                    coverUri = "",
+                    tracks = episodes,
+                    complete = true,
+                )
+                pages[ctxUri] = page
+                episodes.take(MAX_ITEMS).map { playable(ctxUri, it) }
+            }
+            parentId.startsWith("sh:") -> {
+                val showId = parentId.removePrefix("sh:")
+                val showPage = firstResult { Graph.api.getShowPage(showId) } ?: return emptyList()
+                val ctxUri = "spotify:show:$showId"
+                val page = ContextPageModel(
+                    uri = ctxUri,
+                    type = "show",
+                    name = showPage.show.name,
+                    coverUri = showPage.coverUri.ifBlank { showPage.show.coverUri },
+                    tracks = showPage.items,
+                    complete = true,
+                )
+                pages[ctxUri] = page
+                showPage.items.take(MAX_ITEMS).map { playable(ctxUri, it) }
+            }
             parentId == "liked" -> tracksOf(context, firstResult { Graph.api.getLikedPage() })
             parentId.startsWith("pl:") -> tracksOf(context, firstResult { Graph.api.getPlaylistPage(parentId.removePrefix("pl:")) })
             parentId.startsWith("al:") -> tracksOf(context, firstResult { Graph.api.getAlbumPage(parentId.removePrefix("al:")) })
@@ -140,18 +182,27 @@ object AutoBrowser {
     private fun libraryTab(context: Context): List<MediaItem> = listOf(
         browsable("liked", context.getString(R.string.collection_liked_songs_title), resource(context, "aa_ic_liked"), grid = false),
         browsable("playlists", context.getString(R.string.aa_playlists), resource(context, "aa_ic_playlists"), grid = false),
+        browsable("podcasts", context.getString(R.string.ad_category_title_podcasts), resource(context, "aa_ic_playlists"), grid = false),
         browsable("albums", context.getString(R.string.aa_albums), resource(context, "aa_ic_albums"), grid = false),
         browsable("artists", context.getString(R.string.aa_artists), resource(context, "aa_ic_artists"), grid = false),
     )
 
-    /** Recently played, then the home feed's shelves (mixes, jump back in, …), each a titled group. */
+    /** Recently played, then the home feed's shelves (mixes, jump back in, podcasts, …), each a titled group. */
     private suspend fun homeTab(context: Context): List<MediaItem> = kotlinx.coroutines.coroutineScope {
         val recents = async { runCatching { recentItems(context) }.getOrDefault(emptyList()) }
         val feed = async { runCatching { firstResult { Graph.api.getHomeFeed() } }.getOrNull() }
+        val podcastFeed = async { runCatching { firstResult { Graph.api.getHomeFeed("podcasts-chip") } }.getOrNull() }
         val out = ArrayList<MediaItem>(recents.await())
         feed.await()?.sections?.take(HOME_SHELVES)?.forEach { section ->
             val title = section.title.ifBlank { context.getString(R.string.aa_home) }
             section.items.mapNotNull { homeItem(it, title) }.take(HOME_PER_SHELF).let(out::addAll)
+        }
+        val hasShowsInMain = out.any { it.description.mediaId?.startsWith("sh:") == true || it.description.mediaId?.contains("|episode:") == true }
+        if (!hasShowsInMain) {
+            podcastFeed.await()?.sections?.take(2)?.forEach { section ->
+                val title = section.title.ifBlank { context.getString(R.string.ad_category_title_podcasts) }
+                section.items.mapNotNull { homeItem(it, title) }.take(HOME_PER_SHELF).let(out::addAll)
+            }
         }
         out
     }
@@ -163,21 +214,45 @@ object AutoBrowser {
         ).takeIf { item.id.isNotBlank() }
         is HomeItem.Album -> browsable("al:${item.id}", item.name, art(item.imageUrl), subtitle = item.artists, group = group).takeIf { item.id.isNotBlank() }
         is HomeItem.Artist -> browsable("ar:${item.id}|${item.name}", item.name, art(item.imageUrl), group = group).takeIf { item.id.isNotBlank() }
-        else -> null
+        is HomeItem.Show -> if (item.id.isBlank()) null else if (item.isEpisode) {
+            val d = MediaDescriptionCompat.Builder()
+                .setMediaId("t||episode:${item.id}")
+                .setTitle(item.name)
+                .setSubtitle(item.subtitle)
+                .setIconUri(art(item.imageUrl))
+                .setExtras(hints(STYLE_LIST, group))
+                .build()
+            MediaItem(d, MediaItem.FLAG_PLAYABLE)
+        } else {
+            browsable("sh:${item.id}", item.name, art(item.imageUrl), subtitle = item.subtitle, group = group)
+        }
     }
 
-    /** The account's recents (all devices): playlists, albums, artists and Liked Songs, as a group. */
+    /** The account's recents (all devices): playlists, albums, artists, podcasts and Liked Songs, as a group. */
     private suspend fun recentItems(context: Context): List<MediaItem> {
         val entries = withTimeoutOrNull(TIMEOUT_MS) { MyspotiRuntime.api.recents.recentEntries(0, 50).items } ?: return emptyList()
         val title = context.getString(R.string.aa_recent)
         val seen = HashSet<String>()
-        return groupRecents(entries).flatMap { it.groups }.filter { it.music }.mapNotNull { g ->
+        return groupRecents(entries).flatMap { it.groups }.mapNotNull { g ->
             val c = g.context
             val id = c.uri.substringAfterLast(':')
+            if (c.kind == MediaKind.EPISODE || c.kind == MediaKind.CHAPTER) {
+                val mediaId = "t||episode:$id"
+                if (id.isBlank() || !seen.add(mediaId)) return@mapNotNull null
+                val d = MediaDescriptionCompat.Builder()
+                    .setMediaId(mediaId)
+                    .setTitle(c.title)
+                    .setSubtitle(c.subtitle.orEmpty())
+                    .setIconUri(art(c.images.best(300)?.url))
+                    .setExtras(hints(STYLE_LIST, title))
+                    .build()
+                return@mapNotNull MediaItem(d, MediaItem.FLAG_PLAYABLE)
+            }
             val mediaId = when {
                 c.kind == MediaKind.PLAYLIST -> "pl:$id"
                 c.kind == MediaKind.ALBUM -> "al:$id"
                 c.kind == MediaKind.ARTIST -> "ar:$id|${c.title}"
+                c.kind == MediaKind.SHOW || c.kind == MediaKind.AUDIOBOOK -> "sh:$id"
                 c.kind == MediaKind.COLLECTION && c.uri == "spotify:collection:tracks" -> "liked"
                 else -> return@mapNotNull null
             }
@@ -255,6 +330,13 @@ object AutoBrowser {
         val artists = context.getString(R.string.aa_artists)
         r.artists.filter { it.id.isNotBlank() }.take(8).forEach {
             out += browsable("ar:${it.id}|${it.name}", it.name, art(it.coverUri), group = artists)
+        }
+        val podcasts = context.getString(R.string.ad_category_title_podcasts)
+        r.shows.filter { it.id.isNotBlank() }.take(8).forEach {
+            out += browsable("sh:${it.id}", it.name, art(it.coverUri), subtitle = it.publisher, group = podcasts)
+        }
+        r.episodes.take(8).forEach {
+            out += playable("", it, podcasts)
         }
         return out
     }
@@ -397,7 +479,7 @@ object AutoBrowser {
  */
 class ArtworkProvider : android.content.ContentProvider() {
     companion object {
-        private val AUTHORITY = app.myspoti.engine.BuildConfig.APPLICATION_ID + ".artwork"
+        private val AUTHORITY: String get() = Graph.app.packageName + ".artwork"
         private val allowedHosts = setOf("i.scdn.co", "mosaic.scdn.co", "image-cdn-ak.spotifycdn.com", "image-cdn-fa.spotifycdn.com", "thisis-images.spotifycdn.com", "seeded-session-images.scdn.co", "pickasso.spotifycdn.com")
 
         /** A downloaded song's cover: its file (the car is offline), else the CDN image. */

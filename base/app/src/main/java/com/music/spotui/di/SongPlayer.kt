@@ -157,12 +157,18 @@ object SongPlayer {
         scope.launch {
             while (true) {
                 kotlinx.coroutines.delay(REMOTE_REFRESH_MS)
+                if (isPlaying()) saveLastPosition()
                 val remote = _activeDevice.value != null || MyspotiRuntime.spotify.player.playsElsewhere.value
                 val now = SystemClock.elapsedRealtime()
                 val overdue = playing && !isBuffering && durationMs > 0 && positionMs + (now - positionAt) > durationMs + SONG_END_GRACE_MS
                 if (!remote && !overdue && !PlaybackService.isRunning) continue
                 runCatching { MyspotiRuntime.spotify.player.refresh() }
                 if (remote || overdue) refreshDevice()
+            }
+        }
+        scope.launch {
+            MyspotiRuntime.spotify.player.playsElsewhere.collect { elsewhere ->
+                if (elsewhere || _activeDevice.value != null) refreshDevice()
             }
         }
         scope.launch { api.player.queue.collect { q -> if (acceptsSessionUpdates()) applyQueue(q) } }
@@ -203,6 +209,9 @@ object SongPlayer {
     private fun lastTrackPrefs() = Graph.app.getSharedPreferences("myspoti_last_track", Context.MODE_PRIVATE)
     private var savedLast = ""
     @Volatile private var resumeWhenReady = false
+    @Volatile private var restoredUri = ""
+    @Volatile private var restoredPositionMs = 0L
+    @Volatile private var lastSavedPositionAt = 0L
 
     private fun restoreLastTrack(state: CurrentSongState) {
         if (state.title.value.isNotBlank() || !acceptsSessionUpdates()) return
@@ -212,11 +221,22 @@ object SongPlayer {
         if (uri.isBlank() || title.isBlank()) return
         val id = trackIdOf(uri)
         currentTrackId = id
+        currentContextUri = p.getString("contextUri", "").orEmpty()
+        val ctxName = p.getString("contextName", "").orEmpty()
+        if (currentContextUri.isNotBlank() && ctxName.isNotBlank()) {
+            registerContextName(currentContextUri, ctxName)
+        }
         durationMs = p.getLong("duration", 0L)
-        positionMs = p.getLong("position", 0L)
+        positionMs = p.getLong("position", 0L).coerceAtLeast(0L)
+        restoredUri = uri
+        restoredPositionMs = positionMs
         positionAt = SystemClock.elapsedRealtime()
         playing = false
-        _nowPlaying.value = NowPlaying(uri = uri)
+        _nowPlaying.value = NowPlaying(
+            uri = uri,
+            contextUri = currentContextUri,
+            contextName = ctxName,
+        )
         state.updateSongState(
             coverUri = p.getString("cover", "").orEmpty(),
             title = title,
@@ -229,17 +249,34 @@ object SongPlayer {
         state.likeState.value = p.getBoolean("liked", false)
     }
 
-    /** Saved on track change and on play/pause (not on every state). */
+    /** Saved on track change, play/pause, and periodically while playing so the track bar restores accurately. */
     private fun saveLastTrack(song: SongsModel, uri: String, liked: Boolean) {
+        if (uri.isBlank()) return
         val key = "$uri|$playing|$liked"
-        if (uri.isBlank() || key == savedLast) return
+        val now = SystemClock.elapsedRealtime()
+        if (key == savedLast && playing && now - lastSavedPositionAt < 3_000L) return
         savedLast = key
+        lastSavedPositionAt = now
+        val pos = getCurrentPosition().coerceAtLeast(0L)
+        val dur = getDuration().takeIf { it > 0L } ?: song.durationMs.toLong()
         lastTrackPrefs().edit()
             .putString("uri", uri).putString("title", song.title).putString("singer", song.singer)
             .putString("album", song.album).putString("cover", song.coverUri)
-            .putLong("duration", durationMs).putLong("position", getCurrentPosition())
+            .putString("contextUri", _nowPlaying.value.contextUri.ifBlank { currentContextUri })
+            .putString("contextName", _nowPlaying.value.contextName.ifBlank { knownContextName(currentContextUri) })
+            .putLong("duration", dur).putLong("position", pos)
             .putBoolean("liked", liked)
             .apply()
+    }
+
+    private fun saveLastPosition(pos: Long = getCurrentPosition(), dur: Long = getDuration()) {
+        val uri = _nowPlaying.value.uri
+        if (uri.isBlank()) return
+        lastSavedPositionAt = SystemClock.elapsedRealtime()
+        lastTrackPrefs().edit().apply {
+            putLong("position", pos.coerceAtLeast(0L))
+            if (dur > 0L) putLong("duration", dur)
+        }.apply()
     }
 
     private fun acceptsSessionUpdates() = Graph.app.getSharedPreferences("myspoti_prefs", Context.MODE_PRIVATE)
@@ -344,12 +381,24 @@ object SongPlayer {
 
     private fun applyState(s: PlayerState?) {
         if (s == null) return
+        val firstState = !stateSeen
         stateSeen = true
         if (LocalPlayer.active.value && engineWhileLocal(s)) return
         if (resumeWhenReady) {
             resumeWhenReady = false
-            // The Web Player restored the last session paused: play what was tapped.
-            if (s.isPaused) transport { api.player.resume() }
+            // The Web Player restored the last session paused: play what was tapped, preserving saved position.
+            if (s.isPaused) {
+                val targetPos = restoredPositionMs.takeIf { it > 0L && (s.item?.uri == restoredUri || s.item == null) }
+                transport {
+                    if (s.item == null && restoredUri.isNotBlank()) {
+                        val ctx = currentContextUri.ifBlank { restoredUri }
+                        api.player.play(ctx, trackUri = restoredUri.takeIf { ctx != restoredUri }, positionMs = targetPos)
+                    } else {
+                        api.player.resume()
+                        if (targetPos != null && s.positionMs < 2_000L) api.player.seek(targetPos)
+                    }
+                }
+            }
         }
         val item = s.item
         val uri = item?.uri.orEmpty()
@@ -369,10 +418,20 @@ object SongPlayer {
         bufferingState.value = waiting(s)
         playing = resolvePlaying(s.isPaused)
         SpeakerKeepAlive.set(playing && _activeDevice.value == null)
-        durationMs = item?.durationMs ?: 0L
+        durationMs = item?.durationMs ?: durationMs
         val reported = s.positionAt(System.currentTimeMillis())
-        // Keep the running clock when the player only nudges it (< 1 s).
-        if (!(wasPlaying && playing && !wasBuffering && !isBuffering && kotlin.math.abs(reported - predicted) < 1000)) {
+        if (uri.isNotBlank() && uri != restoredUri) {
+            restoredUri = ""
+            restoredPositionMs = 0L
+        } else if (playing && reported >= 2_000L) {
+            restoredPositionMs = 0L
+        }
+        val keepRestoredPos = !playing && restoredPositionMs > 0L && (uri == restoredUri || uri.isBlank()) && reported < 2_000L
+        // Keep the running clock when the player only nudges it (< 1 s), or keep the restored cold-start position while paused at 0:00.
+        if (keepRestoredPos) {
+            positionMs = restoredPositionMs
+            positionAt = SystemClock.elapsedRealtime()
+        } else if (!(wasPlaying && playing && !wasBuffering && !isBuffering && kotlin.math.abs(reported - predicted) < 1000)) {
             positionMs = reported
             positionAt = SystemClock.elapsedRealtime()
         }
@@ -424,7 +483,7 @@ object SongPlayer {
         pushNotification(song, liked)
         saveLastTrack(song, uri, liked)
         trackListen(uri, song, com.music.spotui.data.local.ListenHistory.Source.SPOTIFY, playing)
-        if (trackChanged) {
+        if (trackChanged || firstState) {
             refreshCurrentLiked()
             refreshDevice()
         }
@@ -607,28 +666,42 @@ object SongPlayer {
         val itemUri = if (episodeId != null) "spotify:episode:$episodeId" else SPOTIFY_TRACK_PREFIX + trackId
 
         val isOffline = !com.music.spotui.data.offline.OfflineStore.isOnline(appCtx) || com.music.spotui.data.DataSaver.active
-        val offlineTrack = if (episodeId == null) com.music.spotui.data.offline.OfflineStore.tracks[trackId] else null
+        val offlineTrack = com.music.spotui.data.offline.OfflineStore.tracks[trackId]
+            ?: com.music.spotui.data.offline.OfflineStore.tracks[song]
         val cachedTrack = if (episodeId == null) com.music.spotui.data.cache.PlaybackCacheStore.cachedTracks[trackId] else null
 
         if (isOffline || offlineTrack != null || cachedTrack != null) {
+            val candidateIds = order?.map { it.removePrefix("spotify:track:") }
+                ?: boundState?.queue?.value?.map { it.spotifyTrackId.ifBlank { it.url } }
+                ?: emptyList()
             val primaryLocal = offlineTrack?.let(com.music.spotui.data.offline.OfflineStore::toLocalTrack)
                 ?: cachedTrack?.let(com.music.spotui.data.cache.PlaybackCacheStore::toLocalTrack)
+                ?: if (isOffline) {
+                    candidateIds.firstNotNullOfOrNull { id ->
+                        com.music.spotui.data.offline.OfflineStore.tracks[id]?.let(com.music.spotui.data.offline.OfflineStore::toLocalTrack)
+                            ?: com.music.spotui.data.cache.PlaybackCacheStore.cachedTracks[id]?.let(com.music.spotui.data.cache.PlaybackCacheStore::toLocalTrack)
+                    }
+                } else null
 
             if (primaryLocal != null) {
                 val localQueue = mutableListOf(primaryLocal)
-                order?.forEach { uri ->
-                    val id = uri.removePrefix("spotify:track:")
+                candidateIds.forEach { rawId ->
+                    val id = rawId.removePrefix("spotify:track:")
                     if (id != trackId) {
                         val off = com.music.spotui.data.offline.OfflineStore.tracks[id]?.let(com.music.spotui.data.offline.OfflineStore::toLocalTrack)
                         val cac = com.music.spotui.data.cache.PlaybackCacheStore.cachedTracks[id]?.let(com.music.spotui.data.cache.PlaybackCacheStore::toLocalTrack)
                         val loc = off ?: cac
-                        if (loc != null) localQueue.add(loc)
+                        if (loc != null && localQueue.none { it.id == loc.id }) localQueue.add(loc)
                     }
                 }
                 val ctx = contextUri ?: contextRegistry[song] ?: ""
                 val ctxName = knownContextName(ctx).ifBlank { context?.let { "Cache / Local" } }
                 currentTrackId = trackId
-                if (Looper.myLooper() == Looper.getMainLooper()) LocalPlayer.play(localQueue, 0, context = ctxName, contextUri = ctx, fallback = true) else main.post { LocalPlayer.play(localQueue, 0, context = ctxName, contextUri = ctx, fallback = true) }
+                val startPlay = {
+                    LocalPlayer.play(localQueue, 0, context = ctxName, contextUri = ctx, fallback = true)
+                    if (positionMs != null && positionMs > 0L) LocalPlayer.seekTo(positionMs)
+                }
+                if (Looper.myLooper() == Looper.getMainLooper()) startPlay() else main.post(startPlay)
                 return
             } else if (isOffline) {
                 main.post {
@@ -780,12 +853,46 @@ object SongPlayer {
 
     fun play() {
         if (LocalPlayer.active.value) { Haptics.click(); LocalPlayer.resume(); return }
+        val uri = _nowPlaying.value.uri
+        val id = currentTrackId.ifBlank { trackIdOf(uri) }
+        val resumePos = restoredPositionMs.takeIf { it > 0L && (uri == restoredUri || id == trackIdOf(restoredUri)) }
+            ?: getCurrentPosition().takeIf { it > 0L }
+        val isOffline = !com.music.spotui.data.offline.OfflineStore.isOnline(Graph.app) || com.music.spotui.data.DataSaver.active
+        val localTrack = if (id.isNotBlank()) {
+            com.music.spotui.data.offline.OfflineStore.tracks[id]?.let(com.music.spotui.data.offline.OfflineStore::toLocalTrack)
+                ?: com.music.spotui.data.cache.PlaybackCacheStore.cachedTracks[id]?.let(com.music.spotui.data.cache.PlaybackCacheStore::toLocalTrack)
+        } else null
+        if (localTrack != null && (isOffline || !stateSeen)) {
+            Haptics.click()
+            restoredPositionMs = 0L
+            LocalPlayer.play(
+                listOf(localTrack),
+                0,
+                context = _nowPlaying.value.contextName.ifBlank { "Downloaded" },
+                contextUri = currentContextUri,
+                fallback = true,
+            )
+            if (resumePos != null && resumePos > 0L) LocalPlayer.seekTo(resumePos)
+            return
+        }
         Haptics.click(); intendPlaying(); playing = true; positionAt = SystemClock.elapsedRealtime()
         if (api.player.state.value?.isPaused != false) bufferingState.value = true
         // Tapped on the restored mini player while the Web Player is still loading.
         if (!stateSeen) resumeWhenReady = true
-        val uri = _nowPlaying.value.uri
-        transport { api.player.resume() }
+        transport {
+            val s = api.player.state.value
+            if (s?.item == null && uri.isNotBlank()) {
+                val ctx = currentContextUri.ifBlank { uri }
+                api.player.play(ctx, trackUri = uri.takeIf { ctx != uri }, positionMs = resumePos)
+                restoredPositionMs = 0L
+            } else {
+                api.player.resume()
+                if (resumePos != null && resumePos > 2_000L && (s?.positionMs ?: 0L) < 2_000L) {
+                    api.player.seek(resumePos)
+                }
+                restoredPositionMs = 0L
+            }
+        }
         // An episode ignored by a plain resume (the page's element stays paused, which is what
         // "the podcast stopped and the play button does nothing" was — B11) is asked for again
         // by its uri, where it was. Music keeps the plain resume: it never showed that.
@@ -804,9 +911,10 @@ object SongPlayer {
     fun pause() { Haptics.click(); pauseSilently() }
 
     private fun pauseSilently() {
-        if (LocalPlayer.active.value) { LocalPlayer.pause(); return }
+        if (LocalPlayer.active.value) { LocalPlayer.pause(); saveLastPosition(LocalPlayer.position(), LocalPlayer.duration()); return }
         intendPaused()
         positionMs = getCurrentPosition(); positionAt = SystemClock.elapsedRealtime(); playing = false
+        saveLastPosition(positionMs, durationMs)
         transport(pullBack = false) { api.player.pause() }
     }
 
@@ -1026,9 +1134,11 @@ object SongPlayer {
     }
 
     fun seekTo(ms: Long) {
-        if (LocalPlayer.active.value) { LocalPlayer.seekTo(ms); return }
+        if (LocalPlayer.active.value) { LocalPlayer.seekTo(ms); saveLastPosition(ms, LocalPlayer.duration()); return }
         positionMs = ms
         positionAt = SystemClock.elapsedRealtime()
+        if (restoredPositionMs > 0L) restoredPositionMs = ms
+        saveLastPosition(ms, durationMs)
         command { api.player.seek(ms) }
     }
 
@@ -1437,6 +1547,8 @@ object SongPlayer {
                 st.updateSongState(song.coverUri, song.title, song.singer, isPlaying, song.id, 0, song.album)
             }
             pushNotification(song, false)
+            val saveUri = currentTrackId.takeIf { it.isNotBlank() }?.let { SPOTIFY_TRACK_PREFIX + it } ?: uri
+            saveLastTrack(song, saveUri, boundState?.likeState?.value == true)
             val source = if (t.uri.scheme == "file") com.music.spotui.data.local.ListenHistory.Source.DOWNLOAD
                 else com.music.spotui.data.local.ListenHistory.Source.LOCAL
             trackListen(uri, song, source, isPlaying)

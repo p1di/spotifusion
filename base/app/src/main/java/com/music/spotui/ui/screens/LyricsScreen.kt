@@ -627,3 +627,45 @@ private fun CardIconButton(palette: LyricsPalette, description: String, icon: @C
             .clickable(onClick = onClick),
     ) { icon() }
 }
+
+/**
+ * Current synced lyric line displayed right below the artwork on the Now Playing screen,
+ * matching the official Spotify player layout.
+ */
+@Composable
+fun ArtworkCurrentLyricLine(
+    title: String,
+    artist: String,
+    onClick: () -> Unit,
+    vm: LyricsViewModel = viewModel(),
+) {
+    val state = rememberLyricsState(vm, title, artist)
+    val loaded = state as? LyricsViewModel.State.Loaded ?: return
+    val l = loaded.lyrics
+    if (l.lines.isEmpty()) return
+    val position = rememberPosition(running = l.synced)
+    val active by remember(l) { derivedStateOf { activeIndexFor(l, position()) } }
+    val currentLine = when {
+        !l.synced -> l.lines.firstOrNull { it.text.isNotBlank() && it.text != "♪" }
+        active >= 0 -> l.lines.getOrNull(active)?.takeIf { it.text.isNotBlank() && it.text != "♪" }
+        else -> l.lines.firstOrNull { it.text.isNotBlank() && it.text != "♪" }
+    } ?: return
+
+    Text(
+        text = currentLine.text,
+        color = Color.White,
+        fontSize = 16.sp,
+        lineHeight = 20.sp,
+        fontWeight = FontWeight.Bold,
+        maxLines = 2,
+        overflow = TextOverflow.Ellipsis,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = onClick,
+            )
+            .padding(horizontal = 24.dp, vertical = 6.dp),
+    )
+}
