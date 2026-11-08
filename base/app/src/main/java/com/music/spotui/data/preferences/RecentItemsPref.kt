@@ -71,3 +71,23 @@ fun removeRecentItem(context: Context, item: RecentItem) {
 fun clearRecentItems(context: Context) {
     context.getSharedPreferences(PREF, Context.MODE_PRIVATE).edit().remove(KEY).apply()
 }
+
+/**
+ * Merges Spotify's cloud recent searches ([remoteItems]) behind the user's locally recorded
+ * recent items so searches from Spotify across devices also appear in Spotifusion (Issue #20).
+ */
+fun mergeRemoteRecentItems(context: Context, remoteItems: List<RecentItem>): List<RecentItem> {
+    if (remoteItems.isEmpty()) return getRecentItems(context)
+    val local = getRecentItems(context)
+    val seen = local.map { "${it.type}:${it.key}" }.toHashSet()
+    val merged = ArrayList<RecentItem>(local)
+    for (r in remoteItems) {
+        if (r.name.isBlank() || r.type.isBlank() || r.key.isBlank()) continue
+        if (seen.add("${r.type}:${r.key}")) {
+            merged.add(r)
+        }
+    }
+    val capped = merged.take(35)
+    save(context, capped)
+    return capped
+}

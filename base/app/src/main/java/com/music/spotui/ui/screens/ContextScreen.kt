@@ -445,14 +445,34 @@ private fun ContextContent(navController: NavController, vm: ContextViewModel, p
     // recomputed when the page, the search, the sort or a like changes, while a recomposition
     // of the screen with nothing new in them re-sorts nothing (a 900-track list is real work).
     val findable = p.type == "liked" || p.type == "playlist"
+    var selectedGenre by remember(p.uri) { mutableStateOf<String?>(null) }
     val all by remember(p) {
         derivedStateOf {
             if (p.type == "liked" || p.type == "liked-artist") p.tracks.filter { SongPlayer.library["spotify:track:${it.spotifyTrackId}"] != false } else p.tracks
         }
     }
-    val rows by remember(p, find, sort) {
+    if (p.type == "liked") {
+        LaunchedEffect(all.size) {
+            LikedGenreFilter.resolveGenres(ctx, all)
+        }
+    }
+    val availableGenres by remember(p.type, all) {
         derivedStateOf {
-            val found = if (findable) all.filter { com.music.spotui.ui.components.matchesFind(find, it.title, it.singer, it.album) } else all
+            if (p.type != "liked") emptyList()
+            else LikedGenreFilter.genresForTracks(all)
+        }
+    }
+    LaunchedEffect(availableGenres) {
+        if (selectedGenre != null && availableGenres.none { it.equals(selectedGenre, ignoreCase = true) }) {
+            selectedGenre = null
+        }
+    }
+    val rows by remember(p, find, sort, selectedGenre) {
+        derivedStateOf {
+            val genreFiltered = if (p.type == "liked" && selectedGenre != null) {
+                all.filter { LikedGenreFilter.matchesGenre(it, selectedGenre!!) }
+            } else all
+            val found = if (findable) genreFiltered.filter { com.music.spotui.ui.components.matchesFind(find, it.title, it.singer, it.album) } else genreFiltered
             if (findable) sort.apply(found) else found
         }
     }
@@ -696,7 +716,7 @@ private fun ContextContent(navController: NavController, vm: ContextViewModel, p
                         )
                     }
                     Spacer(Modifier.weight(1f))
-                    val smart = SmartShuffle.on.value == p.uri
+                    val smart = SmartShuffle.isActiveFor(p.uri)
                     Box {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_player_shuffle),
@@ -714,13 +734,25 @@ private fun ContextContent(navController: NavController, vm: ContextViewModel, p
                                     indication = null,
                                 ) {
                                     when {
-                                        smart -> { SmartShuffle.on.value = null; playerVm.updateShuffleState(false) }
+                                        smart -> {
+                                            SmartShuffle.on.value = null
+                                            playerVm.updateShuffleState(false)
+                                            android.widget.Toast.makeText(context, "Shuffle is off", android.widget.Toast.LENGTH_SHORT).show()
+                                        }
                                         shuffle && (p.type == "playlist" || p.type == "liked") -> {
                                             SmartShuffle.on.value = p.uri
                                             android.widget.Toast.makeText(context, context.getString(R.string.smart_shuffle_on), android.widget.Toast.LENGTH_SHORT).show()
                                             if (isThisContext) vm.playSmart(p, p.tracks.firstOrNull { it.id == currentSongId })
                                         }
-                                        else -> playerVm.updateShuffleState(!shuffle)
+                                        else -> {
+                                            val nextShuffle = !shuffle
+                                            playerVm.updateShuffleState(nextShuffle)
+                                            android.widget.Toast.makeText(
+                                                context,
+                                                if (nextShuffle) "Shuffle is on" else "Shuffle is off",
+                                                android.widget.Toast.LENGTH_SHORT
+                                            ).show()
+                                        }
                                     }
                                 },
                         )
@@ -735,11 +767,12 @@ private fun ContextContent(navController: NavController, vm: ContextViewModel, p
                         modifier = Modifier
                             .size(56.dp)
                             .pressable(pressedScale = 0.92f) {
+                                val effectivePage = if (p.type == "liked" && selectedGenre != null && rows.isNotEmpty()) p.copy(tracks = rows) else p
                                 when {
-                                    isThisContext && playing -> SongPlayer.pause()
-                                    isThisContext -> SongPlayer.play()
-                                    p.tracks.isNotEmpty() && SmartShuffle.on.value == p.uri -> vm.playSmart(p, null)
-                                    p.tracks.isNotEmpty() -> vm.play(p, if (shuffle) p.tracks.random() else sort.apply(p.tracks).first(), sort)
+                                    isThisContext && playing && selectedGenre == null -> SongPlayer.pause()
+                                    isThisContext && !playing && selectedGenre == null -> SongPlayer.play()
+                                    effectivePage.tracks.isNotEmpty() && SmartShuffle.isActiveFor(p.uri) -> vm.playSmart(effectivePage, null)
+                                    effectivePage.tracks.isNotEmpty() -> vm.play(effectivePage, if (shuffle) effectivePage.tracks.random() else sort.apply(effectivePage.tracks).first(), if (selectedGenre != null) TrackOrder(TrackSort.TITLE) else sort)
                                 }
                             }
                             .clip(CircleShape)
@@ -753,6 +786,13 @@ private fun ContextContent(navController: NavController, vm: ContextViewModel, p
                         )
                     }
                 }
+                if (p.type == "liked" && availableGenres.isNotEmpty()) {
+                    LikedGenreFilterRow(
+                        genres = availableGenres,
+                        selectedGenre = selectedGenre,
+                        onSelect = { selectedGenre = if (selectedGenre == it) null else it },
+                    )
+                }
             }
         }
         if (rows.isEmpty() && find.isNotBlank()) item(key = "find-empty") {
@@ -765,7 +805,11 @@ private fun ContextContent(navController: NavController, vm: ContextViewModel, p
                 isCurrent = song.id == currentSongId,
                 saved = SongPlayer.library["spotify:track:${song.spotifyTrackId}"] ?: ("spotify:track:${song.spotifyTrackId}" in saved),
                 offline = com.music.spotui.data.offline.OfflineStore.statusOf(song.spotifyTrackId),
-                onClick = { if (SmartShuffle.on.value == p.uri) vm.playSmart(p, song) else vm.play(p, song, sort) },
+                onClick = {
+                    val effectivePage = if (p.type == "liked" && selectedGenre != null) p.copy(tracks = rows) else p
+                    val effectiveSort = if (p.type == "liked" && selectedGenre != null && sort.isCustom) TrackOrder(TrackSort.ADDED) else sort
+                    if (SmartShuffle.isActiveFor(p.uri)) vm.playSmart(effectivePage, song) else vm.play(effectivePage, song, effectiveSort)
+                },
                 onMore = { menuSong = song },
             ) }
         }
@@ -782,6 +826,11 @@ private fun ContextContent(navController: NavController, vm: ContextViewModel, p
             }
         }
         // 1:1 port of spotify-clone components/Preview/Info/Info.tsx & Artists/Artists.tsx
+        if (p.type == "album") {
+            item(key = "other-releases") {
+                AlbumOtherReleases(navController, p)
+            }
+        }
         if (p.type == "album" || p.type == "playlist") {
             item(key = "preview-info") {
                 Column(modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 35.dp)) {
@@ -857,6 +906,14 @@ private fun ContextContent(navController: NavController, vm: ContextViewModel, p
             .fillMaxWidth()
             .align(Alignment.TopCenter)
             .background(lerp(tint, com.music.spotui.ui.theme.ScSecondary, 0.5f).copy(alpha = headerAlpha))
+            .then(
+                if (headerAlpha > 0.05f) {
+                    Modifier.clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                    ) {}
+                } else Modifier
+            )
             .statusBarsPadding()
             .height(56.dp)
             .padding(horizontal = 12.dp),
@@ -1033,6 +1090,17 @@ object SmartShuffle {
     fun canPlay(contextUri: String): Boolean = contextUri.startsWith("spotify:playlist:") || contextUri.contains(":collection")
 
     /**
+     * Checks whether Smart Shuffle is active for [contextUri], handling both
+     * `"spotify:collection:tracks"` (Liked Songs page) and `"spotify:user:<id>:collection"`
+     * (reported by the Web Player when playing Liked Songs — Issue #23).
+     */
+    fun isActiveFor(contextUri: String): Boolean {
+        val active = on.value ?: return false
+        if (active.isBlank() || contextUri.isBlank()) return false
+        return active == contextUri || (active.contains(":collection") && contextUri.contains(":collection"))
+    }
+
+    /**
      * Smart shuffle (Spotify keeps its own for Premium): the playlist shuffled, with one of
      * Spotify's recommendations for it after every [EVERY] songs.
      */
@@ -1191,6 +1259,321 @@ private fun SimilarAlbums(navController: NavController, firstTrackId: String, al
                         modifier = Modifier.size(140.dp).clip(RoundedCornerShape(4.dp)))
                     Text(a.name, color = Color.White, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 6.dp))
                     Text(artists, color = Color(0xFFB3B3B3), fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Resolves and caches primary genres for artists in Liked Songs (Issue #24) so horizontal
+ * Genre Filter chips can filter Liked Songs just like Spotify.
+ */
+internal object LikedGenreFilter {
+    private const val PREF_NAME = "liked_genre_cache"
+    val artistGenres = androidx.compose.runtime.mutableStateMapOf<String, String>()
+    private val inFlight = java.util.Collections.synchronizedSet(HashSet<String>())
+    @Volatile private var prefsLoaded = false
+
+    private fun primaryArtistKey(singer: String): String =
+        singer.substringBefore(",").substringBefore("&").substringBefore(" feat.").trim().lowercase()
+
+    private fun normalizeGenre(raw: String): String {
+        val g = raw.trim()
+        if (g.isBlank() || g.equals("Music", ignoreCase = true) || g.equals("Unknown", ignoreCase = true)) return ""
+        val low = g.lowercase()
+        return when {
+            low.contains("hip-hop") || low.contains("hip hop") || low.contains("rap") -> "Hip-Hop"
+            low.contains("r&b") || low.contains("rnb") || low.contains("soul") -> "R&B"
+            low.contains("k-pop") || low.contains("kpop") -> "K-Pop"
+            low.contains("j-pop") || low.contains("jpop") -> "J-Pop"
+            low.contains("pop") -> "Pop"
+            low.contains("indie") -> "Indie"
+            low.contains("alternative") || low.contains("alt ") -> "Alternative"
+            low.contains("rock") || low.contains("punk") || low.contains("grunge") -> "Rock"
+            low.contains("metal") -> "Metal"
+            low.contains("electronic") || low.contains("edm") || low.contains("house") || low.contains("techno") || low.contains("dance") -> "Electronic"
+            low.contains("latin") || low.contains("reggaeton") || low.contains("urbano") -> "Latin"
+            low.contains("country") || low.contains("americana") -> "Country"
+            low.contains("jazz") || low.contains("blues") -> "Jazz"
+            low.contains("classical") || low.contains("orchestra") || low.contains("piano") -> "Classical"
+            low.contains("anime") -> "Anime"
+            low.contains("soundtrack") || low.contains("score") -> "Soundtrack"
+            low.contains("folk") || low.contains("acoustic") || low.contains("singer/songwriter") -> "Folk & Acoustic"
+            low.contains("reggae") || low.contains("afro") -> "Afro & Reggae"
+            else -> g.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
+        }
+    }
+
+    fun ensureLoaded(context: android.content.Context) {
+        if (prefsLoaded) return
+        prefsLoaded = true
+        val prefs = context.getSharedPreferences(PREF_NAME, android.content.Context.MODE_PRIVATE)
+        for ((k, v) in prefs.all) {
+            val str = v as? String ?: continue
+            if (str.isNotBlank()) artistGenres[k] = str
+        }
+    }
+
+    fun matchesGenre(song: SongsModel, genre: String): Boolean {
+        val key = primaryArtistKey(song.singer)
+        val g = artistGenres[key].orEmpty()
+        return g.equals(genre, ignoreCase = true)
+    }
+
+    fun genresForTracks(tracks: List<SongsModel>): List<String> {
+        val counts = LinkedHashMap<String, Int>()
+        for (song in tracks) {
+            val key = primaryArtistKey(song.singer)
+            val g = artistGenres[key]
+            if (!g.isNullOrBlank() && g != "NONE") {
+                counts[g] = (counts[g] ?: 0) + 1
+            }
+        }
+        return counts.entries
+            .sortedByDescending { it.value }
+            .map { it.key }
+            .take(12)
+    }
+
+    suspend fun resolveGenres(context: android.content.Context, tracks: List<SongsModel>) {
+        ensureLoaded(context)
+        val prefs = context.getSharedPreferences(PREF_NAME, android.content.Context.MODE_PRIVATE)
+        val missing = tracks
+            .map { it.singer.substringBefore(",").substringBefore("&").substringBefore(" feat.").trim() }
+            .filter { it.isNotBlank() }
+            .distinctBy { it.lowercase() }
+            .filter { !artistGenres.containsKey(it.lowercase()) && inFlight.add(it.lowercase()) }
+            .take(36)
+        if (missing.isEmpty()) return
+
+        withContext(Dispatchers.IO) {
+            for (batch in missing.chunked(4)) {
+                val results = batch.map { artistName ->
+                    async {
+                        val key = artistName.lowercase()
+                        val genre = fetchArtistGenreFromItunes(artistName)
+                        key to (genre.ifBlank { "NONE" })
+                    }
+                }.map { it.await() }
+                val editor = prefs.edit()
+                withContext(Dispatchers.Main) {
+                    for ((key, genre) in results) {
+                        artistGenres[key] = genre
+                        editor.putString(key, genre)
+                    }
+                }
+                editor.apply()
+            }
+        }
+    }
+
+    private fun fetchArtistGenreFromItunes(artistName: String): String {
+        return runCatching {
+            val encoded = java.net.URLEncoder.encode(artistName, "UTF-8")
+            val url = java.net.URL("https://itunes.apple.com/search?term=$encoded&entity=musicArtist&limit=1")
+            val conn = (url.openConnection() as java.net.HttpURLConnection).apply {
+                connectTimeout = 4_000
+                readTimeout = 4_000
+                setRequestProperty("Accept", "application/json")
+            }
+            val body = conn.inputStream.bufferedReader().use { it.readText() }
+            val match = Regex(""""primaryGenreName"\s*:\s*"([^"]+)"""").find(body)
+            normalizeGenre(match?.groupValues?.getOrNull(1).orEmpty())
+        }.getOrDefault("")
+    }
+}
+
+@Composable
+private fun LikedGenreFilterRow(
+    genres: List<String>,
+    selectedGenre: String?,
+    onSelect: (String) -> Unit,
+) {
+    androidx.compose.foundation.lazy.LazyRow(
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 12.dp),
+    ) {
+        if (selectedGenre != null) {
+            item(key = "clear-genre") {
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .size(32.dp)
+                        .clip(CircleShape)
+                        .background(Color(0xFF2A2A2A))
+                        .clickable { onSelect(selectedGenre) },
+                ) {
+                    Text("✕", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+        val ordered = if (selectedGenre != null && selectedGenre in genres) {
+            listOf(selectedGenre)
+        } else {
+            genres
+        }
+        items(ordered.size, key = { ordered[it] }) { i ->
+            val genre = ordered[i]
+            val active = genre == selectedGenre
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .height(32.dp)
+                    .clip(RoundedCornerShape(50))
+                    .background(if (active) SpotifyGreen else Color(0xFF282828))
+                    .clickable { onSelect(genre) }
+                    .padding(horizontal = 16.dp),
+            ) {
+                Text(
+                    text = genre,
+                    color = if (active) Color.Black else Color.White,
+                    fontSize = 13.sp,
+                    fontWeight = if (active) FontWeight.Bold else FontWeight.Medium,
+                    maxLines = 1,
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Spotify's "1 more release" / "N more releases" section on album pages (Issue #29),
+ * allowing the user to switch between alternate versions (e.g. Clean / Explicit / Deluxe).
+ */
+@OptIn(ExperimentalGlideComposeApi::class)
+@Composable
+private fun AlbumOtherReleases(navController: NavController, p: ContextPageModel) {
+    fun baseTitle(name: String): String =
+        name.lowercase()
+            .replace(Regex("""\s*[\(\[](deluxe|expanded|clean|explicit|remaster|bonus|edition|version|anniversary|special|standard|collector|super deluxe|complete).*?[\)\]]"""), "")
+            .replace(Regex("""\s*-\s*(deluxe|expanded|remastered|single|ep).*$"""), "")
+            .trim()
+
+    val primaryArtist = remember(p.ownerName) { p.ownerName.substringBefore(",").trim() }
+    val targetBase = remember(p.name) { baseTitle(p.name) }
+
+    val otherReleases by androidx.compose.runtime.produceState(emptyList<app.myspoti.api.Album>(), p.uri) {
+        if (targetBase.isBlank()) return@produceState
+        value = withContext(Dispatchers.IO) {
+            runCatching {
+                val query = "${p.name} $primaryArtist".trim()
+                app.myspoti.host.android.MyspotiRuntime.api.search.albums(query, limit = 15).items
+            }.getOrDefault(emptyList()).filter { candidate ->
+                candidate.uri != p.uri &&
+                    candidate.uri.startsWith("spotify:album:") &&
+                    baseTitle(candidate.name) == targetBase &&
+                    (primaryArtist.isBlank() || candidate.artists.any { it.name.equals(primaryArtist, ignoreCase = true) })
+            }.distinctBy { it.uri }
+        }
+    }
+
+    if (otherReleases.isEmpty()) return
+    var expanded by remember(p.uri) { mutableStateOf(false) }
+    val label = if (otherReleases.size == 1) "1 more release" else "${otherReleases.size} more releases"
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 12.dp, start = 16.dp, end = 16.dp),
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(8.dp))
+                .background(Color(0xFF1F1F1F))
+                .clickable {
+                    if (otherReleases.size == 1 && !expanded) {
+                        val target = otherReleases.first()
+                        val artists = target.artists.joinToString(", ") { it.name }.ifBlank { p.ownerName }
+                        navController.navigate(com.music.spotui.ui.navigation.albumRoute(target.name, artists, target.uri.substringAfterLast(':')))
+                    } else {
+                        expanded = !expanded
+                    }
+                }
+                .padding(horizontal = 16.dp, vertical = 14.dp),
+        ) {
+            Text(
+                text = label,
+                color = Color.White,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Bold,
+            )
+            Icon(
+                imageVector = if (expanded) Icons.Default.ArrowUpward else Icons.Default.ArrowDownward,
+                contentDescription = label,
+                tint = Color(0xFFB3B3B3),
+                modifier = Modifier.size(18.dp),
+            )
+        }
+        androidx.compose.animation.AnimatedVisibility(visible = expanded || otherReleases.size > 1 && expanded) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                otherReleases.forEach { release ->
+                    val artists = release.artists.joinToString(", ") { it.name }.ifBlank { p.ownerName }
+                    val coverUrl = release.images.maxByOrNull { it.width ?: 0 }?.url.orEmpty()
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(Color(0xFF181818))
+                            .clickable {
+                                navController.navigate(
+                                    com.music.spotui.ui.navigation.albumRoute(
+                                        release.name,
+                                        artists,
+                                        release.uri.substringAfterLast(':')
+                                    )
+                                )
+                            }
+                            .padding(10.dp),
+                    ) {
+                        GlideImage(
+                            transition = CrossFade,
+                            model = coverUrl.ifBlank { p.coverUri },
+                            contentDescription = release.name,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier
+                                .size(48.dp)
+                                .clip(RoundedCornerShape(4.dp))
+                                .background(com.music.spotui.ui.theme.ScSecondary),
+                        )
+                        Spacer(Modifier.width(12.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = release.name,
+                                color = Color.White,
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                            val sub = listOfNotNull(
+                                release.releaseDate?.take(4)?.takeIf { it.isNotBlank() },
+                                artists.takeIf { it.isNotBlank() }
+                            ).joinToString(" • ")
+                            if (sub.isNotBlank()) {
+                                Text(
+                                    text = sub,
+                                    color = Color(0xFFB3B3B3),
+                                    fontSize = 12.5.sp,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }

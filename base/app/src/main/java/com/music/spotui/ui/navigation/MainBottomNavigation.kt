@@ -125,7 +125,7 @@ fun MainBottomNavigation(navController: NavHostController, bottomBarState: Mutab
                     )
             ) {
 
-                Column(modifier = Modifier.navigationBarsPadding()) {
+                Column(modifier = Modifier.navigationBarsPadding().clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {}) {
 
                     AnimatedVisibility(
                         visible = hasTrack,

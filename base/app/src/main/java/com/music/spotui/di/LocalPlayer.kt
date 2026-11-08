@@ -58,7 +58,7 @@ object LocalPlayer {
         fallbackMode = fallback
         active.value = true
         val p = player()
-        p.shuffleModeEnabled = false
+        p.shuffleModeEnabled = false; setRepeatMode(SongPlayer.repeatMode.value)
         p.setMediaItems(list.map(::item), index.coerceIn(0, list.lastIndex), 0L)
         p.prepare()
         if (shuffle) setShuffle(true)

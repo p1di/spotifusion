@@ -522,15 +522,6 @@ class WebPlayerHost(private val context: Context) : BridgeHost {
     fun attach(container: ViewGroup, visible: Boolean) = main.post {
         this.container = container
         lastVisible = visible
-        val awake = view as? AwakeWebView
-        if (!visible && awake?.attachedToChromium == true) {
-            (view.parent as? ViewGroup)?.removeView(view)
-            if (loadAsked && _url.value.isEmpty() && pageStarts == 0) view.loadUrl(playerRoot())
-            return@post
-        }
-        if (visible) awake?.needsRealAttach = true
-        // Re-added each time: addView converts the params to the container's own type
-        // (assigning plain ViewGroup.LayoutParams to a FrameLayout child crashes on measure).
         val size = if (visible) ViewGroup.LayoutParams.MATCH_PARENT else 1
         if (view.parent !== container) {
             (view.parent as? ViewGroup)?.removeView(view)
@@ -550,13 +541,6 @@ class WebPlayerHost(private val context: Context) : BridgeHost {
         view.requestLayout()
         // Now in a window: a first navigation that never started gets another go.
         if (loadAsked && _url.value.isEmpty() && pageStarts == 0) view.loadUrl(playerRoot())
-        if (!visible) {
-            main.post {
-                if (!lastVisible && (view as? AwakeWebView)?.attachedToChromium == true) {
-                    (view.parent as? ViewGroup)?.removeView(view)
-                }
-            }
-        }
     }
 
     /**
@@ -654,29 +638,20 @@ private class AwakeWebView(context: Context) : WebView(context) {
      * again (the new window needs a fresh attach) or destroyed.
      */
     private var detachHeld = false
-    var attachedToChromium = false
-    var needsRealAttach = false
 
     override fun onDetachedFromWindow() {
         detachHeld = true
     }
 
     override fun onAttachedToWindow() {
-        if (attachedToChromium && detachHeld && !needsRealAttach) {
-            detachHeld = false
-            return
-        }
-        needsRealAttach = false
         releaseFromWindow()
         super.onAttachedToWindow()
-        attachedToChromium = true
     }
 
     /** Tells Chromium about a detach that was held back; no-op when none is pending. */
     fun releaseFromWindow() {
         if (!detachHeld) return
         detachHeld = false
-        attachedToChromium = false
         super.onDetachedFromWindow()
     }
 }

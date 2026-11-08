@@ -61,6 +61,32 @@ object DeveloperModePref {
     }
 }
 
+/**
+ * Automatic player engine restart when playback or playlist loading gets stuck (Issue #28).
+ * Enabled by default with configurable maximum attempts before falling back to the recovery modal.
+ */
+object AutoRestartPlayerPref {
+    private const val KEY_ON = "auto_restart_player_on"
+    private const val KEY_ATTEMPTS = "auto_restart_player_attempts"
+    var on by androidx.compose.runtime.mutableStateOf(prefs(com.music.spotui.di.Graph.app).getBoolean(KEY_ON, true))
+        private set
+    var maxAttempts by androidx.compose.runtime.mutableIntStateOf(
+        prefs(com.music.spotui.di.Graph.app).getInt(KEY_ATTEMPTS, 2).coerceIn(1, 5)
+    )
+        private set
+
+    fun setOn(c: Context, value: Boolean) {
+        on = value
+        prefs(c).edit().putBoolean(KEY_ON, value).apply()
+    }
+
+    fun setAttempts(c: Context, value: Int) {
+        val v = value.coerceIn(1, 5)
+        maxAttempts = v
+        prefs(c).edit().putInt(KEY_ATTEMPTS, v).apply()
+    }
+}
+
 /** "When your music ends, keep playing similar songs" (on by default). Read by the player. */
 object AutoplayPref {
     private const val KEY = "autoplay_similar"

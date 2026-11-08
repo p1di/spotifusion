@@ -98,6 +98,10 @@ fun AddToPlaylistSheet(
                 val cached = EditablePlaylists.fallbackFromCache()
                 if (cached.isNotEmpty()) {
                     playlists = cached
+                } else if (com.music.spotui.data.preferences.AutoRestartPlayerPref.on && reloadNonce < com.music.spotui.data.preferences.AutoRestartPlayerPref.maxAttempts) {
+                    Toast.makeText(context, "Auto-restarting player (${reloadNonce + 1}/${com.music.spotui.data.preferences.AutoRestartPlayerPref.maxAttempts})…", Toast.LENGTH_SHORT).show()
+                    com.music.spotui.di.SongPlayer.restartPlayerEngine()
+                    reloadNonce++
                 } else {
                     PlayerRecoveryModal.promptPlaylistsStuck {
                         reloadNonce++

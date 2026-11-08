@@ -135,6 +135,12 @@ fun SumUpSearchScreen(
         mutableStateOf(com.music.spotui.data.preferences.getRecentItems(context).filter { com.music.spotui.data.api.Features.PODCASTS || it.type != "show" })
     }
     var menuSong by remember { mutableStateOf<SongsModel?>(null) }
+    LaunchedEffect(searchActive) {
+        val synced = syncSpotifyRecents(context)
+        if (synced.isNotEmpty()) {
+            recents = synced.filter { com.music.spotui.data.api.Features.PODCASTS || it.type != "show" }
+        }
+    }
     // Re-tapping the Search tab while already on it focuses the field (official behaviour)
     // and clears any existing query so the user can search something new.
     val listState = androidx.compose.foundation.lazy.rememberLazyListState()
@@ -1229,4 +1235,37 @@ private fun SearchProfileRow(name: String, image: String?, onClick: () -> Unit) 
 private fun clearSpotifyRecents() {
     val runtime = app.myspoti.host.android.MyspotiRuntime
     runtime.scope.launch { runCatching { runtime.api.search.clearRecent() } }
+}
+
+private suspend fun syncSpotifyRecents(context: android.content.Context): List<com.music.spotui.data.preferences.RecentItem> {
+    val cards = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+        runCatching { app.myspoti.host.android.MyspotiRuntime.api.search.recent() }.getOrDefault(emptyList())
+    }
+    if (cards.isEmpty()) return emptyList()
+    val mapped = cards.mapNotNull { c ->
+        val parts = c.uri.split(":")
+        val kind = parts.getOrNull(1).orEmpty()
+        val id = c.uri.substringAfterLast(":")
+        if (id.isBlank() || c.title.isBlank()) return@mapNotNull null
+        val type = when (kind) {
+            "track" -> "song"
+            "artist" -> "artist"
+            "album" -> "album"
+            "playlist" -> "playlist"
+            "show" -> "show"
+            else -> return@mapNotNull null
+        }
+        com.music.spotui.data.preferences.RecentItem(
+            type = type,
+            key = id,
+            name = c.title,
+            singer = c.subtitle.orEmpty(),
+            image = c.images.firstOrNull()?.url.orEmpty(),
+            songId = id.hashCode(),
+            songUrl = if (kind == "track") "spotify:track:$id" else "",
+            spotifyTrackId = if (kind == "track") id else "",
+        )
+    }
+    return com.music.spotui.data.preferences.mergeRemoteRecentItems(context, mapped)
+
 }

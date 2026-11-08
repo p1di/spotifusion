@@ -7,7 +7,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
@@ -43,14 +42,16 @@ import kotlin.math.roundToInt
  * Spotify's gesture: swipe a song row sideways to add it to the queue. The row
  * follows the finger over a green strip, ticks once with a vibration when it
  * passes the threshold, adds the song ONCE on release, then springs back.
+ *
+ * Uses strict horizontal angle-gating so vertical scrolling never triggers a swipe by accident.
  */
 @Composable
 fun SwipeToQueue(song: SongsModel, content: @Composable () -> Unit) {
     val context = LocalContext.current
     val haptic = LocalHapticFeedback.current
     val scope = rememberCoroutineScope()
-    val threshold = with(LocalDensity.current) { 96.dp.toPx() }
-    val maxDrag = threshold * 1.4f
+    val threshold = with(LocalDensity.current) { 108.dp.toPx() }
+    val maxDrag = threshold * 1.35f
     val offset = remember { Animatable(0f) }
     var armed by remember { mutableStateOf(false) }
 
@@ -75,26 +76,69 @@ fun SwipeToQueue(song: SongsModel, content: @Composable () -> Unit) {
                 .offset { IntOffset(offset.value.roundToInt(), 0) }
                 .background(com.music.spotui.ui.theme.AppBackground)
                 .pointerInput(song.id) {
-                    detectHorizontalDragGestures(
-                        onDragEnd = {
-                            if (armed && song.spotifyTrackId.isNotBlank()) {
-                                com.music.spotui.di.SongPlayer.addToQueue(song.spotifyTrackId)
-                                android.widget.Toast.makeText(context, context.getString(R.string.snackbar_added_to_queue), android.widget.Toast.LENGTH_SHORT).show()
+                    val slop = viewConfiguration.touchSlop
+                    awaitPointerEventScope {
+                        while (true) {
+                            val downEvent = awaitPointerEvent()
+                            val down = downEvent.changes.firstOrNull { it.changedToDownIgnoreConsumed() } ?: continue
+                            val pointerId = down.id
+                            var totalDx = 0f
+                            var totalDy = 0f
+                            var dragging = false
+                            var cancelled = false
+
+                            while (true) {
+                                val event = awaitPointerEvent()
+                                val change = event.changes.firstOrNull { it.id == pointerId }
+                                if (change == null || !change.pressed) {
+                                    break
+                                }
+                                if (!dragging && change.isConsumed) {
+                                    cancelled = true
+                                    break
+                                }
+                                val dx = change.position.x - change.previousPosition.x
+                                val dy = change.position.y - change.previousPosition.y
+                                totalDx += dx
+                                totalDy += dy
+
+                                if (!dragging) {
+                                    // Any meaningful vertical movement yields immediately to list scrolling.
+                                    if (abs(totalDy) > slop * 0.8f && abs(totalDy) * 1.8f >= abs(totalDx)) {
+                                        cancelled = true
+                                        break
+                                    }
+                                    // Require a clear, flat horizontal gesture (> 1.8x touchSlop and > 2.4x vertical delta).
+                                    if (abs(totalDx) > slop * 1.8f && abs(totalDx) > abs(totalDy) * 2.4f) {
+                                        dragging = true
+                                    }
+                                }
+
+                                if (dragging) {
+                                    change.consume()
+                                    val next = (offset.value + dx).coerceIn(-maxDrag, maxDrag)
+                                    scope.launch { offset.snapTo(next) }
+                                    val nowArmed = abs(next) >= threshold
+                                    if (nowArmed && !armed) {
+                                        haptic.performHapticFeedback(HapticFeedbackType.GestureThresholdActivate)
+                                    }
+                                    armed = nowArmed
+                                }
                             }
-                            armed = false
-                            scope.launch { offset.animateTo(0f, spring()) }
-                        },
-                        onDragCancel = {
-                            armed = false
-                            scope.launch { offset.animateTo(0f, spring()) }
-                        },
-                    ) { change, dx ->
-                        change.consume()
-                        val next = (offset.value + dx).coerceIn(-maxDrag, maxDrag)
-                        scope.launch { offset.snapTo(next) }
-                        val nowArmed = abs(next) >= threshold
-                        if (nowArmed && !armed) haptic.performHapticFeedback(HapticFeedbackType.GestureThresholdActivate)
-                        armed = nowArmed
+
+                            if (dragging) {
+                                if (!cancelled && armed && song.spotifyTrackId.isNotBlank()) {
+                                    com.music.spotui.di.SongPlayer.addToQueue(song.spotifyTrackId)
+                                    android.widget.Toast.makeText(
+                                        context,
+                                        context.getString(R.string.snackbar_added_to_queue),
+                                        android.widget.Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+                                armed = false
+                                scope.launch { offset.animateTo(0f, spring()) }
+                            }
+                        }
                     }
                 },
         ) { content() }
@@ -275,4 +319,3 @@ fun ClickableDescriptionText(
         },
     )
 }
-

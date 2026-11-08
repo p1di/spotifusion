@@ -724,6 +724,8 @@ object SongPlayer {
     @Volatile private var lastRequestedSongKey: String = ""
     @Volatile private var lastRequestedContextUri: String = ""
     @Volatile private var fallbackInFlightTrackId: String = ""
+    @Volatile private var autoRestartAttemptsUsed: Int = 0
+    @Volatile private var isAutoRestarting: Boolean = false
     private var playbackWatchdogJob: kotlinx.coroutines.Job? = null
     private const val PLAYBACK_STALL_MODAL_MS = 6_500L
 
@@ -735,33 +737,69 @@ object SongPlayer {
             val state = api.player.state.value
             val curUri = state?.item?.uri.orEmpty()
             val stillStuck = pendingItemUri == expectedUri ||
-                (curUri != expectedUri && state?.isPaused != false) ||
+                (expectedUri.isNotBlank() && curUri != expectedUri && state?.isPaused != false) ||
+                (state?.isPaused != false && getCurrentPosition() < 600L) ||
                 (curUri == expectedUri && (state?.isBuffering == true || state?.isPaused == true) && getCurrentPosition() < 600L)
             if (stillStuck) {
-                val title = boundState?.title?.value.orEmpty()
-                com.music.spotui.ui.components.PlayerRecoveryModal.promptPlaybackStuck(title)
+                val autoPref = com.music.spotui.data.preferences.AutoRestartPlayerPref
+                if (autoPref.on && autoRestartAttemptsUsed < autoPref.maxAttempts) {
+                    autoRestartAttemptsUsed++
+                    val attemptNum = autoRestartAttemptsUsed
+                    val maxNum = autoPref.maxAttempts
+                    com.music.spotui.data.local.DeveloperLogStore.warn(
+                        "SongPlayer",
+                        "Playback stuck on $expectedUri — auto-restarting player ($attemptNum/$maxNum)"
+                    )
+                    main.post {
+                        android.widget.Toast.makeText(
+                            Graph.app,
+                            "Auto-restarting player ($attemptNum/$maxNum)…",
+                            android.widget.Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                    isAutoRestarting = true
+                    try {
+                        restartPlayerEngine()
+                    } finally {
+                        isAutoRestarting = false
+                    }
+                } else {
+                    autoRestartAttemptsUsed = 0
+                    val title = boundState?.title?.value.orEmpty()
+                    com.music.spotui.ui.components.PlayerRecoveryModal.promptPlaybackStuck(title)
+                }
+            } else {
+                autoRestartAttemptsUsed = 0
             }
         }
     }
 
     /**
-     * Rebuilds the WebView player engine and automatically retries the last requested song if one
-     * was waiting to play.
+     * Rebuilds the WebView player engine, waits for the *new* page load to become ready, and
+     * automatically retries the last requested or currently playing song.
      */
     suspend fun restartPlayerEngine() {
         com.music.spotui.data.local.DeveloperLogStore.info("SongPlayer", "Restarting Web Player engine")
         playbackWatchdogJob?.cancel()
         val retrySong = lastRequestedSongKey.takeIf { it.isNotBlank() && (pendingItemUri != null || playing) }
-        val retryCtx = lastRequestedContextUri.takeIf { it.isNotBlank() }
-        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
-            runCatching { MyspotiRuntime.host.reload() }
-        }
-        kotlinx.coroutines.withTimeoutOrNull(12_000L) {
-            api.ready.first { it }
+            ?: _nowPlaying.value.uri.takeIf { it.isNotBlank() && (pendingItemUri != null || playing) }
+        val retryCtx = lastRequestedContextUri.ifBlank { currentContextUri }.takeIf { it.isNotBlank() }
+        val retryPos = getCurrentPosition().takeIf { it > 1_500L && retrySong == _nowPlaying.value.uri }
+        val reloaded = if (MyspotiRuntime.isStarted) {
+            runCatching { MyspotiRuntime.spotify.player.reloadPage() }.getOrDefault(false)
+        } else false
+        if (!reloaded) {
+            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                runCatching { MyspotiRuntime.host.reload() }
+            }
+            kotlinx.coroutines.delay(1_800L)
+            kotlinx.coroutines.withTimeoutOrNull(15_000L) {
+                api.ready.first { it }
+            }
         }
         if (!retrySong.isNullOrBlank()) {
-            kotlinx.coroutines.delay(350L)
-            playSong(retrySong, contextUri = retryCtx)
+            kotlinx.coroutines.delay(450L)
+            playSong(retrySong, contextUri = retryCtx, positionMs = retryPos)
         }
     }
 
@@ -791,7 +829,11 @@ object SongPlayer {
             com.music.spotui.data.cache.PlaybackCacheStore.cachedTracks[trackId]
         } else null
 
-        if (episodeId == null && (isOffline || offlineTrack != null)) {
+        if (!isAutoRestarting) {
+            autoRestartAttemptsUsed = 0
+        }
+
+        if (episodeId == null && (isOffline || (offlineTrack != null && _activeDevice.value == null))) {
             val candidateIds = (order?.map { it.removePrefix("spotify:track:") }
                 ?: boundState?.queue?.value?.filter { !it.isEpisode }?.map { it.spotifyTrackId.ifBlank { it.url } }
                 ?: emptyList()).filter { !it.startsWith("episode:") && !it.startsWith("spotify:episode:") }
@@ -1002,6 +1044,7 @@ object SongPlayer {
         if (api.player.state.value?.isPaused != false) bufferingState.value = true
         // Tapped on the restored mini player while the Web Player is still loading.
         if (!stateSeen) resumeWhenReady = true
+        if (uri.isNotBlank()) schedulePlaybackWatchdog(uri)
         transport {
             val s = api.player.state.value
             if (s?.item == null && uri.isNotBlank()) {
@@ -1016,17 +1059,25 @@ object SongPlayer {
                 restoredPositionMs = 0L
             }
         }
-        // An episode ignored by a plain resume (the page's element stays paused, which is what
-        // "the podcast stopped and the play button does nothing" was — B11) is asked for again
-        // by its uri, where it was. Music keeps the plain resume: it never showed that.
-        if (!uri.startsWith("spotify:episode:")) return
+        // When resuming after a long pause in background (Issues #25, #26), the Web Player's
+        // Connect session or HTMLMediaElement may ignore a plain resume(). Check after 2.5s and
+        // re-play the current track at its paused position if it is still paused.
+        if (uri.isBlank()) return
         scope.launch {
-            kotlinx.coroutines.delay(EPISODE_RESUME_CHECK_MS)
-            if (!playing || LocalPlayer.active.value) return@launch
+            kotlinx.coroutines.delay(if (uri.startsWith("spotify:episode:")) EPISODE_RESUME_CHECK_MS else 2_500L)
+            if (!playing || LocalPlayer.active.value || _activeDevice.value != null) return@launch
             val s = api.player.state.value
-            if (s?.item?.uri == uri && s.isPaused) {
-                Log.i(TAG, "episode resume not taken: playing $uri again")
-                runCatching { api.player.play(uri, positionMs = getCurrentPosition()) }
+            if (s == null || s.isPaused) {
+                Log.i(TAG, "resume not taken after pause: playing $uri again at ${resumePos ?: getCurrentPosition()}")
+                val ctx = currentContextUri.ifBlank { uri }
+                val targetPos = resumePos ?: getCurrentPosition().takeIf { it > 0L }
+                runCatching {
+                    if (uri.startsWith("spotify:episode:") || ctx == uri) {
+                        api.player.play(uri, positionMs = targetPos)
+                    } else {
+                        api.player.play(ctx, trackUri = uri, positionMs = targetPos)
+                    }
+                }
             }
         }
     }
@@ -1050,6 +1101,8 @@ object SongPlayer {
         Haptics.click()
         if (LocalPlayer.active.value) { LocalPlayer.next(); return }
         intendPlaying()
+        playing = true
+        schedulePlaybackWatchdog(_nowPlaying.value.next?.url.orEmpty())
         // The first tap skips at once. Taps that follow it within SKIP_BURST_MS become one
         // jump to the song they add up to: a burst of "next" commands left the Web Player out
         // of step (state conflicts, then a player stuck until reloaded).
@@ -1081,7 +1134,14 @@ object SongPlayer {
         val target = burstUpcoming.getOrNull(burstTaps - 1)
         transport(waitReady = !stateSeen) { if (target == null) api.player.next() else api.player.skipTo(target) }
     }
-    fun previous() { Haptics.click(); if (LocalPlayer.active.value) { LocalPlayer.previous(); return }; intendPlaying(); transport(waitReady = !stateSeen) { api.player.previous() } }
+    fun previous() {
+        Haptics.click()
+        if (LocalPlayer.active.value) { LocalPlayer.previous(); return }
+        intendPlaying()
+        playing = true
+        schedulePlaybackWatchdog(_nowPlaying.value.prev?.url.orEmpty())
+        transport(waitReady = !stateSeen) { api.player.previous() }
+    }
 
     /** Tracks shufflePlay plays without a context: the first one, plus up to 49 queued. */
     private const val SHUFFLE_QUEUE_MAX = 50
@@ -1131,10 +1191,10 @@ object SongPlayer {
     fun setRepeat(on: Boolean) = setRepeatMode(if (on) 1 else 0)
 
     fun setRepeatMode(mode: Int) {
-        if (LocalPlayer.active.value) { _repeatMode.value = mode; LocalPlayer.setRepeatMode(mode); return }
         Haptics.toggle(mode != 0)
         _repeatMode.value = mode
         boundState?.repeat?.value = mode != 0
+        if (LocalPlayer.active.value) { LocalPlayer.setRepeatMode(mode); return }
         command { api.player.setRepeat(Repeat.entries[mode.coerceIn(0, 2)]) }
     }
 

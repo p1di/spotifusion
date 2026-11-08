@@ -1139,7 +1139,7 @@ fun PlayerFull(
     repeat: Boolean,
     queueSongs: List<SongsModel>
 ) {
-    val smartOn = SmartShuffle.on.value != null && SmartShuffle.on.value == SongPlayer.nowPlaying.value.contextUri
+    val smartOn = SmartShuffle.isActiveFor(SongPlayer.nowPlaying.value.contextUri)
     val smartScope = androidx.compose.runtime.rememberCoroutineScope()
 
     Row(verticalAlignment = Alignment.CenterVertically,
@@ -1161,7 +1161,11 @@ fun PlayerFull(
                     // As in Spotify: off → shuffle → smart shuffle (playlists, Liked Songs) → off.
                     val ctx = SongPlayer.nowPlaying.value.contextUri
                     when {
-                        smartOn -> { SmartShuffle.on.value = null; playerViewModel.updateShuffleState(false) }
+                        smartOn -> {
+                            SmartShuffle.on.value = null
+                            playerViewModel.updateShuffleState(false)
+                            android.widget.Toast.makeText(context, "Shuffle is off", android.widget.Toast.LENGTH_SHORT).show()
+                        }
                         shuffle && SmartShuffle.canPlay(ctx) -> {
                             SmartShuffle.on.value = ctx
                             android.widget.Toast.makeText(context, context.getString(R.string.smart_shuffle_on), android.widget.Toast.LENGTH_SHORT).show()
@@ -1172,7 +1176,15 @@ fun PlayerFull(
                                 }
                             }
                         }
-                        else -> playerViewModel.updateShuffleState(!shuffle)
+                        else -> {
+                            val nextShuffle = !shuffle
+                            playerViewModel.updateShuffleState(nextShuffle)
+                            android.widget.Toast.makeText(
+                                context,
+                                if (nextShuffle) "Shuffle is on" else "Shuffle is off",
+                                android.widget.Toast.LENGTH_SHORT
+                            ).show()
+                        }
                     }
                 }
             ,
@@ -1261,6 +1273,12 @@ fun PlayerFull(
                 }
                 .pressable {
                     SongPlayer.cycleRepeat()
+                    val msg = when (SongPlayer.repeatMode.value) {
+                        1 -> context.getString(R.string.repeat_on)
+                        2 -> context.getString(R.string.repeat_one)
+                        else -> context.getString(R.string.repeat_off)
+                    }
+                    android.widget.Toast.makeText(context, msg, android.widget.Toast.LENGTH_SHORT).show()
                 }
             ,
             tint = if (repeat){

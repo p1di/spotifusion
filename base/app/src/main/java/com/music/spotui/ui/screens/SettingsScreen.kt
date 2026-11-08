@@ -158,7 +158,7 @@ fun SettingsScreen(navController: NavController) {
             CheckUpdateRow()
             // The hidden Web Player stuck or crashed: rebuild it without leaving the app.
             Column(
-                Modifier.fillMaxWidth().clickable { app.myspoti.host.android.MyspotiRuntime.host.reload() }
+                Modifier.fillMaxWidth().clickable { kotlinx.coroutines.MainScope().launch { android.widget.Toast.makeText(ctx, "Restarting player engine…", android.widget.Toast.LENGTH_SHORT).show(); com.music.spotui.di.SongPlayer.restartPlayerEngine(); android.widget.Toast.makeText(ctx, "Player engine restarted", android.widget.Toast.LENGTH_SHORT).show() } }
                     .padding(horizontal = 20.dp, vertical = 10.dp),
             ) {
                 Text(stringResource(R.string.restart_player_title), color = Color.White, fontSize = 16.sp)
@@ -178,6 +178,7 @@ fun SettingsScreen(navController: NavController) {
                 Text(stringResource(R.string.diagnostic_export_detail), color = Color(0xFFB3B3B3), fontSize = 12.sp)
             }
             Divider()
+            AutoRestartPlayerSection()
             DeveloperModeSection()
             Spacer(Modifier.height(96.dp))
         }
@@ -769,6 +770,49 @@ private fun DevActionPill(label: String, onClick: () -> Unit) {
             .clickable(onClick = onClick)
             .padding(horizontal = 12.dp, vertical = 6.dp),
     )
+}
+
+@Composable
+private fun AutoRestartPlayerSection() {
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    val pref = com.music.spotui.data.preferences.AutoRestartPlayerPref
+    OptionRow(
+        label = "Automatic player engine restart",
+        detail = "Automatically restart the player engine when playback gets stuck before prompting",
+        checked = pref.on,
+        onChecked = { pref.setOn(ctx, it) },
+    )
+    if (pref.on) {
+        Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp)) {
+            Text("Max auto-restart attempts", color = Color.White, fontSize = 15.sp)
+            Text(
+                "Number of automatic recovery attempts before showing the restart prompt",
+                color = Color(0xFFB3B3B3),
+                fontSize = 12.sp,
+                modifier = Modifier.padding(top = 2.dp),
+            )
+            Row(
+                horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp),
+                modifier = Modifier.padding(top = 10.dp),
+            ) {
+                for (count in listOf(1, 2, 3, 5)) {
+                    val selected = pref.maxAttempts == count
+                    Text(
+                        "$count ${if (count == 1) "attempt" else "attempts"}",
+                        color = if (selected) Color.Black else Color.White,
+                        fontSize = 13.5.sp,
+                        fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(50))
+                            .background(if (selected) com.music.spotui.ui.theme.AppAccent else Color(0xFF2A2A2A))
+                            .clickable { pref.setAttempts(ctx, count) }
+                            .padding(horizontal = 14.dp, vertical = 7.dp),
+                    )
+                }
+            }
+        }
+    }
+    Divider()
 }
 
 @Composable
